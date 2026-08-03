@@ -1,0 +1,236 @@
+
+
+#' Fit an exposure-response time-to-event model based on `survreg()`
+#'
+#' @param formula Model formula, with a `survival::Surv()` object as the
+#' response, e.g. `Surv(time, event) ~ exposure`.
+#' @param data Data set
+#' @param dist The AFT distribution to fit, as for `survival::survreg()`.
+#' Defaults to `"weibull"`. Tested and officially supported for
+#' `"exponential"`, `"weibull"`, `"lognormal"`, and `"loglogistic"` --
+#' see [ertte_select_distribution()] for choosing among them by AIC.
+#' @param ... Other arguments passed to `survival::survreg()`.
+#' @returns A survreg object with an extra `ertte_model` class
+#'
+#' @details The returned object has class `c("ertte_model", "survreg")`:
+#' it *is* a `survreg` object, with a little extra metadata attached.
+#' This means all of the usual `survreg` methods work unchanged, without
+#' needing an ertte-specific equivalent -- e.g. `summary()`, `coef()`,
+#' `vcov()`, `confint()`, `predict()`, `AIC()`, `BIC()`, `logLik()`, and
+#' `anova()` for comparing nested models. `ertte_predict()` is a
+#' separate, ertte-specific alternative to `predict()` that returns
+#' survival probabilities with confidence intervals in a tidy data
+#' frame; the two are complementary, not competing.
+#'
+#' All four supported distributions are log-location-scale AFT models:
+#' `log(T) = mu + scale * W`, where `mu` is the linear predictor
+#' (intercept + covariates) and `W` follows a distribution that depends
+#' only on `dist` (extreme-value for `"exponential"`/`"weibull"`,
+#' standard normal for `"lognormal"`, standard logistic for
+#' `"loglogistic"`) -- see [ertte_predict()] and `.ertte_dist_info()`.
+#'
+#' @export
+#' @examples
+#' mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod
+#'
+#' # other AFT distributions are also supported
+#' mod_ln <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data, dist = "lognormal")
+#' mod_ln
+#'
+ertte_model <- function(formula, data, dist = "weibull", ...) {
+  .ertte_check_dist(dist)
+  mod <- survival::survreg(formula = formula, data = data, dist = dist, ...)
+  # unlike `glm()`, `survreg()` doesn't retain the fitting data on the
+  # returned object -- store it explicitly so `ertte_predict()`/
+  # `ertte_fun()`/SCM (which default `newdata`/refit from `mod$data`,
+  # mirroring erglm's `glm`-based equivalents) have something to fall
+  # back on.
+  mod$data <- data
+  .as_ertte(mod, dist)
+}
+
+#' Survival-probability predictions for exposure-response TTE models
+#'
+#' @param object An ertte model, as returned by [ertte_model()]
+#' @param newdata Data frame containing cases to be predicted. Defaults
+#' to the data the model was fitted to.
+#' @param time Numeric vector of times at which to compute survival
+#' probabilities
+#' @param conf_level Confidence level for the intervals
+#' @returns A tibble with one row per combination of `newdata` row and
+#' `time`
+#'
+#' @details Computes the linear predictor (and its standard error) via
+#' `predict(object, newdata, type = "linear", se.fit = TRUE)`, then
+#' converts to a survival probability `S(t) = 1 - F((log(t) - mu) /
+#' scale)`, where `F` is the base distribution's CDF implied by
+#' `object`'s `dist` (see [ertte_model()] Details). Confidence intervals
+#' are Wald intervals on `mu` (a `qnorm()` z-score times the standard
+#' error), back-transformed the same way -- parameter uncertainty in
+#' `scale` is not propagated, matching the level of approximation used
+#' throughout this package (e.g. `erglm_predict()`'s equivalent in the
+#' companion `erglm` package). `conf_level` must be a single number
+#' between 0 and 1 (inclusive); other values error rather than silently
+#' producing a reversed or `NaN` interval.
+#'
+#' @export
+#' @examples
+#' mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+#' ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
+#'
+ertte_predict <- function(object, newdata = NULL, time, conf_level = .95) {
+  .ertte_check_conf_level(conf_level)
+  if (is.null(newdata)) newdata <- object$data
+  if (!is.numeric(time) || length(time) == 0L || anyNA(time) || any(time <= 0)) {
+    rlang::abort("`time` must be a numeric vector of strictly positive values.")
+  }
+  info <- .ertte_dist_info(object$ertte$type)
+  z_scale <- -stats::qnorm((1 - conf_level) / 2)
+  scale <- object$scale
+
+  lp <- stats::predict(object, newdata, type = "linear", se.fit = TRUE)
+  n <- nrow(newdata)
+  k <- length(time)
+  rep_rows <- rep(seq_len(n), each = k)
+
+  time_rep <- rep(time, times = n)
+  mu_rep <- rep(lp$fit, each = k)
+  se_mu_rep <- rep(lp$se.fit, each = k)
+  z <- (log(time_rep) - mu_rep) / scale
+
+  out <- newdata[rep_rows, , drop = FALSE] |>
+    tibble::as_tibble() |>
+    dplyr::mutate(
+      time = unname(time_rep),
+      fit_survival = unname(1 - info$pbase(z)),
+      ci_lower = unname(1 - info$pbase((log(time_rep) - (mu_rep - z_scale * se_mu_rep)) / scale)),
+      ci_upper = unname(1 - info$pbase((log(time_rep) - (mu_rep + z_scale * se_mu_rep)) / scale)),
+    )
+  return(out)
+}
+
+#' Prediction function for an exposure-response TTE model
+#'
+#' @param object An ertte model, as returned by [ertte_model()]
+#'
+#' @returns A function with arguments `param`, `data`, and `time`.
+#' - The `param` argument should be a vector of location coefficients;
+#'   defaults to `coef(object)` (the fitted coefficients) if not supplied.
+#' - The `data` argument should be a data frame or tibble; defaults to
+#'   `object$data` (the data the model was fitted to) if not supplied.
+#' - The `time` argument gives the time(s) at which to evaluate the
+#'   survival function; recycled against `data`.
+#'
+#' @details Takes a fitted ertte model as input and returns a function
+#' that evaluates the survival function `S(t)` at user-specified
+#' parameters, data, and times (e.g. for VPCs or other counterfactual
+#' simulation scenarios). Named `ertte_fun()` for consistency with the
+#' companion `erglm`/`emaxnls` packages' `erglm_fun()`/`emax_fun()`,
+#' which serve the same purpose for their respective model classes. The
+#' returned function checks that `param` is numeric and has one entry
+#' per column of the model matrix implied by `data`, erroring
+#' informatively rather than failing with a cryptic "non-conformable
+#' arguments" error from matrix multiplication. `scale` is always taken
+#' from the fitted `object`, not from `param` (the coefficient vector
+#' from `coef()` never includes it).
+#'
+#' @export
+#' @examples
+#' mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod_fun <- ertte_fun(mod)
+#'
+#' # no arguments: reproduces the fitted model's own survival predictions
+#' s1 <- mod_fun(time = 60)
+#'
+#' # user modifies the parameters
+#' par2 <- coef(mod)
+#' par2["(Intercept)"] <- par2["(Intercept)"] + 1
+#' s2 <- mod_fun(param = par2, time = 60)
+#'
+ertte_fun <- function(object) {
+  ff <- stats::delete.response(stats::terms(object))
+  info <- .ertte_dist_info(object$ertte$type)
+  scale <- object$scale
+  force(ff)
+  function(param = NULL, data = NULL, time) {
+    if (is.null(param)) param <- stats::coef(object)
+    if (is.null(data)) data <- object$data
+    mm <- stats::model.matrix(ff, data)
+    if (!is.numeric(param) || length(param) != ncol(mm)) {
+      rlang::abort(paste0(
+        "`param` must be a numeric vector of length ", ncol(mm),
+        " (one entry per column of the model matrix: ",
+        paste(colnames(mm), collapse = ", "), "), not length ",
+        length(param), "."
+      ))
+    }
+    mu <- as.vector(mm %*% param)
+    z <- (log(time) - mu) / scale
+    1 - info$pbase(z)
+  }
+}
+
+# shared helper: draws `nsim` sets of location coefficients from the
+# sampling distribution implied by the model's variance-covariance
+# matrix, and for each draw simulates an event time per row of `newdata`
+# via inverse-CDF sampling from the fitted AFT distribution. Used
+# directly by `simulate.ertte_model()` and `er_simulate.ertte_model()`
+# (used by erplots, if installed, for TTE visual predictive checks).
+#
+# Administrative/observed censoring is reproduced by capping each
+# simulated event time at that row's *observed* exit time (the `time`
+# variable in `newdata`, whether that row was itself an event or
+# censored) -- a documented simplification: the true per-subject
+# administrative censoring time (if later than an observed event) isn't
+# otherwise available, so the observed exit time is used as a stand-in
+# upper bound. `newdata` must therefore contain the original response
+# columns (`time`/`event`, named as in the model's `Surv()` call).
+.ertte_simulate_draws <- function(object, newdata, nsim = 100, seed = NULL) {
+  .ertte_check_nsim(nsim)
+  if (is.null(seed)) {
+    seed <- .pick_seed()
+    rlang::inform(paste0("Using seed = ", seed, ". Pass `seed = ", seed, "` to reproduce this result."))
+  }
+  vars <- .ertte_response_vars(object)
+  if (!all(c(vars$time, vars$event) %in% names(newdata))) {
+    rlang::abort(paste0(
+      "`newdata` must contain the original response columns `", vars$time,
+      "` and `", vars$event, "` (used to cap simulated event times at the ",
+      "observed exit time)."
+    ))
+  }
+  info <- .ertte_dist_info(object$ertte$type)
+  scale <- object$scale
+  obs_time <- newdata[[vars$time]]
+  withr::with_seed(
+    seed = seed,
+    code = {
+      coef_names <- names(stats::coef(object))
+      par <- mvtnorm::rmvnorm(
+        n = nsim,
+        mean = stats::coef(object),
+        # `vcov()` also carries a row/column for `Log(scale)` (when the
+        # scale is estimated jointly with the location coefficients);
+        # only the location-coefficient block is needed here, since
+        # `scale` itself is held fixed at its point estimate throughout
+        # this package (see `ertte_model()` Details).
+        sigma = stats::vcov(object)[coef_names, coef_names, drop = FALSE]
+      )
+      sim <- list()
+      for (ii in seq_len(nsim)) {
+        dd_sim <- newdata |> dplyr::mutate(row_id = dplyr::row_number(), sim_id = ii)
+        mm <- stats::model.matrix(stats::delete.response(stats::terms(object)), dd_sim)
+        mu <- as.vector(mm %*% par[ii, ])
+        u <- stats::runif(nrow(dd_sim))
+        sim_time_raw <- exp(mu + scale * info$qbase(u))
+        dd_sim$sim_time <- pmin(sim_time_raw, obs_time)
+        dd_sim$sim_event <- as.numeric(sim_time_raw <= obs_time)
+        coef_draw <- stats::setNames(as.list(par[ii, ]), paste0("coef_", names(stats::coef(object))))
+        dd_sim <- dd_sim |> dplyr::bind_cols(tibble::as_tibble(coef_draw))
+        sim[[ii]] <- dd_sim
+      }
+    }
+  )
+  dplyr::bind_rows(sim)
+}

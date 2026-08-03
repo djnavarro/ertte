@@ -18,7 +18,15 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of ertte is to ...
+ertte is the time-to-event member of the exposure-response (E-R) package
+family, alongside [erglm](https://github.com/djnavarro/erglm) (GLM E-R
+models) and [emaxnls](https://github.com/djnavarro/emaxnls) (Emax /
+logistic-Emax models), all of which plug into
+[erplots](https://github.com/djnavarro/erplots) for visualisation. It
+wraps `survival::survreg()`-based parametric accelerated failure time
+(AFT) modelling behind a tidy, consistent interface: model fitting,
+AIC-based distribution selection, stepwise covariate modelling, and
+simulation.
 
 ## Installation
 
@@ -31,10 +39,11 @@ pak::pak("djnavarro/ertte")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
-
 ```{r example}
 library(ertte)
-## basic example code
-```
 
+mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod
+
+ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
+```

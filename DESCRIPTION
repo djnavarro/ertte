@@ -1,11 +1,39 @@
 Package: ertte
-Title: What the Package Does (One Line, Title Case)
+Title: Exposure-Response Tools for Time-to-Event Models
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("Danielle", "Navarro", , "djnavarro@protonmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0001-7648-6578"))
+Description:
+    Provides estimation tools for exposure-response models of
+    time-to-event endpoints based on survival::survreg(): parametric
+    accelerated failure time model fitting and prediction with
+    AIC-based distribution selection, stepwise covariate modelling,
+    and simulation-based visual predictive checks. Tested and
+    supported for the exponential, Weibull, log-normal, and
+    log-logistic distributions. For a model-agnostic mini-language to
+    visualise exposure-response models (including those fitted with
+    'ertte'), see the companion package 'erplots'.
+License: MIT + file LICENSE
+Language: en-GB
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 8.0.0
+Imports: 
+    dplyr,
+    mvtnorm,
+    rlang,
+    stats,
+    survival,
+    tibble,
+    withr
+Suggests: 
+    erplots,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+URL: https://github.com/djnavarro/ertte
+BugReports: https://github.com/djnavarro/ertte/issues
+Depends: 
+    R (>= 4.1.0)
+LazyData: true
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

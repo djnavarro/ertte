@@ -1,0 +1,10 @@
+test_that("ertte_data has the expected columns and types", {
+  expect_true(all(c(
+    "id", "sex", "age", "weight", "dose", "treatment",
+    "aucss", "cmaxss", "time", "event"
+  ) %in% names(ertte_data)))
+  expect_true(all(ertte_data$time > 0))
+  expect_true(all(ertte_data$event %in% c(0, 1)))
+  expect_s3_class(ertte_data$sex, "factor")
+  expect_s3_class(ertte_data$treatment, "factor")
+})
