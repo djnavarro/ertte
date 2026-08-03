@@ -155,6 +155,32 @@ plotting packages in package code.
   detects the true `sex` effect at the default threshold -- both are
   exercised by regression tests, so if the dataset is ever regenerated
   with a different seed/effect size, check these tests still pass.
+- CI: `.github/workflows/R-CMD-check.yaml` (standard r-lib matrix:
+  macOS/Windows/Ubuntu release, Ubuntu devel/oldrel-1) and
+  `.github/workflows/pkgdown.yaml` (builds and deploys the pkgdown site
+  to the `gh-pages` branch), both derived from the `r-lib/actions`
+  examples and matching erglm's workflow files. Both install
+  `github::djnavarro/erplots` as an extra dependency alongside CRAN
+  packages, since `erplots` is a `Suggests`-only GitHub-hosted package
+  exercised by `tests/testthat/test-er-methods.R`. No
+  `test-coverage.yaml`/`rhub.yaml` yet (erglm has both); add them later
+  if/when Codecov and CRAN submission become relevant.
+- pkgdown renders every `*.md` file at the package root (and in
+  `.github/`) into its own `docs/*.html` page -- hard-coded in
+  `pkgdown:::package_mds()` and not configurable via `_pkgdown.yml`, so
+  `.Rbuildignore`-ing `AGENTS.md` (needed to keep it out of the built
+  *package*) has no effect on the *pkgdown site*: unhandled, it'd get
+  published as `docs/AGENTS.html` and indexed in
+  `docs/search.json`/`docs/sitemap.xml`. `tools/pkgdown-postbuild.R`
+  strips this page (and its search/sitemap entries) back out;
+  `.github/workflows/pkgdown.yaml` runs it right after
+  `build_site_github_pages()`. Run it manually after any local
+  `pkgdown::build_site()` too -- same pattern as erglm (which also
+  strips a `PLAN.md`-derived page; ertte has no `PLAN.md`, so only
+  `AGENTS.md` needs stripping here). The site uses the shared
+  `djnavarro/waeponwifestre` template and a custom domain
+  (`ertte.djnavarro.net`) matching erglm/emaxnls -- the DNS/GitHub Pages
+  custom-domain configuration itself is done outside the repo.
 
 ## Conventions
 

@@ -1,0 +1,25 @@
+url: https://ertte.djnavarro.net/
+template:
+  package: waeponwifestre
+
+reference:
+- title: Build
+  desc: Fit exposure-response time-to-event models based on survreg()
+- contents:
+  - ertte_model
+  - ertte_predict
+  - ertte_select_distribution
+- title: Covariate selection
+  desc: Stepwise covariate modelling for exposure-response TTE models
+- contents:
+  - ertte_scm
+  - ertte_term
+- title: Simulate
+  desc: Simulation tools for exposure-response TTE models
+- contents:
+  - ertte_fun
+  - simulate.ertte_model
+- title: Other
+  desc: Other functions and objects
+- contents:
+  - ertte_data

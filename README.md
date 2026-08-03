@@ -4,6 +4,8 @@
 # ertte
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/djnavarro/ertte/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/djnavarro/ertte/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ertte is the time-to-event member of the exposure-response (E-R) package
