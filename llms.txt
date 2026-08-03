@@ -1,0 +1,112 @@
+# ertte
+
+ertte is the time-to-event member of the exposure-response (E-R) package
+family, alongside [erglm](https://github.com/djnavarro/erglm) (GLM E-R
+models) and [emaxnls](https://github.com/djnavarro/emaxnls) (Emax /
+logistic-Emax models), all of which plug into
+[erplots](https://github.com/djnavarro/erplots) for visualisation. It
+wraps
+[`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html)-based
+parametric accelerated failure time (AFT) modelling behind a tidy,
+consistent interface: model fitting, AIC-based distribution selection,
+stepwise covariate modelling, and simulation.
+
+## Installation
+
+You can install the development version of ertte from
+[GitHub](https://github.com/) with:
+
+``` r
+
+# install.packages("pak")
+pak::pak("djnavarro/ertte")
+```
+
+## Example
+
+``` r
+
+library(ertte)
+
+mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod
+#> Call:
+#> survival::survreg(formula = formula, data = data, dist = dist)
+#> 
+#> Coefficients:
+#>   (Intercept)         aucss 
+#>  4.8563375087 -0.0006407913 
+#> 
+#> Scale= 0.7164032 
+#> 
+#> Loglik(model)= -1207.3   Loglik(intercept only)= -1263.9
+#>  Chisq= 113.25 on 1 degrees of freedom, p= <2e-16 
+#> n= 300
+
+ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
+#> # A tibble: 15 × 13
+#>       id sex      age weight  dose treatment aucss cmaxss  time event
+#>    <int> <fct>  <int>  <dbl> <dbl> <fct>     <dbl>  <dbl> <dbl> <dbl>
+#>  1     1 Female    27     70   200 Drug      1114.  187.     30     1
+#>  2     1 Female    27     70   200 Drug      1114.  187.     60     1
+#>  3     1 Female    27     70   200 Drug      1114.  187.     90     1
+#>  4     2 Female    27     59   100 Drug       561.   49.1    30     0
+#>  5     2 Female    27     59   100 Drug       561.   49.1    60     0
+#>  6     2 Female    27     59   100 Drug       561.   49.1    90     0
+#>  7     3 Female    24     65     0 Placebo      0     0      30     0
+#>  8     3 Female    24     65     0 Placebo      0     0      60     0
+#>  9     3 Female    24     65     0 Placebo      0     0      90     0
+#> 10     4 Female    29     63     0 Placebo      0     0      30     0
+#> 11     4 Female    29     63     0 Placebo      0     0      60     0
+#> 12     4 Female    29     63     0 Placebo      0     0      90     0
+#> 13     5 Male      27     91   200 Drug      1416.  143.     30     1
+#> 14     5 Male      27     91   200 Drug      1416.  143.     60     1
+#> 15     5 Male      27     91   200 Drug      1416.  143.     90     1
+#> # ℹ 3 more variables: fit_survival <dbl>, ci_lower <dbl>, ci_upper <dbl>
+```
+
+# Package index
+
+## Build
+
+Fit exposure-response time-to-event models based on survreg()
+
+- [`ertte_model()`](https://ertte.djnavarro.net/reference/ertte_model.md)
+  :
+
+  Fit an exposure-response time-to-event model based on `survreg()`
+
+- [`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
+  : Survival-probability predictions for exposure-response TTE models
+
+- [`ertte_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_select_distribution.md)
+  : Select an AFT distribution by AIC
+
+## Covariate selection
+
+Stepwise covariate modelling for exposure-response TTE models
+
+- [`ertte_scm_forward()`](https://ertte.djnavarro.net/reference/ertte_scm.md)
+  [`ertte_scm_backward()`](https://ertte.djnavarro.net/reference/ertte_scm.md)
+  [`ertte_scm_history()`](https://ertte.djnavarro.net/reference/ertte_scm.md)
+  : Stepwise covariate modelling for exposure-response TTE models
+- [`ertte_add_term()`](https://ertte.djnavarro.net/reference/ertte_term.md)
+  [`ertte_remove_term()`](https://ertte.djnavarro.net/reference/ertte_term.md)
+  : Add or remove a covariate term from an exposure-response TTE model
+
+## Simulate
+
+Simulation tools for exposure-response TTE models
+
+- [`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md) :
+  Prediction function for an exposure-response TTE model
+- [`simulate(`*`<ertte_model>`*`)`](https://ertte.djnavarro.net/reference/simulate.ertte_model.md)
+  : Simulate from an exposure-response TTE model
+
+## Other
+
+Other functions and objects
+
+- [`ertte_data`](https://ertte.djnavarro.net/reference/ertte_data.md) :
+  Sample simulated data for exposure-response time-to-event models
+
