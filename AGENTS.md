@@ -162,9 +162,11 @@ plotting packages in package code.
   examples and matching erglm's workflow files. Both install
   `github::djnavarro/erplots` as an extra dependency alongside CRAN
   packages, since `erplots` is a `Suggests`-only GitHub-hosted package
-  exercised by `tests/testthat/test-er-methods.R`. No
-  `test-coverage.yaml`/`rhub.yaml` yet (erglm has both); add them later
-  if/when Codecov and CRAN submission become relevant.
+  exercised by `tests/testthat/test-er-methods.R`.
+  `.github/workflows/test-coverage.yaml` runs the test suite under
+  `covr` and uploads to Codecov (`CODECOV_TOKEN` secret configured on
+  the repo), matching erglm's workflow. No `rhub.yaml` yet (erglm has
+  one); add it later if/when CRAN submission becomes relevant.
 - pkgdown renders every `*.md` file at the package root (and in
   `.github/`) into its own `docs/*.html` page -- hard-coded in
   `pkgdown:::package_mds()` and not configurable via `_pkgdown.yml`, so

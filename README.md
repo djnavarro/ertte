@@ -6,6 +6,8 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/djnavarro/ertte/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/djnavarro/ertte/actions/workflows/R-CMD-check.yaml)
+[![Codecov test
+coverage](https://codecov.io/gh/djnavarro/ertte/graph/badge.svg)](https://app.codecov.io/gh/djnavarro/ertte)
 <!-- badges: end -->
 
 ertte is the time-to-event member of the exposure-response (E-R) package
