@@ -41,11 +41,18 @@ These functions are not typically called directly; they underpin
 and
 [`ertte_scm_backward()`](https://ertte.djnavarro.net/reference/ertte_scm.md).
 Named and shaped to match the companion `erglm` package's
-`erglm_add_term()`/`erglm_remove_term()`: covariates enter as plain
-additive terms on the AFT location scale (linear for continuous
-covariates, factor levels for categorical ones) – the richer "continuous
-covariate as power function" parameterisation described in the package's
-design issue is not yet implemented (see AGENTS.md).
+`erglm_add_term()`/`erglm_remove_term()`: `term`/`candidates` are plain
+formula terms, added/removed additively – categorical covariates enter
+as factor levels, continuous covariates enter linearly by default or,
+for a power-function parameterisation (`theta` such that
+`T ~ (x / ref)^theta` on the AFT time scale, or
+`h(t|x) ~ h0(t) * (x / ref)^theta` on the Cox hazard scale), by wrapping
+the covariate in
+[`ertte_power()`](https://ertte.djnavarro.net/reference/ertte_power.md),
+e.g. `~ ertte_power(age)` or `candidates = "ertte_power(age)"`. Term
+handling here works generically on formula term-labels, so
+[`ertte_power()`](https://ertte.djnavarro.net/reference/ertte_power.md)
+terms need no special-casing.
 
 `mod` is refit via an internal `.ertte_refit()` helper that dispatches
 on `mod`'s engine (`ertte_aft`/`ertte_coxph`) and calls the matching

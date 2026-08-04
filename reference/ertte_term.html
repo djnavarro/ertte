@@ -82,11 +82,14 @@ the model, respectively)</p></dd>
     <p>These functions are not typically called directly; they
 underpin <code><a href="ertte_scm.html">ertte_scm_forward()</a></code> and <code><a href="ertte_scm.html">ertte_scm_backward()</a></code>. Named and
 shaped to match the companion <code>erglm</code> package's
-<code>erglm_add_term()</code>/<code>erglm_remove_term()</code>: covariates enter as plain
-additive terms on the AFT location scale (linear for continuous
-covariates, factor levels for categorical ones) – the richer
-"continuous covariate as power function" parameterisation described
-in the package's design issue is not yet implemented (see AGENTS.md).</p>
+<code>erglm_add_term()</code>/<code>erglm_remove_term()</code>: <code>term</code>/<code>candidates</code> are plain
+formula terms, added/removed additively – categorical covariates enter
+as factor levels, continuous covariates enter linearly by default or,
+for a power-function parameterisation (<code>theta</code> such that <code>T ~ (x / ref)^theta</code> on the AFT time scale, or <code>h(t|x) ~ h0(t) * (x / ref)^theta</code>
+on the Cox hazard scale), by wrapping the covariate in <code><a href="ertte_power.html">ertte_power()</a></code>,
+e.g. <code>~ ertte_power(age)</code> or <code>candidates = "ertte_power(age)"</code>. Term
+handling here works generically on formula term-labels, so
+<code><a href="ertte_power.html">ertte_power()</a></code> terms need no special-casing.</p>
 <p><code>mod</code> is refit via an internal <code>.ertte_refit()</code> helper that dispatches
 on <code>mod</code>'s engine (<code>ertte_aft</code>/<code>ertte_coxph</code>) and calls the matching
 constructor – so these functions (and the SCM family built on them)

@@ -30,6 +30,9 @@ Stepwise covariate modelling for exposure-response TTE models
 - [`ertte_add_term()`](https://ertte.djnavarro.net/reference/ertte_term.md)
   [`ertte_remove_term()`](https://ertte.djnavarro.net/reference/ertte_term.md)
   : Add or remove a covariate term from an exposure-response TTE model
+- [`ertte_power()`](https://ertte.djnavarro.net/reference/ertte_power.md)
+  [`makepredictcall(`*`<ertte_power>`*`)`](https://ertte.djnavarro.net/reference/ertte_power.md)
+  : Power-function covariate transform for exposure-response TTE models
 
 ## Simulate
 

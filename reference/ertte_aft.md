@@ -61,8 +61,8 @@ survival probabilities with confidence intervals in a tidy data frame;
 the two are complementary, not competing.
 
 `ertte_aft()` is the AFT-specific sibling of
-[`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
-(not yet implemented), which wraps
+[`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md),
+which wraps
 [`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html) for a
 semi-parametric alternative. Both share the `"ertte_model"` superclass,
 so functions that only need generic operations

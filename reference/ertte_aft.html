@@ -86,7 +86,7 @@ unchanged, without needing an ertte-specific equivalent – e.g.
 <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> that returns survival probabilities with confidence
 intervals in a tidy data frame; the two are complementary, not
 competing.</p>
-<p><code>ertte_aft()</code> is the AFT-specific sibling of <code><a href="ertte_coxph.html">ertte_coxph()</a></code> (not yet implemented), which
+<p><code>ertte_aft()</code> is the AFT-specific sibling of <code><a href="ertte_coxph.html">ertte_coxph()</a></code>, which
 wraps <code><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">survival::coxph()</a></code> for a semi-parametric alternative. Both
 share the <code>"ertte_model"</code> superclass, so functions that only need
 generic operations (<code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code>, <code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code>, the SCM family) work
