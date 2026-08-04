@@ -228,42 +228,48 @@ plotting packages in package code.
     `sim_time`/`sim_event` shape (unchanged by this pass).
 
   **Caveat discovered end-to-end testing this against erplots'
-  `er_plot()` (not an ertte bug -- tracked upstream as
-  [erplots#10](https://github.com/djnavarro/erplots/issues/10)):**
-  `er_plot_add_model(mod, landmark_time = 90)` currently errors, even
-  though `er_predict.ertte_model()`'s contract (above) is implemented
-  correctly and works when called directly. The reason lives entirely
-  in `erplots`: `er_plot_add_model()`'s `...` is captured only for its
-  *style builder* (`config$dots`, per `?er_style`), never forwarded to
-  `er_predict()` itself -- `.get_model_predictions()` always calls
-  `er_predict(model, newdata, conf_level)` with no extra arguments, so
-  a required `landmark_time` can never reach it this way. The identical
-  gap affects `er_plot_add_summary()`/`er_summary()` (which currently
-  forwards *no* arguments at all, not even `conf_level`) and
-  `er_vpc_add_simulated()`/`er_simulate()`. erplots#10 tracks the fix,
-  with a design sketch comparing two options: forwarding the same
-  `...` to both the style builder and the generic (risks silent
-  argument collisions between the two), vs. a new, separate
-  `predict_args`/`summary_args`/`simulate_args` argument per
-  `er_plot_add_*()`/`er_vpc_add_*()` function (unambiguous, but more
-  API surface). Until resolved upstream, plotting an `ertte_landmark()`
-  curve via `er_plot_add_model()` needs a small wrapper object that
-  bakes `landmark_time` into the model rather than passing it at
-  `er_plot_add_model()` call time:
+  `er_plot()` -- now resolved upstream.** `er_plot_add_model(mod,
+  landmark_time = 90)` used to error, even though
+  `er_predict.ertte_model()`'s contract (above) was implemented
+  correctly and worked when called directly: `er_plot_add_model()`'s
+  `...` was captured only for its *style builder* (`config$dots`, per
+  `?er_style`), never forwarded to `er_predict()` itself. The identical
+  gap affected `er_plot_add_summary()`/`er_summary()` (which forwarded
+  *no* arguments at all, not even `conf_level`) and
+  `er_vpc_add_simulated()`/`er_simulate()`. Filed as
+  [erplots#10](https://github.com/djnavarro/erplots/issues/10), this
+  was fixed upstream by [erplots#11](https://github.com/djnavarro/erplots/pull/11)
+  (merged 2026-08-04), which took the "Design B" option sketched on the
+  issue: dedicated `predict_args`/`summary_args`/`simulate_args = list()`
+  arguments on `er_plot_add_model()`/`er_plot_add_summary()`/
+  `er_vpc_add_simulated()` respectively, spliced into the corresponding
+  generic call via `rlang::exec(er_predict, ..., !!!predict_args)` (and
+  analogously for the other two) -- keeping `...` exclusively for the
+  style builder, with no ambiguity about which consumer a given named
+  argument reaches.
 
-  ```r
-  new_landmark_model <- function(object, landmark_time) {
-    structure(list(object = object, landmark_time = landmark_time), class = "ertte_landmark_model")
-  }
-  er_predict.ertte_landmark_model <- function(model, newdata, conf_level = 0.95, ...) {
-    ertte_landmark(model$object, newdata = newdata, landmark_time = model$landmark_time, conf_level = conf_level)
-  }
-  ```
-
-  This workaround isn't currently shipped in the package (it's just a
-  documented pattern here) -- revisit once erplots#10 lands, and
-  reconsider whether ertte should export a constructor like this
-  itself in the meantime.
+  Confirmed this needed **no ertte-side code changes at all**: ertte's
+  `er_predict.ertte_model()`/`er_summary.ertte_model()`/
+  `er_simulate.ertte_model()` already declared `...` (to forward
+  `landmark_time`/`censor_time` etc.), and erplots' `er_predict()`/
+  `er_summary()`/`er_simulate()` generics already declared `...` too --
+  once erplots started actually splicing `predict_args`/`summary_args`/
+  `simulate_args` into those generic calls, the existing ertte methods
+  picked it up automatically. Verified directly:
+  `er_plot_add_model(mod, predict_args = list(landmark_time = 90))`,
+  `er_plot_add_summary(model = mod, conf_level = 0.9)` (now genuinely
+  reaches `er_summary.ertte_model()`'s `conf_level`, previously
+  impossible), and `er_simulate(mod, newdata, simulate_args =
+  list(censor_time = 200))`-style calls (via `simulate_args` on
+  `er_vpc_add_simulated()`) all now work as intended, with the
+  `er_plot()` pipeline rendering correctly end-to-end. A regression
+  test (`test-er-methods.R`) exercises the `er_plot_add_model(mod,
+  predict_args = list(landmark_time = 90))` path directly against
+  erplots, skipping gracefully if the installed erplots predates
+  `predict_args`. The `new_landmark_model()` wrapper-object workaround
+  documented in earlier revisions of this file is no longer needed and
+  has been removed from here; use `predict_args`/`summary_args`/
+  `simulate_args` instead.
 - **Phase 3: `er_tte()` plotting grammar** -- lives in the separate
   `erplots` repo, co-designed with ertte per the issue. Not started.
 - ~~Broader edge-case test coverage~~ -- **addressed** for the three

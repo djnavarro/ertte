@@ -32,3 +32,30 @@ test_that("ertte registers er_predict/er_simulate/er_summary with erplots, if in
   mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
   expect_true(!is.null(getS3method("er_predict", "ertte_model", envir = asNamespace("erplots"))))
 })
+
+test_that("landmark_time reaches er_predict.ertte_model() through erplots' er_plot_add_model(predict_args = ...)", {
+  # erplots#10/#11: er_plot_add_model()'s `...` used to reach only its
+  # style builder, never `er_predict()` -- so `landmark_time` (which
+  # has no other slot in `er_predict()`'s fixed signature) couldn't
+  # reach `ertte_landmark()` this way. Fixed upstream via a dedicated
+  # `predict_args` argument; skip gracefully on an erplots install that
+  # predates it, rather than erroring on an unrecognised argument.
+  skip_if_not_installed("erplots")
+  skip_if_not("predict_args" %in% names(formals(erplots::er_plot_add_model)))
+
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  dat_landmark <- ertte_data |>
+    dplyr::mutate(
+      event_by_90 = dplyr::case_when(
+        event == 1 & time <= 90 ~ 1,
+        time > 90 ~ 0,
+        TRUE ~ NA_real_
+      )
+    ) |>
+    dplyr::filter(!is.na(event_by_90))
+
+  p <- erplots::er_plot(dat_landmark, aucss, event_by_90) |>
+    erplots::er_plot_add_model(mod, predict_args = list(landmark_time = 90))
+  built <- erplots::er_plot_build(p)
+  expect_s3_class(built$output, "patchwork")
+})
