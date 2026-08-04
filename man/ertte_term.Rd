@@ -11,7 +11,8 @@ ertte_add_term(mod, term, quiet = FALSE)
 ertte_remove_term(mod, term, quiet = FALSE)
 }
 \arguments{
-\item{mod}{An ertte model object, as returned by \code{\link[=ertte_model]{ertte_model()}}}
+\item{mod}{An ertte model object, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
+\code{ertte_coxph()} (not yet implemented)}
 
 \item{term}{A one-sided formula naming the term to add/remove, e.g.
 \code{~ sex}}
@@ -39,7 +40,7 @@ covariates, factor levels for categorical ones) -- the richer
 in the package's design issue is not yet implemented (see AGENTS.md).
 }
 \examples{
-mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 mod2 <- ertte_add_term(mod, ~ sex)
 mod3 <- ertte_remove_term(mod2, ~ sex)
 }

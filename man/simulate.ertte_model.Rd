@@ -7,7 +7,7 @@
 \method{simulate}{ertte_model}(object, nsim = 100, seed = NULL, newdata = NULL, ...)
 }
 \arguments{
-\item{object}{An ertte model object, as returned by \code{\link[=ertte_model]{ertte_model()}}}
+\item{object}{An ertte model object, as returned by \code{\link[=ertte_aft]{ertte_aft()}}}
 
 \item{nsim}{Number of simulation replicates}
 
@@ -35,7 +35,7 @@ censored).
 Coefficients are sampled from the asymptotic sampling
 distribution implied by \code{vcov(object)}, and event times are drawn by
 inverse-CDF sampling from the fitted AFT distribution at each sampled
-coefficient vector (see \code{\link[=ertte_model]{ertte_model()}} Details for the
+coefficient vector (see \code{\link[=ertte_aft]{ertte_aft()}} Details for the
 log-location-scale representation used). Simulated event times are
 capped at each row's \emph{observed} exit time (\code{sim_time <- pmin(sim_time_raw, observed_time)}, with \code{sim_event} set accordingly)
 to reproduce the study's observed censoring/follow-up pattern -- a
@@ -44,7 +44,7 @@ time for subjects who had an event isn't otherwise available (see
 \code{.ertte_simulate_draws()}).
 }
 \examples{
-mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 sim <- simulate(mod, nsim = 20, seed = 1234)
 sim
 

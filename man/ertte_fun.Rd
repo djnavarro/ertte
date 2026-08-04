@@ -2,12 +2,18 @@
 % Please edit documentation in R/ertte-core.R
 \name{ertte_fun}
 \alias{ertte_fun}
+\alias{ertte_fun.ertte_aft}
 \title{Prediction function for an exposure-response TTE model}
 \usage{
-ertte_fun(object)
+ertte_fun(object, ...)
+
+\method{ertte_fun}{ertte_aft}(object, ...)
 }
 \arguments{
-\item{object}{An ertte model, as returned by \code{\link[=ertte_model]{ertte_model()}}}
+\item{object}{An ertte model, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
+\code{ertte_coxph()} (not yet implemented)}
+
+\item{...}{Passed to methods}
 }
 \value{
 A function with arguments \code{param}, \code{data}, and \code{time}.
@@ -24,21 +30,25 @@ survival function; recycled against \code{data}.
 Prediction function for an exposure-response TTE model
 }
 \details{
-Takes a fitted ertte model as input and returns a function
-that evaluates the survival function \code{S(t)} at user-specified
-parameters, data, and times (e.g. for VPCs or other counterfactual
-simulation scenarios). Named \code{ertte_fun()} for consistency with the
-companion \code{erglm}/\code{emaxnls} packages' \code{erglm_fun()}/\code{emax_fun()},
-which serve the same purpose for their respective model classes. The
-returned function checks that \code{param} is numeric and has one entry
-per column of the model matrix implied by \code{data}, erroring
-informatively rather than failing with a cryptic "non-conformable
-arguments" error from matrix multiplication. \code{scale} is always taken
-from the fitted \code{object}, not from \code{param} (the coefficient vector
-from \code{coef()} never includes it).
+\code{ertte_fun()} is a generic, with methods for each supported
+engine -- see \code{\link[=ertte_fun.ertte_aft]{ertte_fun.ertte_aft()}}. Named \code{ertte_fun()} for
+consistency with the companion \code{erglm}/\code{emaxnls} packages'
+\code{erglm_fun()}/\code{emax_fun()}, which serve the same purpose for their
+respective model classes.
+
+The \code{ertte_aft} method takes a fitted AFT model as input and
+returns a function that evaluates the survival function \code{S(t)} at
+user-specified parameters, data, and times (e.g. for VPCs or other
+counterfactual simulation scenarios). The returned function checks
+that \code{param} is numeric and has one entry per column of the model
+matrix implied by \code{data}, erroring informatively rather than failing
+with a cryptic "non-conformable arguments" error from matrix
+multiplication. \code{scale} is always taken from the fitted \code{object}, not
+from \code{param} (the coefficient vector from \code{coef()} never includes
+it).
 }
 \examples{
-mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 mod_fun <- ertte_fun(mod)
 
 # no arguments: reproduces the fitted model's own survival predictions

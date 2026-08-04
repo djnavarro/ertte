@@ -96,8 +96,11 @@
   }
 }
 
-.as_ertte <- function(mod, dist) {
-  class(mod) <- c("ertte_model", class(mod)) # append class in case new methods are required
+.as_ertte_aft <- function(mod, dist) {
+  # "ertte_aft" (engine-specific subclass) ahead of "ertte_model" (shared
+  # superclass) -- see AGENTS.md "API naming: AFT vs Cox PH" for the
+  # dispatch scheme this supports.
+  class(mod) <- c("ertte_aft", "ertte_model", class(mod))
   mod$ertte <- list(type = dist) # internal "ertte" list to store ertte-specific info
   mod
 }

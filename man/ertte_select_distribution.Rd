@@ -11,7 +11,7 @@ ertte_select_distribution(
 )
 }
 \arguments{
-\item{formula}{Model formula, as for \code{\link[=ertte_model]{ertte_model()}}}
+\item{formula}{Model formula, as for \code{\link[=ertte_aft]{ertte_aft()}}}
 
 \item{data}{Data set}
 
@@ -21,8 +21,8 @@ Defaults to all four tested/supported distributions.}
 \value{
 A list with two elements: \code{comparison} (a tibble with one row
 per candidate: \code{dist}, \code{logLik}, \code{aic}, \code{bic}, \code{converged}, sorted by
-AIC) and \code{model} (the best-fitting \code{ertte_model}, i.e. the one with
-lowest AIC).
+AIC) and \code{model} (the best-fitting \code{ertte_aft} model, i.e. the one
+with lowest AIC).
 }
 \description{
 Fits each candidate AFT distribution to the same formula/data and
@@ -34,6 +34,7 @@ is given in, i.e. the first-listed of the tied candidates is
 returned as \code{model}.
 }
 \examples{
+# (uses ertte_aft() internally for each candidate distribution)
 cmp <- ertte_select_distribution(survival::Surv(time, event) ~ aucss, ertte_data)
 cmp$comparison
 cmp$model

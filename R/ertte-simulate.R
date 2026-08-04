@@ -3,7 +3,7 @@
 #'
 #' `simulate()` method for `ertte_model` objects.
 #'
-#' @param object An ertte model object, as returned by [ertte_model()]
+#' @param object An ertte model object, as returned by [ertte_aft()]
 #' @param nsim Number of simulation replicates
 #' @param seed Optional seed. If `NULL` (the default), one is chosen
 #' automatically and reported via a message (since it determines the
@@ -22,7 +22,7 @@
 #' @details Coefficients are sampled from the asymptotic sampling
 #' distribution implied by `vcov(object)`, and event times are drawn by
 #' inverse-CDF sampling from the fitted AFT distribution at each sampled
-#' coefficient vector (see [ertte_model()] Details for the
+#' coefficient vector (see [ertte_aft()] Details for the
 #' log-location-scale representation used). Simulated event times are
 #' capped at each row's *observed* exit time (`sim_time <-
 #' pmin(sim_time_raw, observed_time)`, with `sim_event` set accordingly)
@@ -33,7 +33,7 @@
 #'
 #' @exportS3Method stats::simulate
 #' @examples
-#' mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 #' sim <- simulate(mod, nsim = 20, seed = 1234)
 #' sim
 #'

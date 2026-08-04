@@ -37,11 +37,11 @@
 #'
 #' @name ertte_scm
 #' @examples
-#' mod0 <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 #' mod1 <- ertte_scm_forward(mod0, candidates = c("sex", "dose"))
 #' ertte_scm_history(mod1)
 #'
-#' mod2 <- ertte_model(survival::Surv(time, event) ~ aucss + sex + dose, ertte_data)
+#' mod2 <- ertte_aft(survival::Surv(time, event) ~ aucss + sex + dose, ertte_data)
 #' mod3 <- ertte_scm_backward(mod2, candidates = c("sex", "dose"))
 #' ertte_scm_history(mod3)
 NULL
@@ -256,7 +256,8 @@ ertte_scm_history <- function(mod) {
 #' Add or remove a single covariate term from an existing ertte model,
 #' returning a new fitted model object.
 #'
-#' @param mod An ertte model object, as returned by [ertte_model()]
+#' @param mod An ertte model object, as returned by [ertte_aft()] or
+#' `ertte_coxph()` (not yet implemented)
 #' @param term A one-sided formula naming the term to add/remove, e.g.
 #' `~ sex`
 #' @param quiet If `TRUE`, suppress the warning issued when the term
@@ -277,7 +278,7 @@ ertte_scm_history <- function(mod) {
 #'
 #' @name ertte_term
 #' @examples
-#' mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 #' mod2 <- ertte_add_term(mod, ~ sex)
 #' mod3 <- ertte_remove_term(mod2, ~ sex)
 NULL
@@ -305,7 +306,7 @@ ertte_add_term <- function(mod, term, quiet = FALSE) {
   fml <- stats::as.formula(
     paste(deparse(stats::formula(mod)), deparse(term[[2]]), sep = " + ")
   )
-  ertte_model(formula = fml, data = dat, dist = mod$ertte$type)
+  ertte_aft(formula = fml, data = dat, dist = mod$ertte$type)
 }
 
 #' @rdname ertte_term
@@ -323,5 +324,5 @@ ertte_remove_term <- function(mod, term, quiet = FALSE) {
   }
   dat <- mod$data
   trm_new <- stats::drop.terms(trm_mod, ind, keep.response = TRUE)
-  ertte_model(formula = trm_new, data = dat, dist = mod$ertte$type)
+  ertte_aft(formula = trm_new, data = dat, dist = mod$ertte$type)
 }

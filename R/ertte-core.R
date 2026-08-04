@@ -1,6 +1,6 @@
 
 
-#' Fit an exposure-response time-to-event model based on `survreg()`
+#' Fit an exposure-response time-to-event AFT model based on `survreg()`
 #'
 #' @param formula Model formula, with a `survival::Surv()` object as the
 #' response, e.g. `Surv(time, event) ~ exposure`.
@@ -10,17 +10,26 @@
 #' `"exponential"`, `"weibull"`, `"lognormal"`, and `"loglogistic"` --
 #' see [ertte_select_distribution()] for choosing among them by AIC.
 #' @param ... Other arguments passed to `survival::survreg()`.
-#' @returns A survreg object with an extra `ertte_model` class
+#' @returns A survreg object with extra `ertte_aft`/`ertte_model` classes
 #'
-#' @details The returned object has class `c("ertte_model", "survreg")`:
-#' it *is* a `survreg` object, with a little extra metadata attached.
-#' This means all of the usual `survreg` methods work unchanged, without
-#' needing an ertte-specific equivalent -- e.g. `summary()`, `coef()`,
-#' `vcov()`, `confint()`, `predict()`, `AIC()`, `BIC()`, `logLik()`, and
-#' `anova()` for comparing nested models. `ertte_predict()` is a
-#' separate, ertte-specific alternative to `predict()` that returns
-#' survival probabilities with confidence intervals in a tidy data
-#' frame; the two are complementary, not competing.
+#' @details The returned object has class `c("ertte_aft", "ertte_model",
+#' "survreg")`: it *is* a `survreg` object, with a little extra metadata
+#' attached. This means all of the usual `survreg` methods work
+#' unchanged, without needing an ertte-specific equivalent -- e.g.
+#' `summary()`, `coef()`, `vcov()`, `confint()`, `predict()`, `AIC()`,
+#' `BIC()`, `logLik()`, and `anova()` for comparing nested models.
+#' `ertte_predict()` is a separate, ertte-specific alternative to
+#' `predict()` that returns survival probabilities with confidence
+#' intervals in a tidy data frame; the two are complementary, not
+#' competing.
+#'
+#' `ertte_aft()` is the AFT-specific sibling of `ertte_coxph()` (not yet implemented), which
+#' wraps `survival::coxph()` for a semi-parametric alternative. Both
+#' share the `"ertte_model"` superclass, so functions that only need
+#' generic operations (`update()`, `anova()`, the SCM family) work
+#' unchanged across either engine; functions with AFT-specific logic
+#' (e.g. `ertte_predict()`, `ertte_fun()`) dispatch via the
+#' `"ertte_aft"`/`"ertte_coxph"` subclass.
 #'
 #' All four supported distributions are log-location-scale AFT models:
 #' `log(T) = mu + scale * W`, where `mu` is the linear predictor
@@ -31,14 +40,14 @@
 #'
 #' @export
 #' @examples
-#' mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 #' mod
 #'
 #' # other AFT distributions are also supported
-#' mod_ln <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data, dist = "lognormal")
+#' mod_ln <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data, dist = "lognormal")
 #' mod_ln
 #'
-ertte_model <- function(formula, data, dist = "weibull", ...) {
+ertte_aft <- function(formula, data, dist = "weibull", ...) {
   .ertte_check_dist(dist)
   mod <- survival::survreg(formula = formula, data = data, dist = dist, ...)
   # unlike `glm()`, `survreg()` doesn't retain the fitting data on the
@@ -47,39 +56,50 @@ ertte_model <- function(formula, data, dist = "weibull", ...) {
   # mirroring erglm's `glm`-based equivalents) have something to fall
   # back on.
   mod$data <- data
-  .as_ertte(mod, dist)
+  .as_ertte_aft(mod, dist)
 }
 
 #' Survival-probability predictions for exposure-response TTE models
 #'
-#' @param object An ertte model, as returned by [ertte_model()]
+#' @param object An ertte model, as returned by [ertte_aft()] or
+#' `ertte_coxph()` (not yet implemented)
 #' @param newdata Data frame containing cases to be predicted. Defaults
 #' to the data the model was fitted to.
 #' @param time Numeric vector of times at which to compute survival
 #' probabilities
 #' @param conf_level Confidence level for the intervals
+#' @param ... Passed to methods
 #' @returns A tibble with one row per combination of `newdata` row and
 #' `time`
 #'
-#' @details Computes the linear predictor (and its standard error) via
-#' `predict(object, newdata, type = "linear", se.fit = TRUE)`, then
-#' converts to a survival probability `S(t) = 1 - F((log(t) - mu) /
-#' scale)`, where `F` is the base distribution's CDF implied by
-#' `object`'s `dist` (see [ertte_model()] Details). Confidence intervals
-#' are Wald intervals on `mu` (a `qnorm()` z-score times the standard
-#' error), back-transformed the same way -- parameter uncertainty in
-#' `scale` is not propagated, matching the level of approximation used
-#' throughout this package (e.g. `erglm_predict()`'s equivalent in the
-#' companion `erglm` package). `conf_level` must be a single number
-#' between 0 and 1 (inclusive); other values error rather than silently
-#' producing a reversed or `NaN` interval.
+#' @details `ertte_predict()` is a generic, with methods for each
+#' supported engine -- see [ertte_predict.ertte_aft()].
 #'
 #' @export
+ertte_predict <- function(object, ...) {
+  UseMethod("ertte_predict")
+}
+
+#' @details The `ertte_aft` method computes the linear predictor (and
+#' its standard error) via `predict(object, newdata, type = "linear",
+#' se.fit = TRUE)`, then converts to a survival probability `S(t) = 1 -
+#' F((log(t) - mu) / scale)`, where `F` is the base distribution's CDF
+#' implied by `object`'s `dist` (see [ertte_aft()] Details). Confidence
+#' intervals are Wald intervals on `mu` (a `qnorm()` z-score times the
+#' standard error), back-transformed the same way -- parameter
+#' uncertainty in `scale` is not propagated, matching the level of
+#' approximation used throughout this package (e.g. `erglm_predict()`'s
+#' equivalent in the companion `erglm` package). `conf_level` must be a
+#' single number between 0 and 1 (inclusive); other values error rather
+#' than silently producing a reversed or `NaN` interval.
+#'
+#' @rdname ertte_predict
+#' @export
 #' @examples
-#' mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 #' ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
 #'
-ertte_predict <- function(object, newdata = NULL, time, conf_level = .95) {
+ertte_predict.ertte_aft <- function(object, newdata = NULL, time, conf_level = .95, ...) {
   .ertte_check_conf_level(conf_level)
   if (is.null(newdata)) newdata <- object$data
   if (!is.numeric(time) || length(time) == 0L || anyNA(time) || any(time <= 0)) {
@@ -112,7 +132,9 @@ ertte_predict <- function(object, newdata = NULL, time, conf_level = .95) {
 
 #' Prediction function for an exposure-response TTE model
 #'
-#' @param object An ertte model, as returned by [ertte_model()]
+#' @param object An ertte model, as returned by [ertte_aft()] or
+#' `ertte_coxph()` (not yet implemented)
+#' @param ... Passed to methods
 #'
 #' @returns A function with arguments `param`, `data`, and `time`.
 #' - The `param` argument should be a vector of location coefficients;
@@ -122,22 +144,32 @@ ertte_predict <- function(object, newdata = NULL, time, conf_level = .95) {
 #' - The `time` argument gives the time(s) at which to evaluate the
 #'   survival function; recycled against `data`.
 #'
-#' @details Takes a fitted ertte model as input and returns a function
-#' that evaluates the survival function `S(t)` at user-specified
-#' parameters, data, and times (e.g. for VPCs or other counterfactual
-#' simulation scenarios). Named `ertte_fun()` for consistency with the
-#' companion `erglm`/`emaxnls` packages' `erglm_fun()`/`emax_fun()`,
-#' which serve the same purpose for their respective model classes. The
-#' returned function checks that `param` is numeric and has one entry
-#' per column of the model matrix implied by `data`, erroring
-#' informatively rather than failing with a cryptic "non-conformable
-#' arguments" error from matrix multiplication. `scale` is always taken
-#' from the fitted `object`, not from `param` (the coefficient vector
-#' from `coef()` never includes it).
+#' @details `ertte_fun()` is a generic, with methods for each supported
+#' engine -- see [ertte_fun.ertte_aft()]. Named `ertte_fun()` for
+#' consistency with the companion `erglm`/`emaxnls` packages'
+#' `erglm_fun()`/`emax_fun()`, which serve the same purpose for their
+#' respective model classes.
 #'
 #' @export
+ertte_fun <- function(object, ...) {
+  UseMethod("ertte_fun")
+}
+
+#' @details The `ertte_aft` method takes a fitted AFT model as input and
+#' returns a function that evaluates the survival function `S(t)` at
+#' user-specified parameters, data, and times (e.g. for VPCs or other
+#' counterfactual simulation scenarios). The returned function checks
+#' that `param` is numeric and has one entry per column of the model
+#' matrix implied by `data`, erroring informatively rather than failing
+#' with a cryptic "non-conformable arguments" error from matrix
+#' multiplication. `scale` is always taken from the fitted `object`, not
+#' from `param` (the coefficient vector from `coef()` never includes
+#' it).
+#'
+#' @rdname ertte_fun
+#' @export
 #' @examples
-#' mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 #' mod_fun <- ertte_fun(mod)
 #'
 #' # no arguments: reproduces the fitted model's own survival predictions
@@ -148,7 +180,7 @@ ertte_predict <- function(object, newdata = NULL, time, conf_level = .95) {
 #' par2["(Intercept)"] <- par2["(Intercept)"] + 1
 #' s2 <- mod_fun(param = par2, time = 60)
 #'
-ertte_fun <- function(object) {
+ertte_fun.ertte_aft <- function(object, ...) {
   ff <- stats::delete.response(stats::terms(object))
   info <- .ertte_dist_info(object$ertte$type)
   scale <- object$scale
@@ -175,7 +207,8 @@ ertte_fun <- function(object) {
 # sampling distribution implied by the model's variance-covariance
 # matrix, and for each draw simulates an event time per row of `newdata`
 # via inverse-CDF sampling from the fitted AFT distribution. Used
-# directly by `simulate.ertte_model()` and `er_simulate.ertte_model()`
+# directly by `simulate.ertte_aft()` (dispatched via `simulate.ertte_model()`)
+# and `er_simulate.ertte_model()`
 # (used by erplots, if installed, for TTE visual predictive checks).
 #
 # Administrative/observed censoring is reproduced by capping each

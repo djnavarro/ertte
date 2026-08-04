@@ -44,7 +44,7 @@ pak::pak("djnavarro/ertte")
 ```{r example}
 library(ertte)
 
-mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 mod
 
 ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))

@@ -2,12 +2,18 @@
 % Please edit documentation in R/ertte-core.R
 \name{ertte_predict}
 \alias{ertte_predict}
+\alias{ertte_predict.ertte_aft}
 \title{Survival-probability predictions for exposure-response TTE models}
 \usage{
-ertte_predict(object, newdata = NULL, time, conf_level = 0.95)
+ertte_predict(object, ...)
+
+\method{ertte_predict}{ertte_aft}(object, newdata = NULL, time, conf_level = 0.95, ...)
 }
 \arguments{
-\item{object}{An ertte model, as returned by \code{\link[=ertte_model]{ertte_model()}}}
+\item{object}{An ertte model, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
+\code{ertte_coxph()} (not yet implemented)}
+
+\item{...}{Passed to methods}
 
 \item{newdata}{Data frame containing cases to be predicted. Defaults
 to the data the model was fitted to.}
@@ -25,20 +31,22 @@ A tibble with one row per combination of \code{newdata} row and
 Survival-probability predictions for exposure-response TTE models
 }
 \details{
-Computes the linear predictor (and its standard error) via
-\code{predict(object, newdata, type = "linear", se.fit = TRUE)}, then
-converts to a survival probability \code{S(t) = 1 - F((log(t) - mu) / scale)}, where \code{F} is the base distribution's CDF implied by
-\code{object}'s \code{dist} (see \code{\link[=ertte_model]{ertte_model()}} Details). Confidence intervals
-are Wald intervals on \code{mu} (a \code{qnorm()} z-score times the standard
-error), back-transformed the same way -- parameter uncertainty in
-\code{scale} is not propagated, matching the level of approximation used
-throughout this package (e.g. \code{erglm_predict()}'s equivalent in the
-companion \code{erglm} package). \code{conf_level} must be a single number
-between 0 and 1 (inclusive); other values error rather than silently
-producing a reversed or \code{NaN} interval.
+\code{ertte_predict()} is a generic, with methods for each
+supported engine -- see \code{\link[=ertte_predict.ertte_aft]{ertte_predict.ertte_aft()}}.
+
+The \code{ertte_aft} method computes the linear predictor (and
+its standard error) via \code{predict(object, newdata, type = "linear", se.fit = TRUE)}, then converts to a survival probability \code{S(t) = 1 - F((log(t) - mu) / scale)}, where \code{F} is the base distribution's CDF
+implied by \code{object}'s \code{dist} (see \code{\link[=ertte_aft]{ertte_aft()}} Details). Confidence
+intervals are Wald intervals on \code{mu} (a \code{qnorm()} z-score times the
+standard error), back-transformed the same way -- parameter
+uncertainty in \code{scale} is not propagated, matching the level of
+approximation used throughout this package (e.g. \code{erglm_predict()}'s
+equivalent in the companion \code{erglm} package). \code{conf_level} must be a
+single number between 0 and 1 (inclusive); other values error rather
+than silently producing a reversed or \code{NaN} interval.
 }
 \examples{
-mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
 
 }

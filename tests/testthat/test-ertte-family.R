@@ -5,6 +5,7 @@ test_that("ertte_select_distribution() picks the true generating distribution", 
   expect_setequal(cmp$comparison$dist, c("exponential", "weibull", "lognormal", "loglogistic"))
   expect_true(all(diff(cmp$comparison$aic) >= 0)) # sorted ascending by AIC
   expect_identical(cmp$comparison$dist[1], "weibull")
+  expect_s3_class(cmp$model, "ertte_aft")
   expect_s3_class(cmp$model, "ertte_model")
   expect_identical(cmp$model$ertte$type, "weibull")
 })

@@ -61,10 +61,13 @@ plotting packages in package code.
 - **`coxph()` semi-parametric engine.** The design issue mentions this
   as optional ("Fit wrappers over base `survival` (`survreg` for
   parametric AFT; optionally `coxph` for a semi-parametric option)").
-  Not implemented -- `ertte_model()` is `survreg`-only for now. A
-  `coxph`-based model would need its own prediction/simulation story
-  (no AFT location-scale structure to lean on) and probably a separate
-  constructor rather than an extra `dist` value.
+  Not implemented yet, but the naming/API split is decided -- see "API
+  naming: AFT vs Cox PH" below. A `coxph`-based model needs its own
+  prediction/simulation story (no AFT location-scale structure to lean
+  on): `ertte_predict.ertte_coxph()` will need a baseline hazard
+  estimate (e.g. via `survival::survfit()`) rather than the closed-form
+  `S(t)` used for AFT, and simulation will need an analogous
+  baseline-hazard-based counterpart to `.ertte_simulate_draws()`.
 - **Power-function covariate parameterisation.** The design issue calls
   for "continuous covariates as power functions, categorical covariates
   as factors". `ertte_add_term()`/`ertte_remove_term()`/SCM currently
@@ -95,6 +98,56 @@ plotting packages in package code.
   data set. A more accurate simulation would use a genuine per-subject
   administrative censoring/follow-up time where available, separately
   from the event indicator.
+
+## API naming: AFT vs Cox PH (decided, not yet implemented)
+
+The constructor currently called `ertte_model()` will be renamed to
+`ertte_aft()`, and a new `ertte_coxph()` constructor will wrap
+`survival::coxph()`. This is a deliberate rename, not an addition --
+Cox PH is structurally different enough (semi-parametric, no
+location-scale structure, no `dist` argument) that folding it into
+`ertte_model()` via an extra `dist`/`engine` value would be misleading.
+Since the package is early in development, there's no need to keep
+`ertte_model()` around as a back-compat alias.
+
+Decided naming/dispatch scheme:
+
+- **Constructors are engine-specific by name**: `ertte_aft(formula,
+  data, dist = "weibull", ...)` (wraps `survreg()`) and
+  `ertte_coxph(formula, data, ...)` (wraps `coxph()`). `dist` stays
+  AFT-only; there's no Cox PH equivalent (nothing to select).
+- **Shared superclass, engine-specific subclass**, for dispatch: AFT
+  fits get class `c("ertte_aft", "ertte_model", "survreg")`, Cox PH
+  fits get `c("ertte_coxph", "ertte_model", "coxph")`. `.as_ertte()`
+  needs to split into engine-specific constructors (e.g.
+  `.as_ertte_aft()`/`.as_ertte_coxph()`) that prepend the right
+  subclass ahead of `"ertte_model"`.
+- **Downstream generics keep single shared names**, with S3 methods
+  per subclass where behaviour genuinely differs:
+  - `ertte_predict()` -- needs to become a generic (`UseMethod()`), with
+    `ertte_predict.ertte_aft()` (closed-form `S(t)`, current logic) and
+    `ertte_predict.ertte_coxph()` (baseline-hazard-based, not yet
+    implemented).
+  - `ertte_fun()` -- same: becomes a generic, with `ertte_fun.ertte_aft()`
+    and `ertte_fun.ertte_coxph()` methods.
+  - `simulate()` -- gets `simulate.ertte_aft()` and
+    `simulate.ertte_coxph()` methods (currently only
+    `simulate.ertte_model()` exists, for AFT).
+  - `ertte_scm_forward()`/`ertte_scm_backward()`/`ertte_scm_history()`/
+    `ertte_add_term()`/`ertte_remove_term()` -- **no changes needed**.
+    They already only touch models through `update()`/`anova()`/
+    `stats::terms()`, which are polymorphic over `survreg`/`coxph`
+    already, so they work across both engines unmodified once
+    `.as_ertte()` is split.
+  - `ertte_select_distribution()` -- stays AFT-only, no Cox PH
+    equivalent.
+
+Implementation is expected to happen in two passes: (1) the
+`ertte_aft()` rename plus class-hierarchy/generic scaffolding
+(`ertte_predict()`/`ertte_fun()` becoming generics, dispatch wired up),
+then (2) the actual `ertte_coxph()` constructor and its
+prediction/simulation methods as separate follow-up work, since the
+baseline hazard machinery is genuine modelling work, not just renaming.
 
 ## Structure
 
