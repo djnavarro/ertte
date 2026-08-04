@@ -23,7 +23,7 @@
 #' intervals in a tidy data frame; the two are complementary, not
 #' competing.
 #'
-#' `ertte_aft()` is the AFT-specific sibling of `ertte_coxph()` (not yet implemented), which
+#' `ertte_aft()` is the AFT-specific sibling of `ertte_coxph()`, which
 #' wraps `survival::coxph()` for a semi-parametric alternative. Both
 #' share the `"ertte_model"` superclass, so functions that only need
 #' generic operations (`update()`, `anova()`, the SCM family) work

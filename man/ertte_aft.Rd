@@ -36,7 +36,7 @@ unchanged, without needing an ertte-specific equivalent -- e.g.
 intervals in a tidy data frame; the two are complementary, not
 competing.
 
-\code{ertte_aft()} is the AFT-specific sibling of \code{ertte_coxph()} (not yet implemented), which
+\code{ertte_aft()} is the AFT-specific sibling of \code{ertte_coxph()}, which
 wraps \code{survival::coxph()} for a semi-parametric alternative. Both
 share the \code{"ertte_model"} superclass, so functions that only need
 generic operations (\code{update()}, \code{anova()}, the SCM family) work
