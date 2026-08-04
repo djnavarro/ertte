@@ -36,12 +36,11 @@ work across either engine; functions with engine-specific logic (e.g.
 \code{ertte_predict()}, \code{ertte_fun()}) dispatch via the
 \code{"ertte_aft"}/\code{"ertte_coxph"} subclass.
 
-\code{ertte_predict()} has an \code{ertte_coxph} method (see
-\code{\link[=ertte_predict.ertte_coxph]{ertte_predict.ertte_coxph()}}), built on \code{survival::survfit()}'s
-baseline-hazard-based survival curves. \code{ertte_fun()} and \code{simulate()}
-don't yet have \code{ertte_coxph} methods -- see AGENTS.md. Calling either
-of these on an \code{ertte_coxph} object currently errors with "no
-applicable method".
+\code{ertte_predict()} and \code{ertte_fun()} have \code{ertte_coxph} methods (see
+\code{\link[=ertte_predict.ertte_coxph]{ertte_predict.ertte_coxph()}}/\code{\link[=ertte_fun.ertte_coxph]{ertte_fun.ertte_coxph()}}), both built
+on the fitted baseline hazard. \code{simulate()} doesn't yet have an
+\code{ertte_coxph} method -- see AGENTS.md. Calling it on an \code{ertte_coxph}
+object currently errors with "no applicable method".
 }
 \examples{
 mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)

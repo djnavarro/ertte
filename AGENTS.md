@@ -86,10 +86,27 @@ plotting packages in package code.
   fails on these fits (see the `.ertte_refit()` bullet below) -- the
   captured call refers to `ertte_coxph()`'s own local `formula`/`data`
   bindings, not anything visible in `survfit()`'s caller's frame.
-  Storing the model frame directly sidesteps that. Still missing:
-  `ertte_coxph` methods for `ertte_fun()`/`simulate()` -- simulation in
-  particular will need an analogous baseline-hazard-based counterpart
-  to `.ertte_simulate_draws()`.
+  Storing the model frame directly sidesteps that.
+  `ertte_fun.ertte_coxph()` is also now implemented (same file): it
+  returns a function evaluating `S(t | x) = S0(t)^exp((x - xbar)'param)`
+  via `survival::basehaz(object, centered = TRUE)` (held constant
+  beyond the last observed time, via the internal
+  `.ertte_coxph_basehaz_at()` helper, mirroring
+  `ertte_predict.ertte_coxph()`'s extrapolation) and `object$means`
+  (the covariate means `coxph()` centers on, needed because
+  `basehaz()`'s baseline is relative to that, not to `x = 0`). As with
+  the AFT method, a custom `param` only varies the linear predictor --
+  the baseline hazard/means are always taken from the fitted `object`,
+  never recomputed for a hypothetical `param` (a `param`-dependent
+  baseline would need refitting the partial likelihood's risk sets).
+  One genuine engine difference surfaced here: Cox models have no
+  intercept (it's absorbed into the baseline hazard), but
+  `stats::model.matrix()` on the model's `terms()` adds one anyway
+  since `terms()` doesn't record its absence -- `ertte_fun.ertte_coxph()`
+  drops that column explicitly so `ncol(mm)` matches
+  `length(coef(object))`. Still missing: an `ertte_coxph` method for
+  `simulate()`, which will need an analogous baseline-hazard-based
+  counterpart to `.ertte_simulate_draws()`.
 - ~~`ertte_add_term()`/`ertte_remove_term()` are AFT-hardcoded~~ --
   **fixed.** They used to refit by calling `ertte_aft(...)` directly
   (not `stats::update()`, which doesn't work here because the fitted
@@ -148,9 +165,9 @@ back-compat alias for the old `ertte_model()` name; the package was
 early enough in development that a clean rename was preferred.
 
 Naming/dispatch scheme, now implemented for the constructors,
-`ertte_predict()` (both engines), and `ertte_fun()` (AFT only so far),
-with `ertte_coxph`-specific `ertte_fun()`/simulation still pending (see
-"Planned work" above):
+`ertte_predict()`, and `ertte_fun()` (both engines), with
+`ertte_coxph`-specific simulation still pending (see "Planned work"
+above):
 
 - **Constructors are engine-specific by name**: `ertte_aft(formula,
   data, dist = "weibull", ...)` and `ertte_coxph(formula, data, ...)`.
@@ -166,8 +183,9 @@ with `ertte_coxph`-specific `ertte_fun()`/simulation still pending (see
     for both engines: `ertte_predict.ertte_aft()` (closed-form `S(t)`)
     and `ertte_predict.ertte_coxph()` (baseline-hazard-based, via
     `survival::survfit()`).
-  - `ertte_fun()` -- same: a generic with only `ertte_fun.ertte_aft()`
-    implemented so far.
+  - `ertte_fun()` -- same: a generic, now with methods for both
+    engines: `ertte_fun.ertte_aft()` and `ertte_fun.ertte_coxph()`
+    (baseline-hazard-based, via `survival::basehaz()`).
   - `simulate()` -- only `simulate.ertte_model()` exists (used for AFT
     fits via the shared superclass); an `ertte_coxph`-specific method
     isn't implemented.
@@ -194,10 +212,13 @@ with `ertte_coxph`-specific `ertte_fun()`/simulation still pending (see
   `R/utils-helpers.R` for the base distribution's CDF/quantile function
   this relies on.
 - `R/ertte-coxph.R` -- `ertte_coxph()`, the semi-parametric sibling
-  constructor (wraps `survival::coxph()`, with `model = TRUE`), and
+  constructor (wraps `survival::coxph()`, with `model = TRUE`),
   `ertte_predict.ertte_coxph()` (baseline-hazard-based survival
-  predictions via `survival::survfit()`). No `ertte_fun()`/`simulate()`
-  methods yet -- see "Planned work" above.
+  predictions via `survival::survfit()`), and `ertte_fun.ertte_coxph()`
+  (counterfactual survival-curve evaluation via
+  `survival::basehaz()`, using the internal
+  `.ertte_coxph_basehaz_at()` step-function helper). No `simulate()`
+  method yet -- see "Planned work" above.
 - `R/ertte-family.R` -- `ertte_select_distribution()`: fits each
   candidate AFT distribution and returns the AIC-ranked comparison plus
   the best-fitting model.

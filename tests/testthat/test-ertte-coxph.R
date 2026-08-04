@@ -14,9 +14,40 @@ test_that("ertte_coxph() stores the fitting data on the object", {
   expect_identical(mod$data, ertte_data)
 })
 
-test_that("ertte_fun() has no method yet for ertte_coxph", {
+test_that("ertte_fun() on ertte_coxph reproduces the fitted model's own predictions", {
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss + sex, ertte_data)
+  mod_fun <- ertte_fun(mod)
+  s1 <- unname(mod_fun(time = 60))
+  s2 <- ertte_predict(mod, ertte_data, time = 60)$fit_survival
+  expect_equal(s1, s2)
+})
+
+test_that("ertte_fun() on ertte_coxph works with custom newdata and vectorised time", {
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss + sex, ertte_data)
+  mod_fun <- ertte_fun(mod)
+  nd <- ertte_data[1:5, ]
+  times <- c(30, 60, 90, 30, 60)
+  s1 <- unname(mod_fun(data = nd, time = times))
+  s2 <- vapply(seq_along(times), function(i) {
+    ertte_predict(mod, nd[i, ], time = times[i])$fit_survival
+  }, numeric(1))
+  expect_equal(s1, s2)
+})
+
+test_that("ertte_fun() on ertte_coxph responds to a custom param", {
   mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
-  expect_error(ertte_fun(mod), "no applicable method")
+  mod_fun <- ertte_fun(mod)
+  s1 <- mod_fun(time = 60)
+  par2 <- coef(mod)
+  par2["aucss"] <- par2["aucss"] * 2
+  s2 <- mod_fun(param = par2, time = 60)
+  expect_false(isTRUE(all.equal(unname(s1), unname(s2))))
+})
+
+test_that("ertte_fun() on ertte_coxph checks param length", {
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  mod_fun <- ertte_fun(mod)
+  expect_error(mod_fun(param = c(1, 2, 3), time = 60), "length")
 })
 
 test_that("ertte_coxph() fits with model = TRUE (required by survfit())", {
