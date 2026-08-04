@@ -137,15 +137,56 @@ plotting packages in package code.
   (errors in `terms.formula()`/`ExtractVars`) -- `ertte_remove_term()`
   now converts it via `stats::formula()` first, which works for both
   engines.
-- **Power-function covariate parameterisation.** The design issue calls
-  for "continuous covariates as power functions, categorical covariates
-  as factors". `ertte_add_term()`/`ertte_remove_term()`/SCM currently
-  only support plain additive terms on the AFT location scale (linear
-  for continuous, factor levels for categorical) -- the erglm-style
-  approach. The richer power-function parameterisation (closer to
-  `emaxnls`'s per-structural-parameter covariate attachment, with
-  delta-method or profile-likelihood CIs on the transformed parameter)
-  is unimplemented.
+- ~~Power-function covariate parameterisation~~ -- **implemented.** The
+  design issue calls for "continuous covariates as power functions,
+  categorical covariates as factors", flagging CIs on the transformed
+  parameter (delta method vs profile likelihood) as an open question.
+  Investigated `emaxnls` for a precedent first: it turns out `emaxnls`
+  does *not* implement power functions either -- its covariate model is
+  plain additive/linear per structural parameter, fit via `nls()` -- so
+  this was new design, not a port. The key insight that shaped it: unlike
+  `emaxnls`'s genuinely nonlinear structural parameters, both `ertte_aft()`
+  (log-location-scale AFT: `log(T) = mu + scale * W`) and `ertte_coxph()`
+  (Cox PH: `h(t|x) = h0(t) * exp(x'beta)`) are already linear in their
+  covariates on the model's natural (log-time / log-hazard-ratio) scale.
+  A power-function effect -- `T = T_ref * (x/ref)^theta` (AFT) or `h(t|x)
+  = h0(t) * (x/ref)^theta` (Cox) -- is, after taking logs, exactly a
+  linear term in `log(x/ref)`. So `ertte_power(x, ref = NULL)` (in
+  `R/ertte-power.R`, exported) just returns `log(x/ref)`: the fitted
+  coefficient on `ertte_power(age)` *is* the power exponent directly, and
+  its ordinary Wald CI from `confint()`/`summary()` already is the CI on
+  that exponent -- no delta method or profile likelihood needed, which
+  resolves the design issue's open question for these two model families
+  specifically. `ref` defaults to `median(x, na.rm = TRUE)` in the fitting
+  data (pop-PK/NONMEM convention); every non-missing `x` must be strictly
+  positive (`log(x/ref)` is undefined otherwise), which rules out using it
+  on covariates with a placebo/zero group (`dose`/`aucss`/`cmaxss`) -- by
+  design, since the design issue's power-function language targets the
+  *covariate model* (age, weight, ...), not the primary exposure metric.
+  Predict-time consistency (reusing the original fit's `ref`, not
+  recomputing a new median from `newdata`) is handled by a
+  `makepredictcall.ertte_power()` method -- the same mechanism
+  `stats::poly()`/`splines::ns()` use -- which required no changes to any
+  of the model-matrix-building code elsewhere in the package
+  (`ertte_predict()`/`ertte_fun()`/`.ertte_simulate_draws()`, either
+  engine): they all already build design matrices via `model.matrix()`/
+  `predict()`/`survfit()` against `object$terms` (or a `delete.response()`
+  of it) on a plain `data.frame`, and `model.matrix.default()` always
+  routes that through `model.frame()`, which honours a `terms` object's
+  `predvars` attribute (populated at original-fit time from each term's
+  `makepredictcall()`) -- confirmed empirically for both engines,
+  including `survfit.coxph()`'s newdata path. Likewise,
+  `ertte_add_term()`/`ertte_remove_term()`/SCM needed **no changes**:
+  their term handling (`.ertte_check_term()`, `.ertte_check_candidates()`,
+  `all.vars()`, `stats::drop.terms()`) already operates generically on
+  formula term-labels rather than a restricted "bare variable name"
+  grammar, so `~ ertte_power(age)` / `"ertte_power(age)"` were already
+  legitimate terms/candidates once `ertte_power()` existed. Nothing
+  prevents combining a plain linear term (`age`) and a power term
+  (`ertte_power(age)`) for the same variable in the same model or
+  candidate set -- deliberately left to the user's judgement, consistent
+  with how term handling elsewhere in ertte doesn't reason about variable
+  semantics.
 - **`er_predict.ertte_model()`'s real contract.** Currently a minimal
   placeholder that forwards to `ertte_predict()` with a `time` argument
   threaded through `...` (not part of erplots' `er_predict(model,

@@ -33,11 +33,14 @@ returning a new fitted model object.
 These functions are not typically called directly; they
 underpin \code{\link[=ertte_scm_forward]{ertte_scm_forward()}} and \code{\link[=ertte_scm_backward]{ertte_scm_backward()}}. Named and
 shaped to match the companion \code{erglm} package's
-\code{erglm_add_term()}/\code{erglm_remove_term()}: covariates enter as plain
-additive terms on the AFT location scale (linear for continuous
-covariates, factor levels for categorical ones) -- the richer
-"continuous covariate as power function" parameterisation described
-in the package's design issue is not yet implemented (see AGENTS.md).
+\code{erglm_add_term()}/\code{erglm_remove_term()}: \code{term}/\code{candidates} are plain
+formula terms, added/removed additively -- categorical covariates enter
+as factor levels, continuous covariates enter linearly by default or,
+for a power-function parameterisation (\code{theta} such that \code{T ~ (x / ref)^theta} on the AFT time scale, or \code{h(t|x) ~ h0(t) * (x / ref)^theta}
+on the Cox hazard scale), by wrapping the covariate in \code{\link[=ertte_power]{ertte_power()}},
+e.g. \code{~ ertte_power(age)} or \code{candidates = "ertte_power(age)"}. Term
+handling here works generically on formula term-labels, so
+\code{ertte_power()} terms need no special-casing.
 
 \code{mod} is refit via an internal \code{.ertte_refit()} helper that dispatches
 on \code{mod}'s engine (\code{ertte_aft}/\code{ertte_coxph}) and calls the matching
