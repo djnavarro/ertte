@@ -12,7 +12,7 @@ ertte_remove_term(mod, term, quiet = FALSE)
 }
 \arguments{
 \item{mod}{An ertte model object, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
-\code{ertte_coxph()} (not yet implemented)}
+\code{\link[=ertte_coxph]{ertte_coxph()}}}
 
 \item{term}{A one-sided formula naming the term to add/remove, e.g.
 \code{~ sex}}
@@ -38,6 +38,11 @@ additive terms on the AFT location scale (linear for continuous
 covariates, factor levels for categorical ones) -- the richer
 "continuous covariate as power function" parameterisation described
 in the package's design issue is not yet implemented (see AGENTS.md).
+
+\code{mod} is refit via an internal \code{.ertte_refit()} helper that dispatches
+on \code{mod}'s engine (\code{ertte_aft}/\code{ertte_coxph}) and calls the matching
+constructor -- so these functions (and the SCM family built on them)
+work for both \code{ertte_aft} and \code{ertte_coxph} models.
 }
 \examples{
 mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)

@@ -251,13 +251,41 @@ ertte_scm_history <- function(mod) {
   return(smm[[p_col]][2])
 }
 
+# Refits `mod` with a new `formula`/`data`, dispatching on engine so
+# `ertte_add_term()`/`ertte_remove_term()` (and therefore the SCM
+# functions built on them) work across both `ertte_aft` and
+# `ertte_coxph` models. `mod` itself is only used to determine which
+# constructor to call (and, for AFT, which `dist` to refit with) --
+# `stats::update()` doesn't work here, since the fitted object's `$call`
+# refers to the constructor's own local argument bindings, not anything
+# visible in the caller's frame.
+.ertte_refit <- function(mod, formula, data) {
+  UseMethod(".ertte_refit")
+}
+
+.ertte_refit.ertte_aft <- function(mod, formula, data) {
+  ertte_aft(formula = formula, data = data, dist = mod$ertte$type)
+}
+
+.ertte_refit.ertte_coxph <- function(mod, formula, data) {
+  ertte_coxph(formula = formula, data = data)
+}
+
+.ertte_refit.default <- function(mod, formula, data) {
+  rlang::abort(paste0(
+    "Don't know how to refit an object of class ", .fmt_bad_value(class(mod)),
+    " -- ertte_add_term()/ertte_remove_term() currently only support ",
+    "\"ertte_aft\" and \"ertte_coxph\" models."
+  ))
+}
+
 #' Add or remove a covariate term from an exposure-response TTE model
 #'
 #' Add or remove a single covariate term from an existing ertte model,
 #' returning a new fitted model object.
 #'
 #' @param mod An ertte model object, as returned by [ertte_aft()] or
-#' `ertte_coxph()` (not yet implemented)
+#' [ertte_coxph()]
 #' @param term A one-sided formula naming the term to add/remove, e.g.
 #' `~ sex`
 #' @param quiet If `TRUE`, suppress the warning issued when the term
@@ -272,6 +300,11 @@ ertte_scm_history <- function(mod) {
 #' covariates, factor levels for categorical ones) -- the richer
 #' "continuous covariate as power function" parameterisation described
 #' in the package's design issue is not yet implemented (see AGENTS.md).
+#'
+#' `mod` is refit via an internal `.ertte_refit()` helper that dispatches
+#' on `mod`'s engine (`ertte_aft`/`ertte_coxph`) and calls the matching
+#' constructor -- so these functions (and the SCM family built on them)
+#' work for both `ertte_aft` and `ertte_coxph` models.
 #'
 #' @returns An ertte model object. If the term can't be added/removed
 #' (see `quiet`), the original `mod` is returned unchanged.
@@ -306,7 +339,7 @@ ertte_add_term <- function(mod, term, quiet = FALSE) {
   fml <- stats::as.formula(
     paste(deparse(stats::formula(mod)), deparse(term[[2]]), sep = " + ")
   )
-  ertte_aft(formula = fml, data = dat, dist = mod$ertte$type)
+  .ertte_refit(mod, formula = fml, data = dat)
 }
 
 #' @rdname ertte_term
@@ -324,5 +357,8 @@ ertte_remove_term <- function(mod, term, quiet = FALSE) {
   }
   dat <- mod$data
   trm_new <- stats::drop.terms(trm_mod, ind, keep.response = TRUE)
-  ertte_aft(formula = trm_new, data = dat, dist = mod$ertte$type)
+  # `survreg()` happens to accept a `terms` object directly as `formula`,
+  # but `coxph()` doesn't (errors in `terms.formula()`/`ExtractVars`) --
+  # convert to a plain formula so this works for both engines.
+  .ertte_refit(mod, formula = stats::formula(trm_new), data = dat)
 }

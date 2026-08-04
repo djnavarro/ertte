@@ -74,22 +74,22 @@ plotting packages in package code.
   hazard estimate (e.g. via `survival::survfit()`), and simulation will
   need an analogous baseline-hazard-based counterpart to
   `.ertte_simulate_draws()`.
-- **`ertte_add_term()`/`ertte_remove_term()` are AFT-hardcoded, despite
-  what the "API naming" section below originally assumed.** They
-  refit by calling `ertte_aft(formula = fml, data = dat, dist =
-  mod$ertte$type)` directly (not `stats::update()`), because the
-  `survreg()`/`coxph()` call captured on the fitted object's `$call`
-  refers to `ertte_aft()`'s/`ertte_coxph()`'s local argument bindings
-  (`formula`/`data`/`dist`), which don't exist in the caller's frame --
-  so a naive `update(mod, formula = fml)` would fail with "object not
-  found" errors. This means `ertte_scm_forward()`/`ertte_scm_backward()`
-  (built on top of `ertte_add_term()`/`ertte_remove_term()`) currently
-  only work for `ertte_aft` models, **not** `ertte_coxph` ones, even
-  though `anova()`/`stats::terms()` themselves are genuinely polymorphic.
-  Fixing this needs `ertte_add_term()`/`ertte_remove_term()` to dispatch
-  on engine (e.g. become generics themselves, or branch on
-  `inherits(mod, "ertte_aft")` vs `"ertte_coxph"`) and call the matching
-  constructor -- not yet done.
+- ~~`ertte_add_term()`/`ertte_remove_term()` are AFT-hardcoded~~ --
+  **fixed.** They used to refit by calling `ertte_aft(...)` directly
+  (not `stats::update()`, which doesn't work here because the fitted
+  object's `$call` refers to the constructor's own local argument
+  bindings, not anything visible in the caller's frame). They now
+  refit via an internal `.ertte_refit()` S3 generic (in
+  `R/ertte-scm.R`) that dispatches on `mod`'s class
+  (`.ertte_refit.ertte_aft()`/`.ertte_refit.ertte_coxph()`) and calls
+  the matching constructor, so `ertte_scm_forward()`/
+  `ertte_scm_backward()` now work for `ertte_coxph` models too. Fixing
+  this also surfaced a genuine engine difference:
+  `stats::drop.terms()`'s output (a `terms` object) can be passed
+  straight back into `survreg()` as `formula`, but `coxph()` rejects it
+  (errors in `terms.formula()`/`ExtractVars`) -- `ertte_remove_term()`
+  now converts it via `stats::formula()` first, which works for both
+  engines.
 - **Power-function covariate parameterisation.** The design issue calls
   for "continuous covariates as power functions, categorical covariates
   as factors". `ertte_add_term()`/`ertte_remove_term()`/SCM currently
@@ -156,10 +156,13 @@ prediction/simulation still pending (see "Planned work" above):
     fits via the shared superclass); an `ertte_coxph`-specific method
     isn't implemented.
   - `ertte_scm_forward()`/`ertte_scm_backward()`/`ertte_scm_history()`/
-    `ertte_add_term()`/`ertte_remove_term()` -- **currently AFT-only in
-    practice**, despite the original intent that these work unmodified
-    across engines. See the "Planned work" bullet above on
-    `ertte_add_term()`/`ertte_remove_term()` for why.
+    `ertte_add_term()`/`ertte_remove_term()` -- work across both
+    engines. `ertte_add_term()`/`ertte_remove_term()` themselves stay
+    single functions (not generics), but refit via an internal
+    `.ertte_refit()` S3 generic that dispatches on `mod`'s class to
+    call the matching constructor -- see the "Planned work" bullet
+    above for the history of why a plain `stats::update()` doesn't work
+    here.
   - `ertte_select_distribution()` -- stays AFT-only, no Cox PH
     equivalent.
 
@@ -184,7 +187,10 @@ prediction/simulation still pending (see "Planned work" above):
   (`ertte_scm_forward()`/`ertte_scm_backward()`/`ertte_scm_history()`),
   and the single-term `ertte_add_term()`/`ertte_remove_term()` helpers
   they're built on (also exported, matching erglm's
-  `erglm_add_term()`/`erglm_remove_term()`).
+  `erglm_add_term()`/`erglm_remove_term()`). Both refit via the internal
+  `.ertte_refit()` S3 generic (with `ertte_aft`/`ertte_coxph` methods),
+  which is how they work across both engines despite not being
+  generics themselves.
 - `R/ertte-simulate.R` -- `simulate.ertte_model()`, the `stats::simulate()`
   S3 method (and its `.ertte_resample()` helper), modelled on
   `simulate.erglm_model()`'s output shape: one row per observation per
