@@ -2,6 +2,7 @@
 
 S3method(ertte_fun,ertte_aft)
 S3method(ertte_predict,ertte_aft)
+S3method(ertte_predict,ertte_coxph)
 S3method(stats::simulate,ertte_model)
 export(ertte_add_term)
 export(ertte_aft)

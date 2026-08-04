@@ -61,19 +61,35 @@ plotting packages in package code.
 
 ## Planned work (deferred from the design issue, not yet done)
 
-- **`coxph()` semi-parametric engine -- prediction/simulation.** The
+- **`coxph()` semi-parametric engine -- simulation still missing.** The
   design issue mentions this as optional ("Fit wrappers over base
   `survival` (`survreg` for parametric AFT; optionally `coxph` for a
   semi-parametric option)"). The naming/API split is decided (see "API
   naming: AFT vs Cox PH" below), and `ertte_coxph()` (in
-  `R/ertte-coxph.R`) is now scaffolded: it fits via `survival::coxph()`
-  and returns an object with class `c("ertte_coxph", "ertte_model",
-  "coxph")`, mirroring `ertte_aft()`. Still missing: `ertte_coxph`
-  methods for `ertte_predict()`/`ertte_fun()`/`simulate()`. Unlike the
-  closed-form `S(t)` available for AFT models, these need a baseline
-  hazard estimate (e.g. via `survival::survfit()`), and simulation will
-  need an analogous baseline-hazard-based counterpart to
-  `.ertte_simulate_draws()`.
+  `R/ertte-coxph.R`) is scaffolded: it fits via `survival::coxph()`
+  (with `model = TRUE` -- see below) and returns an object with class
+  `c("ertte_coxph", "ertte_model", "coxph")`, mirroring `ertte_aft()`.
+  `ertte_predict.ertte_coxph()` is now implemented (also in
+  `R/ertte-coxph.R`), via `survival::survfit(object, newdata,
+  conf.int = conf_level)`: this computes each row's survival curve from
+  the fitted baseline hazard (Breslow/Efron, matching `object$method`)
+  and linear predictor, evaluates it at `time` via `summary(...,
+  extend = TRUE)` (letting `time` exceed the last observed follow-up,
+  holding survival constant beyond it), and takes confidence intervals
+  from `survfit()`'s own log-transform CI rather than a hand-rolled
+  Wald interval -- genuinely different from `ertte_predict.ertte_aft()`
+  methodologically, which is expected given the different model
+  structure, not a bug. Getting `survfit()` to work at all required
+  fitting `ertte_coxph()` with `model = TRUE`: `survfit.coxph()`
+  otherwise tries to reconstruct the model frame by re-evaluating
+  `object$call$data`, which fails for the same reason `stats::update()`
+  fails on these fits (see the `.ertte_refit()` bullet below) -- the
+  captured call refers to `ertte_coxph()`'s own local `formula`/`data`
+  bindings, not anything visible in `survfit()`'s caller's frame.
+  Storing the model frame directly sidesteps that. Still missing:
+  `ertte_coxph` methods for `ertte_fun()`/`simulate()` -- simulation in
+  particular will need an analogous baseline-hazard-based counterpart
+  to `.ertte_simulate_draws()`.
 - ~~`ertte_add_term()`/`ertte_remove_term()` are AFT-hardcoded~~ --
   **fixed.** They used to refit by calling `ertte_aft(...)` directly
   (not `stats::update()`, which doesn't work here because the fitted
@@ -131,9 +147,10 @@ argument) that folding it in would be misleading. There's no
 back-compat alias for the old `ertte_model()` name; the package was
 early enough in development that a clean rename was preferred.
 
-Naming/dispatch scheme, now implemented for the constructors and
-`ertte_predict()`/`ertte_fun()`, with `ertte_coxph`-specific
-prediction/simulation still pending (see "Planned work" above):
+Naming/dispatch scheme, now implemented for the constructors,
+`ertte_predict()` (both engines), and `ertte_fun()` (AFT only so far),
+with `ertte_coxph`-specific `ertte_fun()`/simulation still pending (see
+"Planned work" above):
 
 - **Constructors are engine-specific by name**: `ertte_aft(formula,
   data, dist = "weibull", ...)` and `ertte_coxph(formula, data, ...)`.
@@ -145,11 +162,10 @@ prediction/simulation still pending (see "Planned work" above):
   "coxph")` (via `.as_ertte_coxph()`), both in `R/utils-helpers.R`.
 - **Downstream generics keep single shared names**, with S3 methods
   per subclass where behaviour genuinely differs:
-  - `ertte_predict()` -- a generic (`UseMethod()`); only
-    `ertte_predict.ertte_aft()` exists so far (closed-form `S(t)`).
-    `ertte_predict.ertte_coxph()` (baseline-hazard-based) isn't
-    implemented -- calling `ertte_predict()` on an `ertte_coxph` object
-    currently errors with "no applicable method".
+  - `ertte_predict()` -- a generic (`UseMethod()`), now with methods
+    for both engines: `ertte_predict.ertte_aft()` (closed-form `S(t)`)
+    and `ertte_predict.ertte_coxph()` (baseline-hazard-based, via
+    `survival::survfit()`).
   - `ertte_fun()` -- same: a generic with only `ertte_fun.ertte_aft()`
     implemented so far.
   - `simulate()` -- only `simulate.ertte_model()` exists (used for AFT
@@ -178,8 +194,10 @@ prediction/simulation still pending (see "Planned work" above):
   `R/utils-helpers.R` for the base distribution's CDF/quantile function
   this relies on.
 - `R/ertte-coxph.R` -- `ertte_coxph()`, the semi-parametric sibling
-  constructor (wraps `survival::coxph()`). No `ertte_predict()`/
-  `ertte_fun()`/`simulate()` methods yet -- see "Planned work" above.
+  constructor (wraps `survival::coxph()`, with `model = TRUE`), and
+  `ertte_predict.ertte_coxph()` (baseline-hazard-based survival
+  predictions via `survival::survfit()`). No `ertte_fun()`/`simulate()`
+  methods yet -- see "Planned work" above.
 - `R/ertte-family.R` -- `ertte_select_distribution()`: fits each
   candidate AFT distribution and returns the AIC-ranked comparison plus
   the best-fitting model.

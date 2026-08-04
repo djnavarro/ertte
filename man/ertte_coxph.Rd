@@ -35,17 +35,14 @@ only need generic operations (\code{update()}, \code{anova()}, the SCM family)
 work across either engine; functions with engine-specific logic (e.g.
 \code{ertte_predict()}, \code{ertte_fun()}) dispatch via the
 \code{"ertte_aft"}/\code{"ertte_coxph"} subclass.
-}
-\section{Not yet implemented}{
 
-\code{ertte_predict()}, \code{ertte_fun()}, and \code{simulate()} don't yet have
-\code{ertte_coxph} methods -- unlike the closed-form survival function
-available for AFT models, Cox PH prediction/simulation needs a
-baseline hazard estimate (e.g. via \code{survival::survfit()}), which is
-separate follow-up work (see AGENTS.md). Calling any of these on an
-\code{ertte_coxph} object currently errors with "no applicable method".
+\code{ertte_predict()} has an \code{ertte_coxph} method (see
+\code{\link[=ertte_predict.ertte_coxph]{ertte_predict.ertte_coxph()}}), built on \code{survival::survfit()}'s
+baseline-hazard-based survival curves. \code{ertte_fun()} and \code{simulate()}
+don't yet have \code{ertte_coxph} methods -- see AGENTS.md. Calling either
+of these on an \code{ertte_coxph} object currently errors with "no
+applicable method".
 }
-
 \examples{
 mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
 mod
