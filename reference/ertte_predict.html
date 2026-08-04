@@ -34,7 +34,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Survival-probability predictions for exposure-response TTE models</h1>
-      <small class="dont-index">Source: <a href="https://github.com/djnavarro/ertte/blob/main/R/ertte-core.R" class="external-link"><code>R/ertte-core.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/djnavarro/ertte/blob/main/R/ertte-core.R" class="external-link"><code>R/ertte-core.R</code></a>, <a href="https://github.com/djnavarro/ertte/blob/main/R/ertte-coxph.R" class="external-link"><code>R/ertte-coxph.R</code></a></small>
       <div class="d-none name"><code>ertte_predict.Rd</code></div>
     </div>
 
@@ -47,6 +47,9 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'ertte_aft'</span></span>
+<span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">object</span>, newdata <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">time</span>, conf_level <span class="op">=</span> <span class="fl">0.95</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'ertte_coxph'</span></span>
 <span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">object</span>, newdata <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">time</span>, conf_level <span class="op">=</span> <span class="fl">0.95</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -96,12 +99,47 @@ approximation used throughout this package (e.g. <code>erglm_predict()</code>'s
 equivalent in the companion <code>erglm</code> package). <code>conf_level</code> must be a
 single number between 0 and 1 (inclusive); other values error rather
 than silently producing a reversed or <code>NaN</code> interval.</p>
+<p>The <code>ertte_coxph</code> method delegates to
+<code>survival::survfit(object, newdata, conf.int = conf_level)</code>, which
+computes a per-row survival curve <code>S(t | x) = S0(t)^exp(lp(x) - lp(xbar))</code> from the fitted baseline hazard (Breslow or Efron,
+matching <code>object$method</code>) and the linear predictor, then evaluates it
+at <code>time</code> via <code>summary(..., extend = TRUE)</code> – <code>extend = TRUE</code> allows
+<code>time</code> to exceed the last observed follow-up time, holding survival
+constant beyond it (the usual step-function extrapolation) rather
+than erroring. Confidence intervals come from <code>survfit()</code>'s own
+<code>conf.type = "log"</code> transform (Wald on <code>log(-log(S))</code>), which is
+better suited to a probability bounded in <code>[0, 1]</code> than the plain
+Wald interval <code>ertte_predict.ertte_aft()</code> uses on the linear
+predictor – the two methods' intervals are not directly comparable
+as a result, which is expected given the different model structures.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">mod</span>, <span class="va">ertte_data</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span>, time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">60</span>, <span class="fl">90</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 15 × 13</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       id sex      age weight  dose treatment aucss cmaxss  time event</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>     1 Female    27     70   200 Drug      <span style="text-decoration: underline;">1</span>114.  187.     30     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>     1 Female    27     70   200 Drug      <span style="text-decoration: underline;">1</span>114.  187.     60     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>     1 Female    27     70   200 Drug      <span style="text-decoration: underline;">1</span>114.  187.     90     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>     2 Female    27     59   100 Drug       561.   49.1    30     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>     2 Female    27     59   100 Drug       561.   49.1    60     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>     2 Female    27     59   100 Drug       561.   49.1    90     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>     3 Female    24     65     0 Placebo      0     0      30     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>     3 Female    24     65     0 Placebo      0     0      60     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>     3 Female    24     65     0 Placebo      0     0      90     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>     4 Female    29     63     0 Placebo      0     0      30     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span>     4 Female    29     63     0 Placebo      0     0      60     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span>     4 Female    29     63     0 Placebo      0     0      90     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">13</span>     5 Male      27     91   200 Drug      <span style="text-decoration: underline;">1</span>416.  143.     30     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">14</span>     5 Male      27     91   200 Drug      <span style="text-decoration: underline;">1</span>416.  143.     60     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">15</span>     5 Male      27     91   200 Drug      <span style="text-decoration: underline;">1</span>416.  143.     90     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 3 more variables: fit_survival &lt;dbl&gt;, ci_lower &lt;dbl&gt;, ci_upper &lt;dbl&gt;</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">mod_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_coxph.html">ertte_coxph</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">mod_cox</span>, <span class="va">ertte_data</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span>, time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">60</span>, <span class="fl">90</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 15 × 13</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       id sex      age weight  dose treatment aucss cmaxss  time event</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>

@@ -60,17 +60,16 @@ across either engine; functions with engine-specific logic (e.g.
 [`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md))
 dispatch via the `"ertte_aft"`/`"ertte_coxph"` subclass.
 
-## Not yet implemented
-
-[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md),
-[`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md), and
+[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
+has an `ertte_coxph` method (see
+[`ertte_predict.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_predict.md)),
+built on
+[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)'s
+baseline-hazard-based survival curves.
+[`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md) and
 [`simulate()`](https://rdrr.io/r/stats/simulate.html) don't yet have
-`ertte_coxph` methods – unlike the closed-form survival function
-available for AFT models, Cox PH prediction/simulation needs a baseline
-hazard estimate (e.g. via
-[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)),
-which is separate follow-up work (see AGENTS.md). Calling any of these
-on an `ertte_coxph` object currently errors with "no applicable method".
+`ertte_coxph` methods – see AGENTS.md. Calling either of these on an
+`ertte_coxph` object currently errors with "no applicable method".
 
 ## Examples
 
@@ -78,7 +77,7 @@ on an `ertte_coxph` object currently errors with "no applicable method".
 mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
 mod
 #> Call:
-#> survival::coxph(formula = formula, data = data)
+#> survival::coxph(formula = formula, data = data, model = TRUE)
 #> 
 #>            coef exp(coef)  se(coef)     z      p
 #> aucss 8.859e-04 1.001e+00 7.515e-05 11.79 <2e-16

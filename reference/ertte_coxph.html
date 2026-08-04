@@ -83,17 +83,12 @@ only need generic operations (<code><a href="https://rdrr.io/r/stats/update.html
 work across either engine; functions with engine-specific logic (e.g.
 <code><a href="ertte_predict.html">ertte_predict()</a></code>, <code><a href="ertte_fun.html">ertte_fun()</a></code>) dispatch via the
 <code>"ertte_aft"</code>/<code>"ertte_coxph"</code> subclass.</p>
-    </div>
-    <div class="section level2">
-    <h2 id="not-yet-implemented">Not yet implemented<a class="anchor" aria-label="anchor" href="#not-yet-implemented"></a></h2>
-
-
-<p><code><a href="ertte_predict.html">ertte_predict()</a></code>, <code><a href="ertte_fun.html">ertte_fun()</a></code>, and <code><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate()</a></code> don't yet have
-<code>ertte_coxph</code> methods – unlike the closed-form survival function
-available for AFT models, Cox PH prediction/simulation needs a
-baseline hazard estimate (e.g. via <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code>), which is
-separate follow-up work (see AGENTS.md). Calling any of these on an
-<code>ertte_coxph</code> object currently errors with "no applicable method".</p>
+<p><code><a href="ertte_predict.html">ertte_predict()</a></code> has an <code>ertte_coxph</code> method (see
+<code><a href="ertte_predict.html">ertte_predict.ertte_coxph()</a></code>), built on <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code>'s
+baseline-hazard-based survival curves. <code><a href="ertte_fun.html">ertte_fun()</a></code> and <code><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate()</a></code>
+don't yet have <code>ertte_coxph</code> methods – see AGENTS.md. Calling either
+of these on an <code>ertte_coxph</code> object currently errors with "no
+applicable method".</p>
     </div>
 
     <div class="section level2">
@@ -101,7 +96,7 @@ separate follow-up work (see AGENTS.md). Calling any of these on an
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu">ertte_coxph</span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">mod</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Call:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> survival::coxph(formula = formula, data = data)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> survival::coxph(formula = formula, data = data, model = TRUE)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>            coef exp(coef)  se(coef)     z      p</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> aucss 8.859e-04 1.001e+00 7.515e-05 11.79 &lt;2e-16</span>
