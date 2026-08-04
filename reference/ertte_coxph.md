@@ -61,15 +61,13 @@ across either engine; functions with engine-specific logic (e.g.
 dispatch via the `"ertte_aft"`/`"ertte_coxph"` subclass.
 
 [`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
-has an `ertte_coxph` method (see
-[`ertte_predict.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_predict.md)),
-built on
-[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)'s
-baseline-hazard-based survival curves.
-[`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md) and
-[`simulate()`](https://rdrr.io/r/stats/simulate.html) don't yet have
-`ertte_coxph` methods – see AGENTS.md. Calling either of these on an
-`ertte_coxph` object currently errors with "no applicable method".
+and [`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md)
+have `ertte_coxph` methods (see
+[`ertte_predict.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_predict.md)/[`ertte_fun.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_fun.md)),
+both built on the fitted baseline hazard.
+[`simulate()`](https://rdrr.io/r/stats/simulate.html) doesn't yet have
+an `ertte_coxph` method – see AGENTS.md. Calling it on an `ertte_coxph`
+object currently errors with "no applicable method".
 
 ## Examples
 

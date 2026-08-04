@@ -83,12 +83,11 @@ only need generic operations (<code><a href="https://rdrr.io/r/stats/update.html
 work across either engine; functions with engine-specific logic (e.g.
 <code><a href="ertte_predict.html">ertte_predict()</a></code>, <code><a href="ertte_fun.html">ertte_fun()</a></code>) dispatch via the
 <code>"ertte_aft"</code>/<code>"ertte_coxph"</code> subclass.</p>
-<p><code><a href="ertte_predict.html">ertte_predict()</a></code> has an <code>ertte_coxph</code> method (see
-<code><a href="ertte_predict.html">ertte_predict.ertte_coxph()</a></code>), built on <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code>'s
-baseline-hazard-based survival curves. <code><a href="ertte_fun.html">ertte_fun()</a></code> and <code><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate()</a></code>
-don't yet have <code>ertte_coxph</code> methods – see AGENTS.md. Calling either
-of these on an <code>ertte_coxph</code> object currently errors with "no
-applicable method".</p>
+<p><code><a href="ertte_predict.html">ertte_predict()</a></code> and <code><a href="ertte_fun.html">ertte_fun()</a></code> have <code>ertte_coxph</code> methods (see
+<code><a href="ertte_predict.html">ertte_predict.ertte_coxph()</a></code>/<code><a href="ertte_fun.html">ertte_fun.ertte_coxph()</a></code>), both built
+on the fitted baseline hazard. <code><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate()</a></code> doesn't yet have an
+<code>ertte_coxph</code> method – see AGENTS.md. Calling it on an <code>ertte_coxph</code>
+object currently errors with "no applicable method".</p>
     </div>
 
     <div class="section level2">

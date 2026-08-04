@@ -9,6 +9,9 @@ ertte_fun(object, ...)
 
 # S3 method for class 'ertte_aft'
 ertte_fun(object, ...)
+
+# S3 method for class 'ertte_coxph'
+ertte_fun(object, ...)
 ```
 
 ## Arguments
@@ -55,6 +58,24 @@ always taken from the fitted `object`, not from `param` (the coefficient
 vector from [`coef()`](https://rdrr.io/r/stats/coef.html) never includes
 it).
 
+The `ertte_coxph` method returns a function that evaluates
+`S(t | x) = S0(t)^exp((x - xbar)'param)`, where `S0(t)` is the fitted
+baseline survival curve (via
+`survival::basehaz(object, centered = TRUE)`, held constant beyond the
+last observed time, matching
+[`ertte_predict.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_predict.md))
+and `xbar` is `object$means` (the covariate means `coxph()` centers the
+partial likelihood on when fitting – centering matters here because
+`basehaz()`'s baseline is defined relative to it, not to `x = 0`). As
+with `ertte_fun.ertte_aft()`, `param` only varies the linear predictor:
+the baseline hazard is always taken from the fitted `object`, never
+recomputed for a hypothetical `param` (that would need refitting the
+partial likelihood's risk sets) – matching the level of approximation
+used elsewhere in this package (e.g. `scale` for AFT models is likewise
+held fixed). Since Cox models have no intercept, `param` has one entry
+per covariate with no `"(Intercept)"` column, unlike
+`ertte_fun.ertte_aft()`.
+
 ## Examples
 
 ``` r
@@ -68,4 +89,15 @@ s1 <- mod_fun(time = 60)
 par2 <- coef(mod)
 par2["(Intercept)"] <- par2["(Intercept)"] + 1
 s2 <- mod_fun(param = par2, time = 60)
+
+mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+mod_cox_fun <- ertte_fun(mod_cox)
+
+# no arguments: reproduces the fitted model's own survival predictions
+s1 <- mod_cox_fun(time = 60)
+
+# user modifies the parameters
+par2 <- coef(mod_cox)
+par2["aucss"] <- par2["aucss"] * 1.5
+s2 <- mod_cox_fun(param = par2, time = 60)
 ```
