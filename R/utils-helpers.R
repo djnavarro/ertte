@@ -109,8 +109,10 @@
 
 # Shared by `.ertte_simulate_draws()`'s per-engine methods: `newdata`
 # must contain the original response columns (`time`/`event`, as named
-# in `object`'s `Surv()` call) -- used to cap simulated event times at
-# each row's observed exit time. Returns the response variable names
+# in `object`'s `Surv()` call) -- used (absent a supplied `censor_time`)
+# to cap censored rows' simulated event times at their observed exit
+# time, and to identify event rows (left uncensored by default -- see
+# `.ertte_apply_admin_censoring()`). Returns the response variable names
 # (from `.ertte_response_vars()`) for convenience at the call site.
 .ertte_check_newdata_response <- function(object, newdata) {
   vars <- .ertte_response_vars(object)
@@ -122,6 +124,62 @@
     ))
   }
   vars
+}
+
+# Validates `censor_time` (the administrative-censoring-time argument to
+# `simulate()`/`.ertte_simulate_draws()`): `NULL`, or a numeric vector of
+# strictly positive, non-missing values with length 1 (recycled) or `n`
+# (one per row of `newdata`). Returns a length-`n` vector (or `NULL`).
+.ertte_check_censor_time <- function(censor_time, n) {
+  if (is.null(censor_time)) return(NULL)
+  if (!is.numeric(censor_time) || anyNA(censor_time) || any(censor_time <= 0)) {
+    rlang::abort(paste0(
+      "`censor_time` must be `NULL`, or a numeric vector of strictly ",
+      "positive, non-missing values, not ", .fmt_bad_value(censor_time), "."
+    ))
+  }
+  if (!length(censor_time) %in% c(1L, n)) {
+    rlang::abort(paste0(
+      "`censor_time` must have length 1 (recycled across rows) or ", n,
+      " (`nrow(newdata)`), not ", length(censor_time), "."
+    ))
+  }
+  rep_len(censor_time, n)
+}
+
+# Shared by `.ertte_simulate_draws()`'s per-engine methods: applies the
+# administrative-censoring cap to a vector of raw (uncensored) simulated
+# event times, `sim_time_raw`.
+#
+# If `censor_time` is supplied (already validated/recycled to length
+# `n` by `.ertte_check_censor_time()`), it's used as the cap for every
+# row uniformly -- the "proper" simulation, whenever a genuine per-row
+# (or study-wide constant) administrative follow-up time is known.
+#
+# Otherwise (the default, `censor_time = NULL`): censored rows
+# (`event_obs == 0`) have their simulated draws capped at `obs_time`,
+# since that observed exit time *is* the row's true censoring time (the
+# mechanism that produced the data really did censor this subject then)
+# -- an exact match, not an approximation. Event rows (`event_obs == 1`)
+# are left uncensored (`sim_event = 1` always): their observed exit time
+# is when the event actually happened, not their administrative
+# censoring horizon (which was necessarily later, and is unobserved) --
+# capping there would leak the observed event day into the simulated
+# draws. This is a documented simplification, still an approximation for
+# event rows absent a supplied `censor_time`, but avoids the specific
+# bias of the old blanket `pmin(sim_time_raw, obs_time)`.
+.ertte_apply_admin_censoring <- function(sim_time_raw, obs_time, event_obs, censor_time) {
+  if (!is.null(censor_time)) {
+    return(list(
+      sim_time = pmin(sim_time_raw, censor_time),
+      sim_event = as.numeric(sim_time_raw <= censor_time)
+    ))
+  }
+  is_censored_row <- event_obs == 0
+  list(
+    sim_time = ifelse(is_censored_row, pmin(sim_time_raw, obs_time), sim_time_raw),
+    sim_event = ifelse(is_censored_row, as.numeric(sim_time_raw <= obs_time), 1)
+  )
 }
 
 .as_ertte_aft <- function(mod, dist) {

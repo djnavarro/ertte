@@ -216,26 +216,30 @@ ertte_fun.ertte_aft <- function(object, ...) {
 # erplots, if installed, for TTE visual predictive checks) -- both work
 # for either engine automatically via this dispatch.
 #
-# Administrative/observed censoring is reproduced by capping each
-# simulated event time at that row's *observed* exit time (the `time`
-# variable in `newdata`, whether that row was itself an event or
-# censored) -- a documented simplification: the true per-subject
-# administrative censoring time (if later than an observed event) isn't
-# otherwise available, so the observed exit time is used as a stand-in
-# upper bound. `newdata` must therefore contain the original response
-# columns (`time`/`event`, named as in the model's `Surv()` call) --
-# see `.ertte_check_newdata_response()`.
-.ertte_simulate_draws <- function(object, newdata, nsim = 100, seed = NULL) {
+# Administrative/observed censoring is reproduced via
+# `.ertte_apply_admin_censoring()`: by default (`censor_time = NULL`),
+# censored rows are capped at their *observed* exit time (the `time`
+# variable in `newdata`) -- exactly correct, since that's genuinely when
+# censoring happened -- while event rows are left uncensored, since
+# their observed exit time is when the event happened, not their
+# (unobserved) administrative censoring horizon. A genuine per-row
+# administrative follow-up time can be supplied via `censor_time`
+# instead, which then caps every row uniformly. `newdata` must contain
+# the original response columns (`time`/`event`, named as in the
+# model's `Surv()` call) -- see `.ertte_check_newdata_response()`.
+.ertte_simulate_draws <- function(object, newdata, nsim = 100, seed = NULL, censor_time = NULL) {
   UseMethod(".ertte_simulate_draws")
 }
 
-.ertte_simulate_draws.ertte_aft <- function(object, newdata, nsim = 100, seed = NULL) {
+.ertte_simulate_draws.ertte_aft <- function(object, newdata, nsim = 100, seed = NULL, censor_time = NULL) {
   .ertte_check_nsim(nsim)
   seed <- .ertte_pick_seed(seed)
   vars <- .ertte_check_newdata_response(object, newdata)
+  censor_time <- .ertte_check_censor_time(censor_time, nrow(newdata))
   info <- .ertte_dist_info(object$ertte$type)
   scale <- object$scale
   obs_time <- newdata[[vars$time]]
+  event_obs <- newdata[[vars$event]]
   withr::with_seed(
     seed = seed,
     code = {
@@ -257,8 +261,9 @@ ertte_fun.ertte_aft <- function(object, ...) {
         mu <- as.vector(mm %*% par[ii, ])
         u <- stats::runif(nrow(dd_sim))
         sim_time_raw <- exp(mu + scale * info$qbase(u))
-        dd_sim$sim_time <- pmin(sim_time_raw, obs_time)
-        dd_sim$sim_event <- as.numeric(sim_time_raw <= obs_time)
+        censored <- .ertte_apply_admin_censoring(sim_time_raw, obs_time, event_obs, censor_time)
+        dd_sim$sim_time <- censored$sim_time
+        dd_sim$sim_event <- censored$sim_event
         coef_draw <- stats::setNames(as.list(par[ii, ]), paste0("coef_", coef_names))
         dd_sim <- dd_sim |> dplyr::bind_cols(tibble::as_tibble(coef_draw))
         sim[[ii]] <- dd_sim

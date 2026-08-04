@@ -4,7 +4,14 @@
 \alias{simulate.ertte_model}
 \title{Simulate from an exposure-response TTE model}
 \usage{
-\method{simulate}{ertte_model}(object, nsim = 100, seed = NULL, newdata = NULL, ...)
+\method{simulate}{ertte_model}(
+  object,
+  nsim = 100,
+  seed = NULL,
+  newdata = NULL,
+  censor_time = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{An ertte model object, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
@@ -19,6 +26,14 @@ actual simulated values returned).}
 \item{newdata}{Data frame to simulate from. Defaults to the data the
 model was fitted to. Must contain the original response columns
 (\code{time}/\code{event}, as named in the model's \code{Surv()} call) -- see Details.}
+
+\item{censor_time}{Optional administrative/maximum-follow-up time(s)
+to cap simulated event times at, applied uniformly to every row
+regardless of whether that row observed an event. Either \code{NULL} (the
+default -- see Details for the fallback behaviour), a single number
+(recycled across all rows of \code{newdata}), or a numeric vector of
+length \code{nrow(newdata)} giving each row's own administrative follow-up
+time.}
 
 \item{...}{Unused, present for compatibility with the \code{simulate()}
 generic}
@@ -46,12 +61,30 @@ distribution (see \code{\link[=ertte_aft]{ertte_aft()}} Details); for \code{ertt
 inverting the fitted baseline cumulative hazard (\code{survival::basehaz()},
 held fixed regardless of the sampled coefficient draw -- the same
 simplification \code{\link[=ertte_fun.ertte_coxph]{ertte_fun.ertte_coxph()}} makes for a user-supplied
-\code{param}). Simulated event times are capped at each row's \emph{observed}
-exit time (\code{sim_time <- pmin(sim_time_raw, observed_time)}, with
-\code{sim_event} set accordingly) to reproduce the study's observed
-censoring/follow-up pattern -- a documented simplification, since the
-true administrative censoring time for subjects who had an event
-isn't otherwise available (see \code{.ertte_simulate_draws()}).
+\code{param}).
+
+The resulting \emph{raw} (uncensored) simulated event time is then censored
+by \code{censor_time} if supplied (\code{sim_time <- pmin(sim_time_raw, censor_time)}, with \code{sim_event} set accordingly) -- this is the
+accurate case, whenever a genuine per-row (or study-wide constant)
+administrative follow-up time is known, since it caps every row (event
+or censored) against its true censoring horizon.
+
+Absent a supplied \code{censor_time} (the default, \code{NULL}), row's own
+observed \code{event} status determines the fallback: rows that were
+\emph{censored} in \code{newdata} have their observed exit time used as the cap
+(\code{sim_time <- pmin(sim_time_raw, observed_time)}), since that
+observed exit time genuinely is when censoring happened -- an exact
+match, not an approximation. Rows that had an observed \emph{event},
+however, are left \strong{uncensored} in the simulation: their observed
+exit time is when the event actually happened, not their
+administrative censoring horizon (which was necessarily later, and
+typically isn't recorded once an event has occurred) -- capping
+simulated draws there would leak the observed event day into the
+simulation and bias a simulated-vs-observed comparison (e.g. a visual
+predictive check) toward looking more similar than the fitted model
+actually implies. This remains an approximation for event rows (no
+censoring is applied at all, absent better information), but avoids
+that specific bias -- see \code{.ertte_apply_admin_censoring()}.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
@@ -61,5 +94,11 @@ sim
 mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 sim_cox <- simulate(mod_cox, nsim = 20, seed = 1234)
 sim_cox
+
+# a genuine per-row administrative censoring time -- ertte_data's
+# `admin_censor` column records the fixed 180-day study cutoff used
+# to generate it, known regardless of whether a subject had an event
+sim_admin <- simulate(mod, nsim = 20, seed = 1234, censor_time = ertte_data$admin_censor)
+sim_admin
 
 }

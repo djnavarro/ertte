@@ -237,15 +237,17 @@ ertte_fun.ertte_coxph <- function(object, ...) {
 # sampled coefficient draw (recomputing it would need refitting the
 # partial likelihood's risk sets at each draw), the same simplification
 # `ertte_fun.ertte_coxph()` makes for a user-supplied `param`.
-.ertte_simulate_draws.ertte_coxph <- function(object, newdata, nsim = 100, seed = NULL) {
+.ertte_simulate_draws.ertte_coxph <- function(object, newdata, nsim = 100, seed = NULL, censor_time = NULL) {
   .ertte_check_coxph_nevent(object)
   .ertte_check_nsim(nsim)
   seed <- .ertte_pick_seed(seed)
   vars <- .ertte_check_newdata_response(object, newdata)
+  censor_time <- .ertte_check_censor_time(censor_time, nrow(newdata))
   ff <- stats::delete.response(stats::terms(object))
   means <- object$means
   bh <- survival::basehaz(object, centered = TRUE)
   obs_time <- newdata[[vars$time]]
+  event_obs <- newdata[[vars$event]]
   withr::with_seed(
     seed = seed,
     code = {
@@ -264,8 +266,21 @@ ertte_fun.ertte_coxph <- function(object, ...) {
         u <- stats::runif(nrow(dd_sim))
         target_h <- -log(u) / exp(lp)
         sim_time_raw <- .ertte_coxph_invert_basehaz(bh, target_h)
-        dd_sim$sim_time <- pmin(sim_time_raw, obs_time)
-        dd_sim$sim_event <- as.numeric(sim_time_raw <= obs_time)
+        # `sim_time_raw == Inf` means the simulated draw would need to
+        # survive past the fitted baseline hazard's support (the last
+        # observed follow-up time across the whole cohort) to "fail" --
+        # there's no information past that point either way, so treat it
+        # as censored there (never as an event), matching the flat
+        # extrapolation `ertte_predict.ertte_coxph()` already uses beyond
+        # the observed range. Substituting `max(bh$time)` for `Inf`
+        # before applying `censor_time`/`obs_time` lets a smaller cap
+        # still take precedence where applicable.
+        is_extrapolated <- is.infinite(sim_time_raw)
+        sim_time_capped <- ifelse(is_extrapolated, max(bh$time), sim_time_raw)
+        censored <- .ertte_apply_admin_censoring(sim_time_capped, obs_time, event_obs, censor_time)
+        censored$sim_event[is_extrapolated] <- 0
+        dd_sim$sim_time <- censored$sim_time
+        dd_sim$sim_event <- censored$sim_event
         coef_draw <- stats::setNames(as.list(par[ii, ]), paste0("coef_", coef_names))
         dd_sim <- dd_sim |> dplyr::bind_cols(tibble::as_tibble(coef_draw))
         sim[[ii]] <- dd_sim

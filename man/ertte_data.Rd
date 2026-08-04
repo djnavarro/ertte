@@ -17,6 +17,10 @@ A data frame with columns:
 \item{cmaxss}{Cmax,ss}
 \item{time}{Time to event or right-censoring, in days}
 \item{event}{Event indicator (1 = event observed, 0 = right-censored)}
+\item{admin_censor}{Administrative censoring cutoff (days) -- fixed at
+180 for every subject, regardless of whether that subject had an event.
+Demonstrates the \code{censor_time} argument to \code{\link[=simulate.ertte_model]{simulate.ertte_model()}},
+since (unlike \code{time}) it's knowable for event rows too.}
 }
 }
 \usage{
@@ -28,9 +32,11 @@ Sample simulated data for exposure-response time-to-event models
 \details{
 This simulated dataset is entirely synthetic. \code{time}/\code{event} were
 generated from a Weibull AFT model with an exposure (\code{aucss}) and sex
-effect, administrative censoring at 180 days, and a little
-independent random (dropout) censoring. You can find the data
-generating code in the package source code.
+effect, administrative censoring at 180 days (retained as
+\code{admin_censor}), and a little independent random (dropout) censoring
+(not retained, since -- like most real TTE data -- a subject's dropout
+time isn't observable once an event has occurred). You can find the
+data generating code in the package source code.
 }
 \examples{
 ertte_data

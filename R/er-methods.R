@@ -25,7 +25,16 @@ er_predict.ertte_model <- function(model, newdata, conf_level = 0.95, ...) {
 }
 
 er_simulate.ertte_model <- function(model, newdata, nsim = 100, seed = NULL, ...) {
-  .ertte_simulate_draws(object = model, newdata = newdata, nsim = nsim, seed = seed)
+  # `censor_time` isn't part of erplots' fixed `er_simulate(model,
+  # newdata, nsim, seed)` contract, but can still be threaded through
+  # `...` for callers that want the accurate (rather than default
+  # event-rows-uncensored) simulation behaviour -- see
+  # `simulate.ertte_model()`'s `censor_time` argument/Details.
+  dots <- list(...)
+  .ertte_simulate_draws(
+    object = model, newdata = newdata, nsim = nsim, seed = seed,
+    censor_time = dots$censor_time
+  )
 }
 
 er_summary.ertte_model <- function(model, conf_level = 0.95, ...) {

@@ -116,7 +116,10 @@ test_that("simulate() reproduces sensible event times under heavy ties", {
   mod <- ertte_coxph(Surv(time, event) ~ aucss, dat)
   sim <- simulate(mod, newdata = dat[1:10, ], nsim = 5, seed = 33)
   expect_equal(nrow(sim), 50L)
-  expect_true(all(sim$sim_time <= dat$time[match(sim$id, dat$id)] + 1e-8))
+  # only censored rows are capped at their observed exit time by default
+  ref <- dat[1:10, ]
+  is_censored <- ref$event[sim$dat_id] == 0
+  expect_true(all(sim$sim_time[is_censored] <= ref$time[sim$dat_id][is_censored] + 1e-8))
 })
 
 test_that("ertte_aft() fits normally under heavy ties in event times", {

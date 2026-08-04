@@ -245,14 +245,55 @@ plotting packages in package code.
     time) caused no issues on either engine -- `coxph()`'s default Efron
     tie-handling and `.ertte_simulate_draws()` both work unchanged. Kept
     as regression tests rather than a design concern.
-- **Administrative-censoring simulation is a simplification.**
-  `.ertte_simulate_draws()` caps every simulated event time at that
-  row's *observed* exit time (`time`, whether that row was itself an
-  event or a censoring), since the true administrative censoring time
-  for subjects who had an event isn't otherwise available in a typical
-  data set. A more accurate simulation would use a genuine per-subject
-  administrative censoring/follow-up time where available, separately
-  from the event indicator.
+- ~~Administrative-censoring simulation is a simplification~~ --
+  **refined.** `.ertte_simulate_draws()` used to cap every simulated
+  event time at that row's *observed* exit time (`time`), whether that
+  row was itself an event or a censoring. Splitting by the observed
+  `event` indicator sharpens the diagnosis: for censored rows, the
+  observed exit time genuinely *is* the row's true censoring time (an
+  exact match, not an approximation); for event rows, it isn't -- it's
+  when the event happened, not the (necessarily later, unobserved)
+  administrative censoring horizon -- so capping there leaked the
+  observed outcome into the simulation and biased simulated-vs-observed
+  comparisons (e.g. a VPC) toward looking more similar than the fitted
+  model actually implies.
+  - `simulate.ertte_model()`/`.ertte_simulate_draws()` (both engines) now
+    take an optional `censor_time` argument (a single number, recycled,
+    or a numeric vector of length `nrow(newdata)`) giving a genuine
+    per-row administrative follow-up time, validated by a new
+    `.ertte_check_censor_time()`. When supplied, it caps *every* row
+    uniformly, regardless of observed event status -- the accurate case.
+  - Absent `censor_time` (the default), the refined fallback -- via a
+    new shared `.ertte_apply_admin_censoring()` helper -- caps censored
+    rows at their observed exit time (unchanged) but leaves event rows
+    **uncensored**, removing the specific bias above (still an
+    approximation for event rows, just a less wrong one). This is a
+    genuine default-behaviour change, confirmed with the maintainer
+    before implementing.
+  - `ertte_data` gained a demonstration column, `admin_censor` (fixed at
+    180 for every row, reflecting the fixed study-wide cutoff
+    `.make_ertte_data()` already used internally but didn't retain).
+    Adding it as a plain constant (not an RNG draw) didn't perturb any
+    other column's simulated values under the same `seed = 111L` --
+    confirmed by regenerating and diffing before saving.
+  - One real bug surfaced while implementing the coxph engine's version:
+    `.ertte_coxph_invert_basehaz()` returns `Inf` whenever a simulated
+    draw would need to survive past the fitted baseline hazard's
+    support (the last observed follow-up time across the whole cohort)
+    to "fail" -- previously always silently absorbed by the old blanket
+    `pmin(sim_time_raw, obs_time)` cap, but left as a bare `Inf`
+    (`sim_event = 1`, nonsensically "an event at time infinity") once
+    event rows stopped being capped by default. Fixed by substituting
+    `max(bh$time)` for `Inf` before applying `censor_time`/`obs_time`
+    (so a smaller genuine cap still takes precedence), then forcing
+    `sim_event = 0` for any row that hit this extrapolation boundary --
+    consistent with the flat baseline-hazard extrapolation
+    `ertte_predict.ertte_coxph()` already uses beyond the observed
+    range. The AFT engine's equivalent (`qbase()` at `u` near 1) has the
+    same theoretical failure mode but was left unguarded -- the risk is
+    negligible there (a continuous quantile function, vs. the Cox
+    engine's empirical/step-function baseline hazard, which realistically
+    exhausts its support whenever `nsim` is reasonably large).
 
 ## API naming: AFT vs Cox PH
 

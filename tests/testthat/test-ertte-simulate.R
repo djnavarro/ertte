@@ -5,7 +5,12 @@ test_that("simulate.ertte_aft() has the expected shape", {
   expect_equal(nrow(sim), nrow(ertte_data) * 5L)
   expect_true(all(c("dat_id", "sim_id", "sim_time", "sim_event", "coef_(Intercept)", "coef_aucss") %in% names(sim)))
   expect_true(all(sim$sim_event %in% c(0, 1)))
-  expect_true(all(sim$sim_time <= ertte_data$time[sim$dat_id] + 1e-8))
+  # by default (no `censor_time`), only *censored* rows' simulated draws
+  # are capped at their observed exit time -- event rows are simulated
+  # uncensored, since their observed exit time isn't their true
+  # administrative censoring horizon (see `.ertte_apply_admin_censoring()`)
+  is_censored <- ertte_data$event[sim$dat_id] == 0
+  expect_true(all(sim$sim_time[is_censored] <= ertte_data$time[sim$dat_id][is_censored] + 1e-8))
 })
 
 test_that("simulate.ertte_aft() is reproducible given a seed", {

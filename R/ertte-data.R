@@ -46,6 +46,12 @@
           dropout_time = stats::rexp(n, rate = 1 / 400),
           time = pmax(pmin(time_true, dropout_time, admin_censor), 0.1) |> round(digits = 1),
           event = as.numeric(time_true <= pmin(dropout_time, admin_censor)),
+          # the fixed, known study-wide administrative follow-up cutoff --
+          # unlike `dropout_time`, this is retained as a column (not a
+          # per-subject random draw), since it's knowable regardless of
+          # whether a given subject had an event, and demonstrates the
+          # `censor_time` argument to `simulate()` (see R/ertte-simulate.R)
+          admin_censor = admin_censor,
         ) |>
         dplyr::select(-mu, -scale, -time_true, -dropout_time)
     }
@@ -60,6 +66,7 @@
   attr(ertte_data$cmaxss, "label") <- "Cmax,ss"
   attr(ertte_data$time, "label") <- "Time to event or censoring (days)"
   attr(ertte_data$event, "label") <- "Event indicator (1 = event, 0 = censored)"
+  attr(ertte_data$admin_censor, "label") <- "Administrative censoring cutoff (days)"
   return(ertte_data)
 }
 
@@ -81,14 +88,20 @@
 #' \item{cmaxss}{Cmax,ss}
 #' \item{time}{Time to event or right-censoring, in days}
 #' \item{event}{Event indicator (1 = event observed, 0 = right-censored)}
+#' \item{admin_censor}{Administrative censoring cutoff (days) -- fixed at
+#' 180 for every subject, regardless of whether that subject had an event.
+#' Demonstrates the `censor_time` argument to [simulate.ertte_model()],
+#' since (unlike `time`) it's knowable for event rows too.}
 #' }
 #' @details
 #'
 #' This simulated dataset is entirely synthetic. `time`/`event` were
 #' generated from a Weibull AFT model with an exposure (`aucss`) and sex
-#' effect, administrative censoring at 180 days, and a little
-#' independent random (dropout) censoring. You can find the data
-#' generating code in the package source code.
+#' effect, administrative censoring at 180 days (retained as
+#' `admin_censor`), and a little independent random (dropout) censoring
+#' (not retained, since -- like most real TTE data -- a subject's dropout
+#' time isn't observable once an event has occurred). You can find the
+#' data generating code in the package source code.
 #'
 #' @examples
 #' ertte_data
