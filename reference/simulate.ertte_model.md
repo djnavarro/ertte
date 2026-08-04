@@ -36,7 +36,9 @@ simulate(object, nsim = 100, seed = NULL, newdata = NULL, ...)
 
   Data frame to simulate from. Defaults to the data the model was fitted
   to. Must contain the original response columns (`time`/`event`, as
-  named in the model's `Surv()` call) – see Details.
+  named in the model's
+  [`Surv()`](https://rdrr.io/pkg/survival/man/Surv.html) call) – see
+  Details.
 
 - ...:
 
@@ -74,7 +76,7 @@ censoring time for subjects who had an event isn't otherwise available
 ## Examples
 
 ``` r
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 sim <- simulate(mod, nsim = 20, seed = 1234)
 sim
 #> # A tibble: 6,000 × 16
@@ -94,7 +96,7 @@ sim
 #> # ℹ 6 more variables: aucss <dbl>, cmaxss <dbl>, time <dbl>, event <dbl>,
 #> #   `coef_(Intercept)` <dbl>, coef_aucss <dbl>
 
-mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 sim_cox <- simulate(mod_cox, nsim = 20, seed = 1234)
 sim_cox
 #> # A tibble: 6,000 × 15

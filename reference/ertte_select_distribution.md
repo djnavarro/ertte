@@ -45,7 +45,7 @@ in, i.e. the first-listed of the tied candidates is returned as `model`.
 
 ``` r
 # (uses ertte_aft() internally for each candidate distribution)
-cmp <- ertte_select_distribution(survival::Surv(time, event) ~ aucss, ertte_data)
+cmp <- ertte_select_distribution(Surv(time, event) ~ aucss, ertte_data)
 cmp$comparison
 #> # A tibble: 4 × 5
 #>   dist        logLik   aic   bic converged

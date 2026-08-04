@@ -83,7 +83,7 @@ structures.
 ## Examples
 
 ``` r
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
 #> # A tibble: 15 × 13
 #>       id sex      age weight  dose treatment aucss cmaxss  time event
@@ -105,7 +105,7 @@ ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
 #> 15     5 Male      27     91   200 Drug      1416.  143.     90     1
 #> # ℹ 3 more variables: fit_survival <dbl>, ci_lower <dbl>, ci_upper <dbl>
 
-mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 ertte_predict(mod_cox, ertte_data[1:5, ], time = c(30, 60, 90))
 #> # A tibble: 15 × 13
 #>       id sex      age weight  dose treatment aucss cmaxss  time event

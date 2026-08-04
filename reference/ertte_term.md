@@ -55,7 +55,7 @@ for both `ertte_aft` and `ertte_coxph` models.
 ## Examples
 
 ``` r
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod2 <- ertte_add_term(mod, ~ sex)
 mod3 <- ertte_remove_term(mod2, ~ sex)
 ```

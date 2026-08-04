@@ -84,7 +84,7 @@ and `.ertte_dist_info()`.
 ## Examples
 
 ``` r
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod
 #> Call:
 #> survival::survreg(formula = formula, data = data, dist = dist)
@@ -100,7 +100,7 @@ mod
 #> n= 300 
 
 # other AFT distributions are also supported
-mod_ln <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data, dist = "lognormal")
+mod_ln <- ertte_aft(Surv(time, event) ~ aucss, ertte_data, dist = "lognormal")
 mod_ln
 #> Call:
 #> survival::survreg(formula = formula, data = data, dist = dist)

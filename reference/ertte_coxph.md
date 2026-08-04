@@ -74,7 +74,7 @@ dispatches internally (via `.ertte_simulate_draws()`) on engine.
 ## Examples
 
 ``` r
-mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 mod
 #> Call:
 #> survival::coxph(formula = formula, data = data, model = TRUE)

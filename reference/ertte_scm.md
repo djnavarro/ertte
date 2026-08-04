@@ -68,29 +68,29 @@ formula and name exactly one covariate term (e.g. `"sex"`, not
 ## Examples
 
 ``` r
-mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod0 <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod1 <- ertte_scm_forward(mod0, candidates = c("sex", "dose"))
 ertte_scm_history(mod1)
 #> # A tibble: 4 × 11
 #>   iteration attempt step       action term_tested model_tested   model_converged
 #>       <int>   <int> <chr>      <chr>  <chr>       <chr>          <lgl>          
-#> 1         0       0 base model NA     NA          survival::Sur… TRUE           
-#> 2         1       1 forward    add    ~sex        survival::Sur… TRUE           
-#> 3         1       2 forward    add    ~dose       survival::Sur… TRUE           
-#> 4         2       3 forward    add    ~dose       survival::Sur… TRUE           
+#> 1         0       0 base model NA     NA          Surv(time, ev… TRUE           
+#> 2         1       1 forward    add    ~sex        Surv(time, ev… TRUE           
+#> 3         1       2 forward    add    ~dose       Surv(time, ev… TRUE           
+#> 4         2       3 forward    add    ~dose       Surv(time, ev… TRUE           
 #> # ℹ 4 more variables: term_p_value <dbl>, model_aic <dbl>, model_bic <dbl>,
 #> #   model_updated <int>
 
-mod2 <- ertte_aft(survival::Surv(time, event) ~ aucss + sex + dose, ertte_data)
+mod2 <- ertte_aft(Surv(time, event) ~ aucss + sex + dose, ertte_data)
 mod3 <- ertte_scm_backward(mod2, candidates = c("sex", "dose"))
 ertte_scm_history(mod3)
 #> # A tibble: 4 × 11
 #>   iteration attempt step       action term_tested model_tested   model_converged
 #>       <int>   <int> <chr>      <chr>  <chr>       <chr>          <lgl>          
-#> 1         0       0 base model NA     NA          survival::Sur… TRUE           
-#> 2         1       1 backward   remove ~dose       survival::Sur… TRUE           
-#> 3         1       2 backward   remove ~sex        survival::Sur… TRUE           
-#> 4         2       3 backward   remove ~sex        survival::Sur… TRUE           
+#> 1         0       0 base model NA     NA          Surv(time, ev… TRUE           
+#> 2         1       1 backward   remove ~dose       Surv(time, ev… TRUE           
+#> 3         1       2 backward   remove ~sex        Surv(time, ev… TRUE           
+#> 4         2       3 backward   remove ~sex        Surv(time, ev… TRUE           
 #> # ℹ 4 more variables: term_p_value <dbl>, model_aic <dbl>, model_bic <dbl>,
 #> #   model_updated <int>
 ```
