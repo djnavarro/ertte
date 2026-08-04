@@ -85,7 +85,7 @@ structures.
 ``` r
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
-#> # A tibble: 15 × 13
+#> # A tibble: 15 × 14
 #>       id sex      age weight  dose treatment aucss cmaxss  time event
 #>    <int> <fct>  <int>  <dbl> <dbl> <fct>     <dbl>  <dbl> <dbl> <dbl>
 #>  1     1 Female    27     70   200 Drug      1114.  187.     30     1
@@ -103,11 +103,12 @@ ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
 #> 13     5 Male      27     91   200 Drug      1416.  143.     30     1
 #> 14     5 Male      27     91   200 Drug      1416.  143.     60     1
 #> 15     5 Male      27     91   200 Drug      1416.  143.     90     1
-#> # ℹ 3 more variables: fit_survival <dbl>, ci_lower <dbl>, ci_upper <dbl>
+#> # ℹ 4 more variables: admin_censor <dbl>, fit_survival <dbl>, ci_lower <dbl>,
+#> #   ci_upper <dbl>
 
 mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 ertte_predict(mod_cox, ertte_data[1:5, ], time = c(30, 60, 90))
-#> # A tibble: 15 × 13
+#> # A tibble: 15 × 14
 #>       id sex      age weight  dose treatment aucss cmaxss  time event
 #>    <int> <fct>  <int>  <dbl> <dbl> <fct>     <dbl>  <dbl> <dbl> <dbl>
 #>  1     1 Female    27     70   200 Drug      1114.  187.     30     1
@@ -125,5 +126,6 @@ ertte_predict(mod_cox, ertte_data[1:5, ], time = c(30, 60, 90))
 #> 13     5 Male      27     91   200 Drug      1416.  143.     30     1
 #> 14     5 Male      27     91   200 Drug      1416.  143.     60     1
 #> 15     5 Male      27     91   200 Drug      1416.  143.     90     1
-#> # ℹ 3 more variables: fit_survival <dbl>, ci_lower <dbl>, ci_upper <dbl>
+#> # ℹ 4 more variables: admin_censor <dbl>, fit_survival <dbl>, ci_lower <dbl>,
+#> #   ci_upper <dbl>
 ```

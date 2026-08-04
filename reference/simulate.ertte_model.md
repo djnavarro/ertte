@@ -11,7 +11,14 @@ Details).
 
 ``` r
 # S3 method for class 'ertte_model'
-simulate(object, nsim = 100, seed = NULL, newdata = NULL, ...)
+simulate(
+  object,
+  nsim = 100,
+  seed = NULL,
+  newdata = NULL,
+  censor_time = NULL,
+  ...
+)
 ```
 
 ## Arguments
@@ -40,6 +47,15 @@ simulate(object, nsim = 100, seed = NULL, newdata = NULL, ...)
   [`Surv()`](https://rdrr.io/pkg/survival/man/Surv.html) call) – see
   Details.
 
+- censor_time:
+
+  Optional administrative/maximum-follow-up time(s) to cap simulated
+  event times at, applied uniformly to every row regardless of whether
+  that row observed an event. Either `NULL` (the default – see Details
+  for the fallback behaviour), a single number (recycled across all rows
+  of `newdata`), or a numeric vector of length `nrow(newdata)` giving
+  each row's own administrative follow-up time.
+
 - ...:
 
   Unused, present for compatibility with the
@@ -65,13 +81,31 @@ cumulative hazard
 held fixed regardless of the sampled coefficient draw – the same
 simplification
 [`ertte_fun.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_fun.md)
-makes for a user-supplied `param`). Simulated event times are capped at
-each row's *observed* exit time
-(`sim_time <- pmin(sim_time_raw, observed_time)`, with `sim_event` set
-accordingly) to reproduce the study's observed censoring/follow-up
-pattern – a documented simplification, since the true administrative
-censoring time for subjects who had an event isn't otherwise available
-(see `.ertte_simulate_draws()`).
+makes for a user-supplied `param`).
+
+The resulting *raw* (uncensored) simulated event time is then censored
+by `censor_time` if supplied
+(`sim_time <- pmin(sim_time_raw, censor_time)`, with `sim_event` set
+accordingly) – this is the accurate case, whenever a genuine per-row (or
+study-wide constant) administrative follow-up time is known, since it
+caps every row (event or censored) against its true censoring horizon.
+
+Absent a supplied `censor_time` (the default, `NULL`), row's own
+observed `event` status determines the fallback: rows that were
+*censored* in `newdata` have their observed exit time used as the cap
+(`sim_time <- pmin(sim_time_raw, observed_time)`), since that observed
+exit time genuinely is when censoring happened – an exact match, not an
+approximation. Rows that had an observed *event*, however, are left
+**uncensored** in the simulation: their observed exit time is when the
+event actually happened, not their administrative censoring horizon
+(which was necessarily later, and typically isn't recorded once an event
+has occurred) – capping simulated draws there would leak the observed
+event day into the simulation and bias a simulated-vs-observed
+comparison (e.g. a visual predictive check) toward looking more similar
+than the fitted model actually implies. This remains an approximation
+for event rows (no censoring is applied at all, absent better
+information), but avoids that specific bias – see
+`.ertte_apply_admin_censoring()`.
 
 ## Examples
 
@@ -79,40 +113,62 @@ censoring time for subjects who had an event isn't otherwise available
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 sim <- simulate(mod, nsim = 20, seed = 1234)
 sim
-#> # A tibble: 6,000 × 16
+#> # A tibble: 6,000 × 17
 #>    dat_id sim_id sim_time sim_event    id sex      age weight  dose treatment
 #>     <int>  <int>    <dbl>     <dbl> <int> <fct>  <int>  <dbl> <dbl> <fct>    
-#>  1      1      1     77.4         0     1 Female    27     70   200 Drug     
+#>  1      1      1    122.          1     1 Female    27     70   200 Drug     
 #>  2      2      1     26.8         0     2 Female    27     59   100 Drug     
 #>  3      3      1     31.2         1     3 Female    24     65     0 Placebo  
 #>  4      4      1     16.8         0     4 Female    29     63     0 Placebo  
 #>  5      5      1     17.2         1     5 Male      27     91   200 Drug     
-#>  6      6      1     81.3         0     6 Female    18     65     0 Placebo  
+#>  6      6      1    216.          1     6 Female    18     65     0 Placebo  
 #>  7      7      1     46.1         1     7 Male      18     66   200 Drug     
 #>  8      8      1     47.9         1     8 Female    20     66   200 Drug     
 #>  9      9      1     34.2         1     9 Male      25     62     0 Placebo  
 #> 10     10      1    178.          1    10 Male      25     81   100 Drug     
 #> # ℹ 5,990 more rows
-#> # ℹ 6 more variables: aucss <dbl>, cmaxss <dbl>, time <dbl>, event <dbl>,
-#> #   `coef_(Intercept)` <dbl>, coef_aucss <dbl>
+#> # ℹ 7 more variables: aucss <dbl>, cmaxss <dbl>, time <dbl>, event <dbl>,
+#> #   admin_censor <dbl>, `coef_(Intercept)` <dbl>, coef_aucss <dbl>
 
 mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 sim_cox <- simulate(mod_cox, nsim = 20, seed = 1234)
 sim_cox
-#> # A tibble: 6,000 × 15
+#> # A tibble: 6,000 × 16
 #>    dat_id sim_id sim_time sim_event    id sex      age weight  dose treatment
 #>     <int>  <int>    <dbl>     <dbl> <int> <fct>  <int>  <dbl> <dbl> <fct>    
 #>  1      1      1     46.4         1     1 Female    27     70   200 Drug     
 #>  2      2      1     26.8         0     2 Female    27     59   100 Drug     
 #>  3      3      1    135.          1     3 Female    24     65     0 Placebo  
 #>  4      4      1     16.8         0     4 Female    29     63     0 Placebo  
-#>  5      5      1     33.9         0     5 Male      27     91   200 Drug     
-#>  6      6      1     81.3         0     6 Female    18     65     0 Placebo  
+#>  5      5      1     56           1     5 Male      27     91   200 Drug     
+#>  6      6      1     88.4         1     6 Female    18     65     0 Placebo  
 #>  7      7      1     43.6         1     7 Male      18     66   200 Drug     
 #>  8      8      1     74.1         1     8 Female    20     66   200 Drug     
 #>  9      9      1    161.          1     9 Male      25     62     0 Placebo  
 #> 10     10      1     43.2         1    10 Male      25     81   100 Drug     
 #> # ℹ 5,990 more rows
-#> # ℹ 5 more variables: aucss <dbl>, cmaxss <dbl>, time <dbl>, event <dbl>,
-#> #   coef_aucss <dbl>
+#> # ℹ 6 more variables: aucss <dbl>, cmaxss <dbl>, time <dbl>, event <dbl>,
+#> #   admin_censor <dbl>, coef_aucss <dbl>
+
+# a genuine per-row administrative censoring time -- ertte_data's
+# `admin_censor` column records the fixed 180-day study cutoff used
+# to generate it, known regardless of whether a subject had an event
+sim_admin <- simulate(mod, nsim = 20, seed = 1234, censor_time = ertte_data$admin_censor)
+sim_admin
+#> # A tibble: 6,000 × 17
+#>    dat_id sim_id sim_time sim_event    id sex      age weight  dose treatment
+#>     <int>  <int>    <dbl>     <dbl> <int> <fct>  <int>  <dbl> <dbl> <fct>    
+#>  1      1      1    122.          1     1 Female    27     70   200 Drug     
+#>  2      2      1     61.9         1     2 Female    27     59   100 Drug     
+#>  3      3      1     31.2         1     3 Female    24     65     0 Placebo  
+#>  4      4      1    100.          1     4 Female    29     63     0 Placebo  
+#>  5      5      1     17.2         1     5 Male      27     91   200 Drug     
+#>  6      6      1    180           0     6 Female    18     65     0 Placebo  
+#>  7      7      1     46.1         1     7 Male      18     66   200 Drug     
+#>  8      8      1     47.9         1     8 Female    20     66   200 Drug     
+#>  9      9      1     34.2         1     9 Male      25     62     0 Placebo  
+#> 10     10      1    178.          1    10 Male      25     81   100 Drug     
+#> # ℹ 5,990 more rows
+#> # ℹ 7 more variables: aucss <dbl>, cmaxss <dbl>, time <dbl>, event <dbl>,
+#> #   admin_censor <dbl>, `coef_(Intercept)` <dbl>, coef_aucss <dbl>
 ```

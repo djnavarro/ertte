@@ -57,7 +57,14 @@ engine-specific simulation mechanics are dispatched internally by
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'ertte_model'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">object</span>, nsim <span class="op">=</span> <span class="fl">100</span>, seed <span class="op">=</span> <span class="cn">NULL</span>, newdata <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  nsim <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  censor_time <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -85,6 +92,16 @@ model was fitted to. Must contain the original response columns
 (<code>time</code>/<code>event</code>, as named in the model's <code><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv()</a></code> call) – see Details.</p></dd>
 
 
+<dt id="arg-censor-time">censor_time<a class="anchor" aria-label="anchor" href="#arg-censor-time"></a></dt>
+<dd><p>Optional administrative/maximum-follow-up time(s)
+to cap simulated event times at, applied uniformly to every row
+regardless of whether that row observed an event. Either <code>NULL</code> (the
+default – see Details for the fallback behaviour), a single number
+(recycled across all rows of <code>newdata</code>), or a numeric vector of
+length <code>nrow(newdata)</code> giving each row's own administrative follow-up
+time.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Unused, present for compatibility with the <code><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate()</a></code>
 generic</p></dd>
@@ -108,12 +125,28 @@ distribution (see <code><a href="ertte_aft.html">ertte_aft()</a></code> Details)
 inverting the fitted baseline cumulative hazard (<code><a href="https://rdrr.io/pkg/survival/man/basehaz.html" class="external-link">survival::basehaz()</a></code>,
 held fixed regardless of the sampled coefficient draw – the same
 simplification <code><a href="ertte_fun.html">ertte_fun.ertte_coxph()</a></code> makes for a user-supplied
-<code>param</code>). Simulated event times are capped at each row's <em>observed</em>
-exit time (<code>sim_time &lt;- pmin(sim_time_raw, observed_time)</code>, with
-<code>sim_event</code> set accordingly) to reproduce the study's observed
-censoring/follow-up pattern – a documented simplification, since the
-true administrative censoring time for subjects who had an event
-isn't otherwise available (see <code>.ertte_simulate_draws()</code>).</p>
+<code>param</code>).</p>
+<p>The resulting <em>raw</em> (uncensored) simulated event time is then censored
+by <code>censor_time</code> if supplied (<code>sim_time &lt;- pmin(sim_time_raw, censor_time)</code>, with <code>sim_event</code> set accordingly) – this is the
+accurate case, whenever a genuine per-row (or study-wide constant)
+administrative follow-up time is known, since it caps every row (event
+or censored) against its true censoring horizon.</p>
+<p>Absent a supplied <code>censor_time</code> (the default, <code>NULL</code>), row's own
+observed <code>event</code> status determines the fallback: rows that were
+<em>censored</em> in <code>newdata</code> have their observed exit time used as the cap
+(<code>sim_time &lt;- pmin(sim_time_raw, observed_time)</code>), since that
+observed exit time genuinely is when censoring happened – an exact
+match, not an approximation. Rows that had an observed <em>event</em>,
+however, are left <strong>uncensored</strong> in the simulation: their observed
+exit time is when the event actually happened, not their
+administrative censoring horizon (which was necessarily later, and
+typically isn't recorded once an event has occurred) – capping
+simulated draws there would leak the observed event day into the
+simulation and bias a simulated-vs-observed comparison (e.g. a visual
+predictive check) toward looking more similar than the fitted model
+actually implies. This remains an approximation for event rows (no
+censoring is applied at all, absent better information), but avoids
+that specific bias – see <code>.ertte_apply_admin_censoring()</code>.</p>
     </div>
 
     <div class="section level2">
@@ -121,42 +154,64 @@ isn't otherwise available (see <code>.ertte_simulate_draws()</code>).</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">mod</span>, nsim <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">1234</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sim</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6,000 × 16</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6,000 × 17</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    dat_id sim_id sim_time sim_event    id sex      age weight  dose treatment</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>      1      1     77.4         0     1 Female    27     70   200 Drug     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>      1      1    122.          1     1 Female    27     70   200 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>      2      1     26.8         0     2 Female    27     59   100 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>      3      1     31.2         1     3 Female    24     65     0 Placebo  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>      4      1     16.8         0     4 Female    29     63     0 Placebo  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>      5      1     17.2         1     5 Male      27     91   200 Drug     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>      6      1     81.3         0     6 Female    18     65     0 Placebo  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>      6      1    216.          1     6 Female    18     65     0 Placebo  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>      7      1     46.1         1     7 Male      18     66   200 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>      8      1     47.9         1     8 Female    20     66   200 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>      9      1     34.2         1     9 Male      25     62     0 Placebo  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>     10      1    178.          1    10 Male      25     81   100 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 5,990 more rows</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 6 more variables: aucss &lt;dbl&gt;, cmaxss &lt;dbl&gt;, time &lt;dbl&gt;, event &lt;dbl&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   `coef_(Intercept)` &lt;dbl&gt;, coef_aucss &lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 7 more variables: aucss &lt;dbl&gt;, cmaxss &lt;dbl&gt;, time &lt;dbl&gt;, event &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   admin_censor &lt;dbl&gt;, `coef_(Intercept)` &lt;dbl&gt;, coef_aucss &lt;dbl&gt;</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">mod_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_coxph.html">ertte_coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sim_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">mod_cox</span>, nsim <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">1234</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sim_cox</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6,000 × 15</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6,000 × 16</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    dat_id sim_id sim_time sim_event    id sex      age weight  dose treatment</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>      1      1     46.4         1     1 Female    27     70   200 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>      2      1     26.8         0     2 Female    27     59   100 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>      3      1    135.          1     3 Female    24     65     0 Placebo  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>      4      1     16.8         0     4 Female    29     63     0 Placebo  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>      5      1     33.9         0     5 Male      27     91   200 Drug     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>      6      1     81.3         0     6 Female    18     65     0 Placebo  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>      5      1     56           1     5 Male      27     91   200 Drug     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>      6      1     88.4         1     6 Female    18     65     0 Placebo  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>      7      1     43.6         1     7 Male      18     66   200 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>      8      1     74.1         1     8 Female    20     66   200 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>      9      1    161.          1     9 Male      25     62     0 Placebo  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>     10      1     43.2         1    10 Male      25     81   100 Drug     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 5,990 more rows</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 5 more variables: aucss &lt;dbl&gt;, cmaxss &lt;dbl&gt;, time &lt;dbl&gt;, event &lt;dbl&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   coef_aucss &lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 6 more variables: aucss &lt;dbl&gt;, cmaxss &lt;dbl&gt;, time &lt;dbl&gt;, event &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   admin_censor &lt;dbl&gt;, coef_aucss &lt;dbl&gt;</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># a genuine per-row administrative censoring time -- ertte_data's</span></span></span>
+<span class="r-in"><span><span class="co"># `admin_censor` column records the fixed 180-day study cutoff used</span></span></span>
+<span class="r-in"><span><span class="co"># to generate it, known regardless of whether a subject had an event</span></span></span>
+<span class="r-in"><span><span class="va">sim_admin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">mod</span>, nsim <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">1234</span>, censor_time <span class="op">=</span> <span class="va">ertte_data</span><span class="op">$</span><span class="va">admin_censor</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">sim_admin</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6,000 × 17</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    dat_id sim_id sim_time sim_event    id sex      age weight  dose treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>      1      1    122.          1     1 Female    27     70   200 Drug     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>      2      1     61.9         1     2 Female    27     59   100 Drug     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>      3      1     31.2         1     3 Female    24     65     0 Placebo  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>      4      1    100.          1     4 Female    29     63     0 Placebo  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>      5      1     17.2         1     5 Male      27     91   200 Drug     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>      6      1    180           0     6 Female    18     65     0 Placebo  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>      7      1     46.1         1     7 Male      18     66   200 Drug     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>      8      1     47.9         1     8 Female    20     66   200 Drug     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>      9      1     34.2         1     9 Male      25     62     0 Placebo  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>     10      1    178.          1    10 Male      25     81   100 Drug     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 5,990 more rows</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 7 more variables: aucss &lt;dbl&gt;, cmaxss &lt;dbl&gt;, time &lt;dbl&gt;, event &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   admin_censor &lt;dbl&gt;, `coef_(Intercept)` &lt;dbl&gt;, coef_aucss &lt;dbl&gt;</span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
