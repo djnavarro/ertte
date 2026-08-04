@@ -5,7 +5,10 @@ Survival-probability predictions for exposure-response TTE models
 ## Usage
 
 ``` r
-ertte_predict(object, newdata = NULL, time, conf_level = 0.95)
+ertte_predict(object, ...)
+
+# S3 method for class 'ertte_aft'
+ertte_predict(object, newdata = NULL, time, conf_level = 0.95, ...)
 ```
 
 ## Arguments
@@ -13,7 +16,13 @@ ertte_predict(object, newdata = NULL, time, conf_level = 0.95)
 - object:
 
   An ertte model, as returned by
-  [`ertte_model()`](https://ertte.djnavarro.net/reference/ertte_model.md)
+  [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) or
+  [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
+  (not yet implemented)
+
+- ...:
+
+  Passed to methods
 
 - newdata:
 
@@ -34,12 +43,15 @@ A tibble with one row per combination of `newdata` row and `time`
 
 ## Details
 
-Computes the linear predictor (and its standard error) via
-`predict(object, newdata, type = "linear", se.fit = TRUE)`, then
-converts to a survival probability
+`ertte_predict()` is a generic, with methods for each supported engine –
+see `ertte_predict.ertte_aft()`.
+
+The `ertte_aft` method computes the linear predictor (and its standard
+error) via `predict(object, newdata, type = "linear", se.fit = TRUE)`,
+then converts to a survival probability
 `S(t) = 1 - F((log(t) - mu) / scale)`, where `F` is the base
 distribution's CDF implied by `object`'s `dist` (see
-[`ertte_model()`](https://ertte.djnavarro.net/reference/ertte_model.md)
+[`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
 Details). Confidence intervals are Wald intervals on `mu` (a
 [`qnorm()`](https://rdrr.io/r/stats/Normal.html) z-score times the
 standard error), back-transformed the same way – parameter uncertainty
@@ -52,7 +64,7 @@ reversed or `NaN` interval.
 ## Examples
 
 ``` r
-mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
 #> # A tibble: 15 × 13
 #>       id sex      age weight  dose treatment aucss cmaxss  time event

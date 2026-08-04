@@ -44,7 +44,10 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">object</span>, newdata <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">time</span>, conf_level <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'ertte_aft'</span></span>
+<span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">object</span>, newdata <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">time</span>, conf_level <span class="op">=</span> <span class="fl">0.95</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -52,7 +55,12 @@
 
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p>An ertte model, as returned by <code><a href="ertte_model.html">ertte_model()</a></code></p></dd>
+<dd><p>An ertte model, as returned by <code><a href="ertte_aft.html">ertte_aft()</a></code> or
+<code><a href="ertte_coxph.html">ertte_coxph()</a></code> (not yet implemented)</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Passed to methods</p></dd>
 
 
 <dt id="arg-newdata">newdata<a class="anchor" aria-label="anchor" href="#arg-newdata"></a></dt>
@@ -76,22 +84,23 @@ probabilities</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Computes the linear predictor (and its standard error) via
-<code>predict(object, newdata, type = "linear", se.fit = TRUE)</code>, then
-converts to a survival probability <code>S(t) = 1 - F((log(t) - mu) / scale)</code>, where <code>F</code> is the base distribution's CDF implied by
-<code>object</code>'s <code>dist</code> (see <code><a href="ertte_model.html">ertte_model()</a></code> Details). Confidence intervals
-are Wald intervals on <code>mu</code> (a <code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm()</a></code> z-score times the standard
-error), back-transformed the same way – parameter uncertainty in
-<code>scale</code> is not propagated, matching the level of approximation used
-throughout this package (e.g. <code>erglm_predict()</code>'s equivalent in the
-companion <code>erglm</code> package). <code>conf_level</code> must be a single number
-between 0 and 1 (inclusive); other values error rather than silently
-producing a reversed or <code>NaN</code> interval.</p>
+    <p><code>ertte_predict()</code> is a generic, with methods for each
+supported engine – see <code>ertte_predict.ertte_aft()</code>.</p>
+<p>The <code>ertte_aft</code> method computes the linear predictor (and
+its standard error) via <code>predict(object, newdata, type = "linear", se.fit = TRUE)</code>, then converts to a survival probability <code>S(t) = 1 - F((log(t) - mu) / scale)</code>, where <code>F</code> is the base distribution's CDF
+implied by <code>object</code>'s <code>dist</code> (see <code><a href="ertte_aft.html">ertte_aft()</a></code> Details). Confidence
+intervals are Wald intervals on <code>mu</code> (a <code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm()</a></code> z-score times the
+standard error), back-transformed the same way – parameter
+uncertainty in <code>scale</code> is not propagated, matching the level of
+approximation used throughout this package (e.g. <code>erglm_predict()</code>'s
+equivalent in the companion <code>erglm</code> package). <code>conf_level</code> must be a
+single number between 0 and 1 (inclusive); other values error rather
+than silently producing a reversed or <code>NaN</code> interval.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_model.html">ertte_model</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">mod</span>, <span class="va">ertte_data</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span>, time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">60</span>, <span class="fl">90</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 15 × 13</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       id sex      age weight  dose treatment aucss cmaxss  time event</span>

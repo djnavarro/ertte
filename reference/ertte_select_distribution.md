@@ -18,7 +18,7 @@ ertte_select_distribution(
 - formula:
 
   Model formula, as for
-  [`ertte_model()`](https://ertte.djnavarro.net/reference/ertte_model.md)
+  [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
 
 - data:
 
@@ -33,8 +33,8 @@ ertte_select_distribution(
 
 A list with two elements: `comparison` (a tibble with one row per
 candidate: `dist`, `logLik`, `aic`, `bic`, `converged`, sorted by AIC)
-and `model` (the best-fitting `ertte_model`, i.e. the one with lowest
-AIC).
+and `model` (the best-fitting `ertte_aft` model, i.e. the one with
+lowest AIC).
 
 ## Details
 
@@ -44,6 +44,7 @@ in, i.e. the first-listed of the tied candidates is returned as `model`.
 ## Examples
 
 ``` r
+# (uses ertte_aft() internally for each candidate distribution)
 cmp <- ertte_select_distribution(survival::Surv(time, event) ~ aucss, ertte_data)
 cmp$comparison
 #> # A tibble: 4 × 5

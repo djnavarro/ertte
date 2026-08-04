@@ -15,7 +15,7 @@ simulate(object, nsim = 100, seed = NULL, newdata = NULL, ...)
 - object:
 
   An ertte model object, as returned by
-  [`ertte_model()`](https://ertte.djnavarro.net/reference/ertte_model.md)
+  [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
 
 - nsim:
 
@@ -50,7 +50,7 @@ Coefficients are sampled from the asymptotic sampling distribution
 implied by `vcov(object)`, and event times are drawn by inverse-CDF
 sampling from the fitted AFT distribution at each sampled coefficient
 vector (see
-[`ertte_model()`](https://ertte.djnavarro.net/reference/ertte_model.md)
+[`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
 Details for the log-location-scale representation used). Simulated event
 times are capped at each row's *observed* exit time
 (`sim_time <- pmin(sim_time_raw, observed_time)`, with `sim_event` set
@@ -62,7 +62,7 @@ censoring time for subjects who had an event isn't otherwise available
 ## Examples
 
 ``` r
-mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 sim <- simulate(mod, nsim = 20, seed = 1234)
 sim
 #> # A tibble: 6,000 × 16

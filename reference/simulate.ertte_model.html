@@ -53,7 +53,7 @@
 
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p>An ertte model object, as returned by <code><a href="ertte_model.html">ertte_model()</a></code></p></dd>
+<dd><p>An ertte model object, as returned by <code><a href="ertte_aft.html">ertte_aft()</a></code></p></dd>
 
 
 <dt id="arg-nsim">nsim<a class="anchor" aria-label="anchor" href="#arg-nsim"></a></dt>
@@ -89,7 +89,7 @@ censored).</p>
     <p>Coefficients are sampled from the asymptotic sampling
 distribution implied by <code>vcov(object)</code>, and event times are drawn by
 inverse-CDF sampling from the fitted AFT distribution at each sampled
-coefficient vector (see <code><a href="ertte_model.html">ertte_model()</a></code> Details for the
+coefficient vector (see <code><a href="ertte_aft.html">ertte_aft()</a></code> Details for the
 log-location-scale representation used). Simulated event times are
 capped at each row's <em>observed</em> exit time (<code>sim_time &lt;- pmin(sim_time_raw, observed_time)</code>, with <code>sim_event</code> set accordingly)
 to reproduce the study's observed censoring/follow-up pattern – a
@@ -100,7 +100,7 @@ time for subjects who had an event isn't otherwise available (see
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_model.html">ertte_model</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">mod</span>, nsim <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">1234</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sim</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6,000 × 16</span></span>

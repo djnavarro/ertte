@@ -16,7 +16,8 @@ ertte_remove_term(mod, term, quiet = FALSE)
 - mod:
 
   An ertte model object, as returned by
-  [`ertte_model()`](https://ertte.djnavarro.net/reference/ertte_model.md)
+  [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) or
+  [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
 
 - term:
 
@@ -46,10 +47,15 @@ covariates, factor levels for categorical ones) – the richer "continuous
 covariate as power function" parameterisation described in the package's
 design issue is not yet implemented (see AGENTS.md).
 
+`mod` is refit via an internal `.ertte_refit()` helper that dispatches
+on `mod`'s engine (`ertte_aft`/`ertte_coxph`) and calls the matching
+constructor – so these functions (and the SCM family built on them) work
+for both `ertte_aft` and `ertte_coxph` models.
+
 ## Examples
 
 ``` r
-mod <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 mod2 <- ertte_add_term(mod, ~ sex)
 mod3 <- ertte_remove_term(mod2, ~ sex)
 ```

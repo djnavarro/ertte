@@ -44,7 +44,10 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ertte_fun</span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ertte_fun</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'ertte_aft'</span></span>
+<span><span class="fu">ertte_fun</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -52,7 +55,12 @@
 
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p>An ertte model, as returned by <code><a href="ertte_model.html">ertte_model()</a></code></p></dd>
+<dd><p>An ertte model, as returned by <code><a href="ertte_aft.html">ertte_aft()</a></code> or
+<code><a href="ertte_coxph.html">ertte_coxph()</a></code> (not yet implemented)</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Passed to methods</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -66,23 +74,26 @@ survival function; recycled against <code>data</code>.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Takes a fitted ertte model as input and returns a function
-that evaluates the survival function <code>S(t)</code> at user-specified
-parameters, data, and times (e.g. for VPCs or other counterfactual
-simulation scenarios). Named <code>ertte_fun()</code> for consistency with the
-companion <code>erglm</code>/<code>emaxnls</code> packages' <code>erglm_fun()</code>/<code>emax_fun()</code>,
-which serve the same purpose for their respective model classes. The
-returned function checks that <code>param</code> is numeric and has one entry
-per column of the model matrix implied by <code>data</code>, erroring
-informatively rather than failing with a cryptic "non-conformable
-arguments" error from matrix multiplication. <code>scale</code> is always taken
-from the fitted <code>object</code>, not from <code>param</code> (the coefficient vector
-from <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> never includes it).</p>
+    <p><code>ertte_fun()</code> is a generic, with methods for each supported
+engine – see <code>ertte_fun.ertte_aft()</code>. Named <code>ertte_fun()</code> for
+consistency with the companion <code>erglm</code>/<code>emaxnls</code> packages'
+<code>erglm_fun()</code>/<code>emax_fun()</code>, which serve the same purpose for their
+respective model classes.</p>
+<p>The <code>ertte_aft</code> method takes a fitted AFT model as input and
+returns a function that evaluates the survival function <code>S(t)</code> at
+user-specified parameters, data, and times (e.g. for VPCs or other
+counterfactual simulation scenarios). The returned function checks
+that <code>param</code> is numeric and has one entry per column of the model
+matrix implied by <code>data</code>, erroring informatively rather than failing
+with a cryptic "non-conformable arguments" error from matrix
+multiplication. <code>scale</code> is always taken from the fitted <code>object</code>, not
+from <code>param</code> (the coefficient vector from <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> never includes
+it).</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_model.html">ertte_model</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">mod_fun</span> <span class="op">&lt;-</span> <span class="fu">ertte_fun</span><span class="op">(</span><span class="va">mod</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># no arguments: reproduces the fitted model's own survival predictions</span></span></span>

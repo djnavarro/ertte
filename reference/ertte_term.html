@@ -57,7 +57,8 @@ returning a new fitted model object.</p>
 
 
 <dl><dt id="arg-mod">mod<a class="anchor" aria-label="anchor" href="#arg-mod"></a></dt>
-<dd><p>An ertte model object, as returned by <code><a href="ertte_model.html">ertte_model()</a></code></p></dd>
+<dd><p>An ertte model object, as returned by <code><a href="ertte_aft.html">ertte_aft()</a></code> or
+<code><a href="ertte_coxph.html">ertte_coxph()</a></code></p></dd>
 
 
 <dt id="arg-term">term<a class="anchor" aria-label="anchor" href="#arg-term"></a></dt>
@@ -86,11 +87,15 @@ additive terms on the AFT location scale (linear for continuous
 covariates, factor levels for categorical ones) – the richer
 "continuous covariate as power function" parameterisation described
 in the package's design issue is not yet implemented (see AGENTS.md).</p>
+<p><code>mod</code> is refit via an internal <code>.ertte_refit()</code> helper that dispatches
+on <code>mod</code>'s engine (<code>ertte_aft</code>/<code>ertte_coxph</code>) and calls the matching
+constructor – so these functions (and the SCM family built on them)
+work for both <code>ertte_aft</code> and <code>ertte_coxph</code> models.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_model.html">ertte_model</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">mod2</span> <span class="op">&lt;-</span> <span class="fu">ertte_add_term</span><span class="op">(</span><span class="va">mod</span>, <span class="op">~</span> <span class="va">sex</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">mod3</span> <span class="op">&lt;-</span> <span class="fu">ertte_remove_term</span><span class="op">(</span><span class="va">mod2</span>, <span class="op">~</span> <span class="va">sex</span><span class="op">)</span></span></span>
 </code></pre></div>

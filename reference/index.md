@@ -2,12 +2,16 @@
 
 ## Build
 
-Fit exposure-response time-to-event models based on survreg()
+Fit exposure-response time-to-event models based on survreg()/coxph()
 
-- [`ertte_model()`](https://ertte.djnavarro.net/reference/ertte_model.md)
+- [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) :
+
+  Fit an exposure-response time-to-event AFT model based on `survreg()`
+
+- [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
   :
 
-  Fit an exposure-response time-to-event model based on `survreg()`
+  Fit an exposure-response time-to-event Cox PH model based on `coxph()`
 
 - [`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
   : Survival-probability predictions for exposure-response TTE models

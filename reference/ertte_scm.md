@@ -68,7 +68,7 @@ formula and name exactly one covariate term (e.g. `"sex"`, not
 ## Examples
 
 ``` r
-mod0 <- ertte_model(survival::Surv(time, event) ~ aucss, ertte_data)
+mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 mod1 <- ertte_scm_forward(mod0, candidates = c("sex", "dose"))
 ertte_scm_history(mod1)
 #> # A tibble: 4 × 11
@@ -81,7 +81,7 @@ ertte_scm_history(mod1)
 #> # ℹ 4 more variables: term_p_value <dbl>, model_aic <dbl>, model_bic <dbl>,
 #> #   model_updated <int>
 
-mod2 <- ertte_model(survival::Surv(time, event) ~ aucss + sex + dose, ertte_data)
+mod2 <- ertte_aft(survival::Surv(time, event) ~ aucss + sex + dose, ertte_data)
 mod3 <- ertte_scm_backward(mod2, candidates = c("sex", "dose"))
 ertte_scm_history(mod3)
 #> # A tibble: 4 × 11
