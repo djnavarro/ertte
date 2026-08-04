@@ -44,7 +44,7 @@ shared \code{simulate.ertte_model()} method -- no separate
 (via \code{.ertte_simulate_draws()}) on engine.
 }
 \examples{
-mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 mod
 
 }

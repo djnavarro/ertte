@@ -45,7 +45,7 @@ constructor -- so these functions (and the SCM family built on them)
 work for both \code{ertte_aft} and \code{ertte_coxph} models.
 }
 \examples{
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod2 <- ertte_add_term(mod, ~ sex)
 mod3 <- ertte_remove_term(mod2, ~ sex)
 }

@@ -35,7 +35,7 @@ pak::pak("djnavarro/ertte")
 ``` r
 library(ertte)
 
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod
 #> Call:
 #> survival::survreg(formula = formula, data = data, dist = dist)

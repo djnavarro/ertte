@@ -63,10 +63,10 @@ predictor -- the two methods' intervals are not directly comparable
 as a result, which is expected given the different model structures.
 }
 \examples{
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
 
-mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 ertte_predict(mod_cox, ertte_data[1:5, ], time = c(30, 60, 90))
 
 }

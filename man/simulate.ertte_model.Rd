@@ -54,11 +54,11 @@ true administrative censoring time for subjects who had an event
 isn't otherwise available (see \code{.ertte_simulate_draws()}).
 }
 \examples{
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 sim <- simulate(mod, nsim = 20, seed = 1234)
 sim
 
-mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 sim_cox <- simulate(mod_cox, nsim = 20, seed = 1234)
 sim_cox
 

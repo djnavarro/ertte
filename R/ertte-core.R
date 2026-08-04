@@ -40,11 +40,11 @@
 #'
 #' @export
 #' @examples
-#' mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 #' mod
 #'
 #' # other AFT distributions are also supported
-#' mod_ln <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data, dist = "lognormal")
+#' mod_ln <- ertte_aft(Surv(time, event) ~ aucss, ertte_data, dist = "lognormal")
 #' mod_ln
 #'
 ertte_aft <- function(formula, data, dist = "weibull", ...) {
@@ -96,7 +96,7 @@ ertte_predict <- function(object, ...) {
 #' @rdname ertte_predict
 #' @export
 #' @examples
-#' mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 #' ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
 #'
 ertte_predict.ertte_aft <- function(object, newdata = NULL, time, conf_level = .95, ...) {
@@ -169,7 +169,7 @@ ertte_fun <- function(object, ...) {
 #' @rdname ertte_fun
 #' @export
 #' @examples
-#' mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 #' mod_fun <- ertte_fun(mod)
 #'
 #' # no arguments: reproduces the fitted model's own survival predictions

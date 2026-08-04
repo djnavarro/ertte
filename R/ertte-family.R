@@ -20,7 +20,7 @@
 #' @export
 #' @examples
 #' # (uses ertte_aft() internally for each candidate distribution)
-#' cmp <- ertte_select_distribution(survival::Surv(time, event) ~ aucss, ertte_data)
+#' cmp <- ertte_select_distribution(Surv(time, event) ~ aucss, ertte_data)
 #' cmp$comparison
 #' cmp$model
 #'

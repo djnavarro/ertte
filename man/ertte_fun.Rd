@@ -67,7 +67,7 @@ models is likewise held fixed). Since Cox models have no intercept,
 unlike \code{ertte_fun.ertte_aft()}.
 }
 \examples{
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod_fun <- ertte_fun(mod)
 
 # no arguments: reproduces the fitted model's own survival predictions
@@ -78,7 +78,7 @@ par2 <- coef(mod)
 par2["(Intercept)"] <- par2["(Intercept)"] + 1
 s2 <- mod_fun(param = par2, time = 60)
 
-mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 mod_cox_fun <- ertte_fun(mod_cox)
 
 # no arguments: reproduces the fitted model's own survival predictions

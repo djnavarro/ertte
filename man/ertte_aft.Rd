@@ -52,11 +52,11 @@ standard normal for \code{"lognormal"}, standard logistic for
 \code{"loglogistic"}) -- see \code{\link[=ertte_predict]{ertte_predict()}} and \code{.ertte_dist_info()}.
 }
 \examples{
-mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod
 
 # other AFT distributions are also supported
-mod_ln <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data, dist = "lognormal")
+mod_ln <- ertte_aft(Surv(time, event) ~ aucss, ertte_data, dist = "lognormal")
 mod_ln
 
 }

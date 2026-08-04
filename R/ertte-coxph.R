@@ -32,7 +32,7 @@
 #'
 #' @export
 #' @examples
-#' mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 #' mod
 #'
 ertte_coxph <- function(formula, data, ...) {
@@ -73,7 +73,7 @@ ertte_coxph <- function(formula, data, ...) {
 #' @rdname ertte_predict
 #' @export
 #' @examples
-#' mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 #' ertte_predict(mod_cox, ertte_data[1:5, ], time = c(30, 60, 90))
 #'
 ertte_predict.ertte_coxph <- function(object, newdata = NULL, time, conf_level = .95, ...) {
@@ -139,7 +139,7 @@ ertte_predict.ertte_coxph <- function(object, newdata = NULL, time, conf_level =
 #' @rdname ertte_fun
 #' @export
 #' @examples
-#' mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 #' mod_cox_fun <- ertte_fun(mod_cox)
 #'
 #' # no arguments: reproduces the fitted model's own survival predictions

@@ -37,11 +37,11 @@
 #'
 #' @name ertte_scm
 #' @examples
-#' mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod0 <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 #' mod1 <- ertte_scm_forward(mod0, candidates = c("sex", "dose"))
 #' ertte_scm_history(mod1)
 #'
-#' mod2 <- ertte_aft(survival::Surv(time, event) ~ aucss + sex + dose, ertte_data)
+#' mod2 <- ertte_aft(Surv(time, event) ~ aucss + sex + dose, ertte_data)
 #' mod3 <- ertte_scm_backward(mod2, candidates = c("sex", "dose"))
 #' ertte_scm_history(mod3)
 NULL
@@ -311,7 +311,7 @@ ertte_scm_history <- function(mod) {
 #'
 #' @name ertte_term
 #' @examples
-#' mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+#' mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 #' mod2 <- ertte_add_term(mod, ~ sex)
 #' mod3 <- ertte_remove_term(mod2, ~ sex)
 NULL
