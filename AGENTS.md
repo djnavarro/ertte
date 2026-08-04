@@ -20,8 +20,8 @@ work" below):
 - Phase 3: a new `er_tte()` KM/survival-curve plotting grammar in the
   separate `erplots` repo.
 
-`ertte_model()` wraps `survival::survreg()` -- parametric accelerated
-failure time (AFT) model fitting (`ertte_model()`), survival-probability
+`ertte_aft()` wraps `survival::survreg()` -- parametric accelerated
+failure time (AFT) model fitting (`ertte_aft()`), survival-probability
 prediction with confidence intervals (`ertte_predict()`), AIC-based
 distribution selection (`ertte_select_distribution()`), stepwise
 covariate modelling (`ertte_scm_forward()`/`ertte_scm_backward()`/
@@ -29,13 +29,16 @@ covariate modelling (`ertte_scm_forward()`/`ertte_scm_backward()`/
 `ertte_add_term()`/`ertte_remove_term()`), and simulation
 (`ertte_fun()`, `simulate.ertte_model()`). Exponential, Weibull,
 log-normal, and log-logistic distributions are tested and officially
-supported.
+supported. `ertte_coxph()` wraps `survival::coxph()` as a
+semi-parametric sibling engine -- the constructor is scaffolded, but
+its prediction/simulation story isn't implemented yet (see "Planned
+work" and "API naming: AFT vs Cox PH" below).
 
 The package's design is deliberately harmonised with the companion
 `erglm` package -- closer to `erglm` than to `emaxnls`, since a fitted
 `survreg` object (like a fitted `glm` object) already carries a rich set
 of base S3 methods to inherit, unlike `emaxnls`'s bespoke NLS-based
-class. `ertte_model()`, `ertte_predict()`, `ertte_fun()`,
+class. `ertte_aft()`, `ertte_predict()`, `ertte_fun()`,
 `ertte_add_term()`/`ertte_remove_term()`, and the SCM
 forward/backward/history functions all mirror their `erglm_*`
 counterparts closely (see `R/erglm-core.R`/`R/erglm-scm.R` in the
@@ -43,9 +46,9 @@ companion repo). Genuine differences remain where the model classes
 differ -- e.g. `survreg` significance testing is always a single
 likelihood-ratio Chi-squared test (no family-dependent `test = "auto"`
 argument, since `survreg`'s LRT doesn't vary by distribution the way
-`glm()`'s does across families), and `survreg` doesn't retain its
-fitting `data` on the returned object the way `glm()` does, so
-`ertte_model()` stores it explicitly (`mod$data <- data`).
+`glm()`'s does across families), and `survreg`/`coxph` don't retain
+their fitting `data` on the returned object the way `glm()` does, so
+`ertte_aft()`/`ertte_coxph()` store it explicitly (`mod$data <- data`).
 
 It deliberately contains **no plotting code**. For a model-agnostic
 mini-language to visualise exposure-response models (including those
@@ -58,16 +61,35 @@ plotting packages in package code.
 
 ## Planned work (deferred from the design issue, not yet done)
 
-- **`coxph()` semi-parametric engine.** The design issue mentions this
-  as optional ("Fit wrappers over base `survival` (`survreg` for
-  parametric AFT; optionally `coxph` for a semi-parametric option)").
-  Not implemented yet, but the naming/API split is decided -- see "API
-  naming: AFT vs Cox PH" below. A `coxph`-based model needs its own
-  prediction/simulation story (no AFT location-scale structure to lean
-  on): `ertte_predict.ertte_coxph()` will need a baseline hazard
-  estimate (e.g. via `survival::survfit()`) rather than the closed-form
-  `S(t)` used for AFT, and simulation will need an analogous
-  baseline-hazard-based counterpart to `.ertte_simulate_draws()`.
+- **`coxph()` semi-parametric engine -- prediction/simulation.** The
+  design issue mentions this as optional ("Fit wrappers over base
+  `survival` (`survreg` for parametric AFT; optionally `coxph` for a
+  semi-parametric option)"). The naming/API split is decided (see "API
+  naming: AFT vs Cox PH" below), and `ertte_coxph()` (in
+  `R/ertte-coxph.R`) is now scaffolded: it fits via `survival::coxph()`
+  and returns an object with class `c("ertte_coxph", "ertte_model",
+  "coxph")`, mirroring `ertte_aft()`. Still missing: `ertte_coxph`
+  methods for `ertte_predict()`/`ertte_fun()`/`simulate()`. Unlike the
+  closed-form `S(t)` available for AFT models, these need a baseline
+  hazard estimate (e.g. via `survival::survfit()`), and simulation will
+  need an analogous baseline-hazard-based counterpart to
+  `.ertte_simulate_draws()`.
+- **`ertte_add_term()`/`ertte_remove_term()` are AFT-hardcoded, despite
+  what the "API naming" section below originally assumed.** They
+  refit by calling `ertte_aft(formula = fml, data = dat, dist =
+  mod$ertte$type)` directly (not `stats::update()`), because the
+  `survreg()`/`coxph()` call captured on the fitted object's `$call`
+  refers to `ertte_aft()`'s/`ertte_coxph()`'s local argument bindings
+  (`formula`/`data`/`dist`), which don't exist in the caller's frame --
+  so a naive `update(mod, formula = fml)` would fail with "object not
+  found" errors. This means `ertte_scm_forward()`/`ertte_scm_backward()`
+  (built on top of `ertte_add_term()`/`ertte_remove_term()`) currently
+  only work for `ertte_aft` models, **not** `ertte_coxph` ones, even
+  though `anova()`/`stats::terms()` themselves are genuinely polymorphic.
+  Fixing this needs `ertte_add_term()`/`ertte_remove_term()` to dispatch
+  on engine (e.g. become generics themselves, or branch on
+  `inherits(mod, "ertte_aft")` vs `"ertte_coxph"`) and call the matching
+  constructor -- not yet done.
 - **Power-function covariate parameterisation.** The design issue calls
   for "continuous covariates as power functions, categorical covariates
   as factors". `ertte_add_term()`/`ertte_remove_term()`/SCM currently
@@ -99,66 +121,62 @@ plotting packages in package code.
   administrative censoring/follow-up time where available, separately
   from the event indicator.
 
-## API naming: AFT vs Cox PH (decided, not yet implemented)
+## API naming: AFT vs Cox PH
 
-The constructor currently called `ertte_model()` will be renamed to
-`ertte_aft()`, and a new `ertte_coxph()` constructor will wrap
-`survival::coxph()`. This is a deliberate rename, not an addition --
-Cox PH is structurally different enough (semi-parametric, no
-location-scale structure, no `dist` argument) that folding it into
-`ertte_model()` via an extra `dist`/`engine` value would be misleading.
-Since the package is early in development, there's no need to keep
-`ertte_model()` around as a back-compat alias.
+`ertte_aft()` (wraps `survreg()`) and `ertte_coxph()` (wraps `coxph()`)
+are separate, engine-specific constructors -- not one constructor with
+a `dist`/`engine` value -- since Cox PH is structurally different
+enough (semi-parametric, no location-scale structure, no `dist`
+argument) that folding it in would be misleading. There's no
+back-compat alias for the old `ertte_model()` name; the package was
+early enough in development that a clean rename was preferred.
 
-Decided naming/dispatch scheme:
+Naming/dispatch scheme, now implemented for the constructors and
+`ertte_predict()`/`ertte_fun()`, with `ertte_coxph`-specific
+prediction/simulation still pending (see "Planned work" above):
 
 - **Constructors are engine-specific by name**: `ertte_aft(formula,
-  data, dist = "weibull", ...)` (wraps `survreg()`) and
-  `ertte_coxph(formula, data, ...)` (wraps `coxph()`). `dist` stays
-  AFT-only; there's no Cox PH equivalent (nothing to select).
+  data, dist = "weibull", ...)` and `ertte_coxph(formula, data, ...)`.
+  `dist` stays AFT-only; there's no Cox PH equivalent (nothing to
+  select).
 - **Shared superclass, engine-specific subclass**, for dispatch: AFT
-  fits get class `c("ertte_aft", "ertte_model", "survreg")`, Cox PH
-  fits get `c("ertte_coxph", "ertte_model", "coxph")`. `.as_ertte()`
-  needs to split into engine-specific constructors (e.g.
-  `.as_ertte_aft()`/`.as_ertte_coxph()`) that prepend the right
-  subclass ahead of `"ertte_model"`.
+  fits get class `c("ertte_aft", "ertte_model", "survreg")` (via
+  `.as_ertte_aft()`), Cox PH fits get `c("ertte_coxph", "ertte_model",
+  "coxph")` (via `.as_ertte_coxph()`), both in `R/utils-helpers.R`.
 - **Downstream generics keep single shared names**, with S3 methods
   per subclass where behaviour genuinely differs:
-  - `ertte_predict()` -- needs to become a generic (`UseMethod()`), with
-    `ertte_predict.ertte_aft()` (closed-form `S(t)`, current logic) and
-    `ertte_predict.ertte_coxph()` (baseline-hazard-based, not yet
-    implemented).
-  - `ertte_fun()` -- same: becomes a generic, with `ertte_fun.ertte_aft()`
-    and `ertte_fun.ertte_coxph()` methods.
-  - `simulate()` -- gets `simulate.ertte_aft()` and
-    `simulate.ertte_coxph()` methods (currently only
-    `simulate.ertte_model()` exists, for AFT).
+  - `ertte_predict()` -- a generic (`UseMethod()`); only
+    `ertte_predict.ertte_aft()` exists so far (closed-form `S(t)`).
+    `ertte_predict.ertte_coxph()` (baseline-hazard-based) isn't
+    implemented -- calling `ertte_predict()` on an `ertte_coxph` object
+    currently errors with "no applicable method".
+  - `ertte_fun()` -- same: a generic with only `ertte_fun.ertte_aft()`
+    implemented so far.
+  - `simulate()` -- only `simulate.ertte_model()` exists (used for AFT
+    fits via the shared superclass); an `ertte_coxph`-specific method
+    isn't implemented.
   - `ertte_scm_forward()`/`ertte_scm_backward()`/`ertte_scm_history()`/
-    `ertte_add_term()`/`ertte_remove_term()` -- **no changes needed**.
-    They already only touch models through `update()`/`anova()`/
-    `stats::terms()`, which are polymorphic over `survreg`/`coxph`
-    already, so they work across both engines unmodified once
-    `.as_ertte()` is split.
+    `ertte_add_term()`/`ertte_remove_term()` -- **currently AFT-only in
+    practice**, despite the original intent that these work unmodified
+    across engines. See the "Planned work" bullet above on
+    `ertte_add_term()`/`ertte_remove_term()` for why.
   - `ertte_select_distribution()` -- stays AFT-only, no Cox PH
     equivalent.
 
-Implementation is expected to happen in two passes: (1) the
-`ertte_aft()` rename plus class-hierarchy/generic scaffolding
-(`ertte_predict()`/`ertte_fun()` becoming generics, dispatch wired up),
-then (2) the actual `ertte_coxph()` constructor and its
-prediction/simulation methods as separate follow-up work, since the
-baseline hazard machinery is genuine modelling work, not just renaming.
-
 ## Structure
 
-- `R/ertte-core.R` -- `ertte_model()`, `ertte_predict()`, the
-  `ertte_fun()` closure factory, and the shared
-  `.ertte_simulate_draws()` helper (used directly by
-  `er_simulate.ertte_model()` and by `simulate.ertte_model()` via
-  `.ertte_resample()`). All four supported distributions are
-  log-location-scale AFT models (`log(T) = mu + scale * W`); see
-  `.ertte_dist_info()` in `R/utils-helpers.R` for the base
-  distribution's CDF/quantile function this relies on.
+- `R/ertte-core.R` -- `ertte_aft()`, the `ertte_predict()`/`ertte_fun()`
+  generics plus their `ertte_predict.ertte_aft()`/`ertte_fun.ertte_aft()`
+  methods, and the shared `.ertte_simulate_draws()` helper (used
+  directly by `er_simulate.ertte_model()` and by
+  `simulate.ertte_model()` via `.ertte_resample()`; AFT-specific for
+  now). All four supported distributions are log-location-scale AFT
+  models (`log(T) = mu + scale * W`); see `.ertte_dist_info()` in
+  `R/utils-helpers.R` for the base distribution's CDF/quantile function
+  this relies on.
+- `R/ertte-coxph.R` -- `ertte_coxph()`, the semi-parametric sibling
+  constructor (wraps `survival::coxph()`). No `ertte_predict()`/
+  `ertte_fun()`/`simulate()` methods yet -- see "Planned work" above.
 - `R/ertte-family.R` -- `ertte_select_distribution()`: fits each
   candidate AFT distribution and returns the AIC-ranked comparison plus
   the best-fitting model.
@@ -184,9 +202,10 @@ baseline hazard machinery is genuine modelling work, not just renaming.
   equivalent -- the standard pattern for optional cross-package S3
   methods).
 - `R/utils-helpers.R`, `R/utils-global.R` -- small internal helpers,
-  `globalVariables()` declarations for NSE, `.as_ertte()`, the
+  `globalVariables()` declarations for NSE, the engine-specific class
+  constructors `.as_ertte_aft()`/`.as_ertte_coxph()`, the
   `.ertte_check_*()` input validators, `.ertte_dist_info()` (the
-  log-location-scale base-distribution table), and
+  log-location-scale base-distribution table, AFT-only), and
   `.ertte_response_vars()` (extracts `time`/`event` variable names from
   a model's `Surv()` formula).
 
@@ -245,9 +264,11 @@ baseline hazard machinery is genuine modelling work, not just renaming.
 - Public functions are prefixed `ertte_`; internal helpers are prefixed
   with `.ertte_` (or, for a couple of package-wide utilities like
   `.pick_seed()`, no prefix at all).
-- Model objects are plain `survreg` objects with an extra `ertte_model`
-  class (same name as the constructor function `ertte_model()`,
-  matching the base-R idiom of `lm()`/class `"lm"`) and an internal
-  `$ertte` list for package-specific metadata (fitted `type`/`dist`, SCM
-  history) -- see `.as_ertte()`.
+- Model objects are plain `survreg`/`coxph` objects with two extra
+  classes prepended: an engine-specific subclass (`"ertte_aft"` or
+  `"ertte_coxph"`, matching the constructor name, cf. the base-R idiom
+  of `lm()`/class `"lm"`) ahead of the shared `"ertte_model"`
+  superclass -- see `.as_ertte_aft()`/`.as_ertte_coxph()` in
+  `R/utils-helpers.R`. Both carry an internal `$ertte` list for
+  package-specific metadata (fitted `type`/`dist`, SCM history).
 - Don't add plotting code here -- that belongs in erplots.

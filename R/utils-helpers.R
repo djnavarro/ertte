@@ -105,6 +105,18 @@
   mod
 }
 
+.as_ertte_coxph <- function(mod) {
+  # "ertte_coxph" (engine-specific subclass) ahead of "ertte_model"
+  # (shared superclass) -- see AGENTS.md "API naming: AFT vs Cox PH" for
+  # the dispatch scheme this supports. `type` is fixed at `"coxph"`
+  # (there's no `dist` equivalent to select, unlike `.as_ertte_aft()`),
+  # kept mainly so code that reads `object$ertte$type` (e.g.
+  # `er_summary.ertte_model()`) has something sensible to report.
+  class(mod) <- c("ertte_coxph", "ertte_model", class(mod))
+  mod$ertte <- list(type = "coxph")
+  mod
+}
+
 # All four tested/supported `survreg()` distributions are log-location-scale
 # families: log(T) = mu + scale * W, where W has a "base" distribution that
 # depends only on `dist`, not on the covariates. This table gives the CDF
