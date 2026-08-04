@@ -65,9 +65,11 @@ and [`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md)
 have `ertte_coxph` methods (see
 [`ertte_predict.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_predict.md)/[`ertte_fun.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_fun.md)),
 both built on the fitted baseline hazard.
-[`simulate()`](https://rdrr.io/r/stats/simulate.html) doesn't yet have
-an `ertte_coxph` method – see AGENTS.md. Calling it on an `ertte_coxph`
-object currently errors with "no applicable method".
+[`simulate()`](https://rdrr.io/r/stats/simulate.html) works too, via the
+shared
+[`simulate.ertte_model()`](https://ertte.djnavarro.net/reference/simulate.ertte_model.md)
+method – no separate `simulate.ertte_coxph()` is needed, since it
+dispatches internally (via `.ertte_simulate_draws()`) on engine.
 
 ## Examples
 

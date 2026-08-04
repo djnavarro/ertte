@@ -1,7 +1,11 @@
 # Simulate from an exposure-response TTE model
 
 [`simulate()`](https://rdrr.io/r/stats/simulate.html) method for
-`ertte_model` objects.
+`ertte_model` objects. Works for both `ertte_aft` and `ertte_coxph` fits
+via a single shared method – there's no separate
+`simulate.ertte_coxph()` – since the engine-specific simulation
+mechanics are dispatched internally by `.ertte_simulate_draws()` (see
+Details).
 
 ## Usage
 
@@ -15,7 +19,8 @@ simulate(object, nsim = 100, seed = NULL, newdata = NULL, ...)
 - object:
 
   An ertte model object, as returned by
-  [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
+  [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) or
+  [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
 
 - nsim:
 
@@ -47,12 +52,19 @@ time), and `sim_event` (1 = event, 0 = censored).
 ## Details
 
 Coefficients are sampled from the asymptotic sampling distribution
-implied by `vcov(object)`, and event times are drawn by inverse-CDF
-sampling from the fitted AFT distribution at each sampled coefficient
-vector (see
+implied by `vcov(object)`. Event times are then drawn by inverse-CDF
+sampling, via the internal `.ertte_simulate_draws()` S3 generic, whose
+per-engine methods differ in exactly how: for `ertte_aft` fits, directly
+from the fitted log-location-scale AFT distribution (see
 [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
-Details for the log-location-scale representation used). Simulated event
-times are capped at each row's *observed* exit time
+Details); for `ertte_coxph` fits, by inverting the fitted baseline
+cumulative hazard
+([`survival::basehaz()`](https://rdrr.io/pkg/survival/man/basehaz.html),
+held fixed regardless of the sampled coefficient draw – the same
+simplification
+[`ertte_fun.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_fun.md)
+makes for a user-supplied `param`). Simulated event times are capped at
+each row's *observed* exit time
 (`sim_time <- pmin(sim_time_raw, observed_time)`, with `sim_event` set
 accordingly) to reproduce the study's observed censoring/follow-up
 pattern – a documented simplification, since the true administrative
@@ -81,4 +93,24 @@ sim
 #> # ℹ 5,990 more rows
 #> # ℹ 6 more variables: aucss <dbl>, cmaxss <dbl>, time <dbl>, event <dbl>,
 #> #   `coef_(Intercept)` <dbl>, coef_aucss <dbl>
+
+mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+sim_cox <- simulate(mod_cox, nsim = 20, seed = 1234)
+sim_cox
+#> # A tibble: 6,000 × 15
+#>    dat_id sim_id sim_time sim_event    id sex      age weight  dose treatment
+#>     <int>  <int>    <dbl>     <dbl> <int> <fct>  <int>  <dbl> <dbl> <fct>    
+#>  1      1      1     46.4         1     1 Female    27     70   200 Drug     
+#>  2      2      1     26.8         0     2 Female    27     59   100 Drug     
+#>  3      3      1    135.          1     3 Female    24     65     0 Placebo  
+#>  4      4      1     16.8         0     4 Female    29     63     0 Placebo  
+#>  5      5      1     33.9         0     5 Male      27     91   200 Drug     
+#>  6      6      1     81.3         0     6 Female    18     65     0 Placebo  
+#>  7      7      1     43.6         1     7 Male      18     66   200 Drug     
+#>  8      8      1     74.1         1     8 Female    20     66   200 Drug     
+#>  9      9      1    161.          1     9 Male      25     62     0 Placebo  
+#> 10     10      1     43.2         1    10 Male      25     81   100 Drug     
+#> # ℹ 5,990 more rows
+#> # ℹ 5 more variables: aucss <dbl>, cmaxss <dbl>, time <dbl>, event <dbl>,
+#> #   coef_aucss <dbl>
 ```
