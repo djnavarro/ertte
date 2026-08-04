@@ -1,4 +1,31 @@
 
+# With zero observed events (e.g. all-censored data), `coxph(model =
+# TRUE)` still leaves `object$model` unset (a `survival::coxph()`
+# quirk, not an ertte-introduced one) -- so the `model = TRUE` workaround
+# `ertte_coxph()` otherwise relies on (see its Details) doesn't help,
+# and `survival::survfit()`/`survival::basehaz()` on such a fit fail
+# with a cryptic error ("'data' must be a data.frame, environment, or
+# list"), from trying to re-evaluate `object$call$data` in a frame
+# where that name doesn't resolve to the original fitting data. Checked
+# up front in `ertte_predict.ertte_coxph()`/`ertte_fun.ertte_coxph()`/
+# `.ertte_simulate_draws.ertte_coxph()` so users see an informative
+# error instead. The model can still be *fit* on all-censored data
+# (`ertte_coxph()` itself doesn't call this check) -- coefficients come
+# back `NA` but that's a legitimate (if degenerate) result to inspect
+# via `summary()`/`coef()`; only the baseline-hazard-based downstream
+# methods are actually broken.
+.ertte_check_coxph_nevent <- function(object) {
+  if (identical(object$nevent, 0L) || identical(object$nevent, 0)) {
+    rlang::abort(paste0(
+      "This model has zero observed events (all-censored data), so it ",
+      "has no baseline hazard to build survival predictions/simulations ",
+      "from. `coef()`/`summary()` still work (coefficients are `NA` at ",
+      "this degenerate fit), but `ertte_predict()`/`ertte_fun()`/",
+      "`simulate()` are not supported for a zero-event `ertte_coxph` model."
+    ))
+  }
+}
+
 #' Fit an exposure-response time-to-event Cox PH model based on `coxph()`
 #'
 #' @param formula Model formula, with a `survival::Surv()` object as the
@@ -77,6 +104,7 @@ ertte_coxph <- function(formula, data, ...) {
 #' ertte_predict(mod_cox, ertte_data[1:5, ], time = c(30, 60, 90))
 #'
 ertte_predict.ertte_coxph <- function(object, newdata = NULL, time, conf_level = .95, ...) {
+  .ertte_check_coxph_nevent(object)
   .ertte_check_conf_level(conf_level)
   if (is.null(newdata)) newdata <- object$data
   if (!is.numeric(time) || length(time) == 0L || anyNA(time) || any(time <= 0)) {
@@ -151,6 +179,7 @@ ertte_predict.ertte_coxph <- function(object, newdata = NULL, time, conf_level =
 #' s2 <- mod_cox_fun(param = par2, time = 60)
 #'
 ertte_fun.ertte_coxph <- function(object, ...) {
+  .ertte_check_coxph_nevent(object)
   ff <- stats::delete.response(stats::terms(object))
   means <- object$means
   bh <- survival::basehaz(object, centered = TRUE)
@@ -209,6 +238,7 @@ ertte_fun.ertte_coxph <- function(object, ...) {
 # partial likelihood's risk sets at each draw), the same simplification
 # `ertte_fun.ertte_coxph()` makes for a user-supplied `param`.
 .ertte_simulate_draws.ertte_coxph <- function(object, newdata, nsim = 100, seed = NULL) {
+  .ertte_check_coxph_nevent(object)
   .ertte_check_nsim(nsim)
   seed <- .ertte_pick_seed(seed)
   vars <- .ertte_check_newdata_response(object, newdata)

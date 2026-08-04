@@ -196,10 +196,55 @@ plotting packages in package code.
   `er_vpc()`) is scoped -- see the design issue's Workstream B.
 - **Phase 3: `er_tte()` plotting grammar** -- lives in the separate
   `erplots` repo, co-designed with ertte per the issue. Not started.
-- **Broader edge-case test coverage** from the issue's test-suite
-  wishlist: all-censored data, single stratum, heavy ties, and the
-  zero-exposure/placebo group specifically (though `ertte_data` does
-  include a placebo group via `dose == 0`/`aucss == 0`).
+- ~~Broader edge-case test coverage~~ -- **addressed** for the three
+  named cases from the issue's test-suite wishlist (all-censored data,
+  single stratum, heavy ties -- the zero-exposure/placebo group was
+  already covered via `ertte_data`'s `dose == 0`/`aucss == 0` rows, used
+  throughout the existing test suite). New tests live in
+  `tests/testthat/test-ertte-edge-cases.R`. Findings, in order of how
+  much they mattered:
+  - **All-censored data (0 events) genuinely broke `ertte_coxph()`'s
+    downstream methods.** `ertte_aft()` degrades gracefully (a
+    `survreg()` "did not converge" warning, but `ertte_predict()` still
+    returns sensible values). `ertte_coxph()` fit fine (`NA`
+    coefficients, `n=0` events), but `ertte_predict()`/`ertte_fun()`/
+    `simulate()` on it used to fail with a cryptic
+    `model.frame.default()` error ("'data' must be a data.frame,
+    environment, or list") -- traced to a `survival::coxph()` quirk: with
+    zero events, `coxph(model = TRUE)` still leaves `object$model`
+    unset, defeating the `model = TRUE` workaround `ertte_coxph()`
+    otherwise relies on for `survfit()`/`basehaz()` to avoid
+    reconstructing the model frame from `object$call$data` (which fails
+    for the reason described below under "`ertte_add_term()`/
+    `ertte_remove_term()`"). Fixed with a new
+    `.ertte_check_coxph_nevent()` guard (in `R/ertte-coxph.R`), called at
+    the top of `ertte_predict.ertte_coxph()`/`ertte_fun.ertte_coxph()`/
+    `.ertte_simulate_draws.ertte_coxph()`, that aborts with an
+    informative message instead. The constructor itself is left alone --
+    fitting on all-censored data is still allowed (a legitimate, if
+    degenerate, thing to inspect via `coef()`/`summary()`); only the
+    baseline-hazard-based methods are actually unsupported.
+  - **Single-level ("single stratum") categorical covariates** (e.g.
+    `sex` with only one level present in a subset) fit fine on both
+    engines, reporting the aliased level's coefficient as `NA`
+    ("singularities" per `survreg()`'s own message). Downstream behaviour
+    genuinely differs by *method*, not just by engine, and this is now
+    pinned down by tests rather than left as a surprise: `predict.survreg()`
+    (used by `ertte_predict.ertte_aft()`) propagates the `NA` straight
+    through to every survival probability/CI; `survival::survfit()`
+    (used by `ertte_predict.ertte_coxph()`) silently drops the aliased
+    column and returns finite predictions anyway; `ertte_fun.ertte_coxph()`'s
+    manual `mm %*% param` propagates the `NA` like the AFT method does.
+    None of this crashes, and it isn't treated as a bug to fix -- SCM
+    already handles the case where a candidate's addition produces a
+    literal `NA` `anova()` p-value (skipped with a warning, pre-existing
+    behaviour); a single-level factor candidate typically doesn't even
+    trigger that path, since `anova()` reports a trivial `p = 1` (zero
+    deviance) rather than `NA` when there's no variation left to explain.
+  - **Heavy ties in event times** (many events at the same observed
+    time) caused no issues on either engine -- `coxph()`'s default Efron
+    tie-handling and `.ertte_simulate_draws()` both work unchanged. Kept
+    as regression tests rather than a design concern.
 - **Administrative-censoring simulation is a simplification.**
   `.ertte_simulate_draws()` caps every simulated event time at that
   row's *observed* exit time (`time`, whether that row was itself an
