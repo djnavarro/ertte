@@ -1,16 +1,16 @@
-test_that("er_predict.ertte_model() returns the same shape as ertte_predict()", {
+test_that("er_predict.ertte_model() returns the same shape as ertte_landmark()", {
   mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
-  pred <- er_predict.ertte_model(mod, ertte_data[1:5, ], time = 60)
-  ref <- ertte_predict(mod, ertte_data[1:5, ], time = 60)
+  pred <- er_predict.ertte_model(mod, ertte_data[1:5, ], landmark_time = 60)
+  ref <- ertte_landmark(mod, ertte_data[1:5, ], landmark_time = 60)
   # `expect_equal(ignore_attr = TRUE)` because row-subsetting a tibble
   # doesn't reliably preserve incidental per-column `label` attributes
   # (from `ertte_data`'s documentation metadata) -- irrelevant here.
   expect_equal(pred, ref, ignore_attr = TRUE)
 })
 
-test_that("er_predict.ertte_model() requires a time argument", {
+test_that("er_predict.ertte_model() requires a landmark_time argument", {
   mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
-  expect_error(er_predict.ertte_model(mod, ertte_data[1:5, ]), "time")
+  expect_error(er_predict.ertte_model(mod, ertte_data[1:5, ]), "landmark_time")
 })
 
 test_that("er_simulate.ertte_model() matches .ertte_simulate_draws()", {

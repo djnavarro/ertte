@@ -99,6 +99,16 @@
 # Shared by `.ertte_simulate_draws()`'s per-engine methods: if `seed` is
 # `NULL`, pick one and tell the user (since it determines the actual
 # simulated values returned), otherwise pass it through unchanged.
+.ertte_check_landmark_time <- function(landmark_time) {
+  if (!is.numeric(landmark_time) || length(landmark_time) != 1L ||
+      is.na(landmark_time) || landmark_time <= 0) {
+    rlang::abort(paste0(
+      "`landmark_time` must be a single, strictly positive number (a ",
+      "fixed time t*), not ", .fmt_bad_value(landmark_time), "."
+    ))
+  }
+}
+
 .ertte_pick_seed <- function(seed) {
   if (is.null(seed)) {
     seed <- .pick_seed()

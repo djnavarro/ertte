@@ -187,13 +187,83 @@ plotting packages in package code.
   candidate set -- deliberately left to the user's judgement, consistent
   with how term handling elsewhere in ertte doesn't reason about variable
   semantics.
-- **`er_predict.ertte_model()`'s real contract.** Currently a minimal
-  placeholder that forwards to `ertte_predict()` with a `time` argument
-  threaded through `...` (not part of erplots' `er_predict(model,
-  newdata, conf_level)` contract as currently defined, which assumes a
-  response-vs-exposure view). Needs a proper design once phase 2
-  (landmark-binary / RMST scalar E-R views, reusing `er_plot()`/
-  `er_vpc()`) is scoped -- see the design issue's Workstream B.
+- **`er_predict.ertte_model()`'s real contract -- landmark-binary now
+  implemented; RMST and VPC parity still deferred.** Phase 2's
+  Workstream B1 (scalar E-R views of a TTE endpoint) is partially done:
+  a new exported `ertte_landmark(object, newdata, landmark_time,
+  conf_level)` (in `R/ertte-landmark.R`) reduces a TTE endpoint to a
+  binary landmark response, `P(event by t*) = 1 - S(t*)`, by calling
+  `ertte_predict()` at `time = landmark_time` and transforming its
+  survival-probability output -- since that's a decreasing monotonic
+  transform, the confidence interval bounds simply swap (no
+  recomputation, and no new edge-case handling needed: whatever
+  validity `ertte_predict()`'s interval has for a given engine carries
+  through unchanged). `ertte_landmark()` is deliberately **not** a
+  generic, unlike `ertte_predict()`/`ertte_fun()` -- it needs no
+  engine-specific logic of its own, since it delegates entirely to
+  `ertte_predict()`, which already dispatches on the
+  `ertte_aft`/`ertte_coxph` subclass. `er_predict.ertte_model()` (in
+  `R/er-methods.R`) now forwards to it, threading a required
+  `landmark_time` argument through `...` (erplots' `er_predict(model,
+  newdata, conf_level)` contract has a fixed signature with no
+  TTE-specific argument, so this -- like the old placeholder's `time`
+  argument -- has to travel through `...`; omitting it errors
+  informatively rather than silently doing nothing).
+
+  Two pieces from the design issue's Workstream B1 are still
+  deliberately deferred, confirmed with the maintainer when scoping
+  this:
+  - **RMST** (restricted mean survival time, the other scalar
+    reduction the issue mentions) -- harder than landmark-binary, since
+    it's an integral of `S(t)` over `[0, tau]`: the AFT engine has a
+    closed-form `S(t)`, so an analytic RMST/CI is plausible, but the
+    Cox engine's baseline hazard is an empirical step function, so its
+    RMST would need numerical integration plus a delta-method or
+    bootstrap CI -- no small addition.
+  - **`er_simulate.ertte_model()` landmark-VPC parity.** The issue notes
+    a landmark-binary VPC "likewise reuses `er_vpc()` unchanged", but
+    that needs `er_simulate.ertte_model()` to also return
+    landmark-transformed draws (`fit_resp`/`sim_resp` as event-by-t*
+    indicators/probabilities), not its current per-row
+    `sim_time`/`sim_event` shape (unchanged by this pass).
+
+  **Caveat discovered end-to-end testing this against erplots'
+  `er_plot()` (not an ertte bug -- tracked upstream as
+  [erplots#10](https://github.com/djnavarro/erplots/issues/10)):**
+  `er_plot_add_model(mod, landmark_time = 90)` currently errors, even
+  though `er_predict.ertte_model()`'s contract (above) is implemented
+  correctly and works when called directly. The reason lives entirely
+  in `erplots`: `er_plot_add_model()`'s `...` is captured only for its
+  *style builder* (`config$dots`, per `?er_style`), never forwarded to
+  `er_predict()` itself -- `.get_model_predictions()` always calls
+  `er_predict(model, newdata, conf_level)` with no extra arguments, so
+  a required `landmark_time` can never reach it this way. The identical
+  gap affects `er_plot_add_summary()`/`er_summary()` (which currently
+  forwards *no* arguments at all, not even `conf_level`) and
+  `er_vpc_add_simulated()`/`er_simulate()`. erplots#10 tracks the fix,
+  with a design sketch comparing two options: forwarding the same
+  `...` to both the style builder and the generic (risks silent
+  argument collisions between the two), vs. a new, separate
+  `predict_args`/`summary_args`/`simulate_args` argument per
+  `er_plot_add_*()`/`er_vpc_add_*()` function (unambiguous, but more
+  API surface). Until resolved upstream, plotting an `ertte_landmark()`
+  curve via `er_plot_add_model()` needs a small wrapper object that
+  bakes `landmark_time` into the model rather than passing it at
+  `er_plot_add_model()` call time:
+
+  ```r
+  new_landmark_model <- function(object, landmark_time) {
+    structure(list(object = object, landmark_time = landmark_time), class = "ertte_landmark_model")
+  }
+  er_predict.ertte_landmark_model <- function(model, newdata, conf_level = 0.95, ...) {
+    ertte_landmark(model$object, newdata = newdata, landmark_time = model$landmark_time, conf_level = conf_level)
+  }
+  ```
+
+  This workaround isn't currently shipped in the package (it's just a
+  documented pattern here) -- revisit once erplots#10 lands, and
+  reconsider whether ertte should export a constructor like this
+  itself in the meantime.
 - **Phase 3: `er_tte()` plotting grammar** -- lives in the separate
   `erplots` repo, co-designed with ertte per the issue. Not started.
 - ~~Broader edge-case test coverage~~ -- **addressed** for the three
@@ -363,6 +433,12 @@ Naming/dispatch scheme, now fully implemented for both engines
   and `.ertte_simulate_draws.ertte_coxph()` (event-time simulation by
   inverting the fitted baseline cumulative hazard, via
   `.ertte_coxph_invert_basehaz()`).
+- `R/ertte-landmark.R` -- `ertte_landmark()`: the landmark-binary
+  scalar E-R reduction (`P(event by t*) = 1 - S(t*)`) that
+  `er_predict.ertte_model()` (`R/er-methods.R`) forwards to. A single
+  function, not a generic -- it delegates entirely to
+  `ertte_predict()`, which already dispatches per engine. See "Planned
+  work" above for what's deferred (RMST, `er_simulate()` VPC parity).
 - `R/ertte-family.R` -- `ertte_select_distribution()`: fits each
   candidate AFT distribution and returns the AIC-ranked comparison plus
   the best-fitting model.

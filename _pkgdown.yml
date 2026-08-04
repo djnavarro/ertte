@@ -9,6 +9,7 @@ reference:
   - ertte_aft
   - ertte_coxph
   - ertte_predict
+  - ertte_landmark
   - ertte_select_distribution
 - title: Covariate selection
   desc: Stepwise covariate modelling for exposure-response TTE models

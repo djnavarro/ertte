@@ -12,16 +12,26 @@
 # below), so that neither erplots nor its dependencies need to be
 # installed for ertte's modelling functions to work standalone.
 #
-# `er_predict.ertte_model()` is currently a minimal placeholder: the
-# real landmark-binary / RMST contract described in the package's design
-# issue (phase 2 -- scalar E-R views of a TTE endpoint) hasn't been
-# designed yet, so this just forwards to `ertte_predict()` with a `time`
-# argument threaded through `...`. Revisit once phase 2 is scoped.
+# `er_predict.ertte_model()` implements phase 2's Workstream B1 --
+# scalar E-R views of a TTE endpoint -- via the landmark-binary
+# reduction only: `P(event by t*)` as a function of exposure, computed
+# by `ertte_landmark()` (see `R/ertte-landmark.R`). `landmark_time`
+# (the fixed `t*`) has to be threaded through `...`, since erplots'
+# `er_predict(model, newdata, conf_level)` contract has a fixed
+# signature with no TTE-specific argument. RMST (the other scalar
+# reduction the design issue mentions) and landmark-VPC parity for
+# `er_simulate.ertte_model()` (below -- which still returns per-row
+# `sim_time`/`sim_event`, not a landmark-transformed draw) are
+# deliberately deferred -- see AGENTS.md's "Planned work".
 
 er_predict.ertte_model <- function(model, newdata, conf_level = 0.95, ...) {
   dots <- list(...)
-  time <- dots$time %||% rlang::abort("er_predict.ertte_model() currently requires a `time` argument (via `...`).")
-  ertte_predict(object = model, newdata = newdata, time = time, conf_level = conf_level)
+  landmark_time <- dots$landmark_time %||% rlang::abort(paste0(
+    "er_predict.ertte_model() requires a `landmark_time` argument ",
+    "(via `...`), giving the fixed time t* at which to compute ",
+    "P(event by t*) -- see `ertte_landmark()`."
+  ))
+  ertte_landmark(object = model, newdata = newdata, landmark_time = landmark_time, conf_level = conf_level)
 }
 
 er_simulate.ertte_model <- function(model, newdata, nsim = 100, seed = NULL, ...) {
