@@ -4,9 +4,10 @@ template:
 
 reference:
 - title: Build
-  desc: Fit exposure-response time-to-event models based on survreg()
+  desc: Fit exposure-response time-to-event models based on survreg()/coxph()
 - contents:
-  - ertte_model
+  - ertte_aft
+  - ertte_coxph
   - ertte_predict
   - ertte_select_distribution
 - title: Covariate selection
