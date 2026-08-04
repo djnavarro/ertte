@@ -228,7 +228,7 @@ ertte_fun.ertte_coxph <- function(object, ...) {
 }
 
 # `.ertte_simulate_draws()` method for `ertte_coxph` models -- see the
-# generic's documentation in `R/ertte-core.R`. Coefficients are sampled
+# generic's documentation in `R/ertte-aft.R`. Coefficients are sampled
 # from the same asymptotic normal approximation as the AFT method, but
 # event times are drawn by inverting the fitted baseline cumulative
 # hazard (via `.ertte_coxph_invert_basehaz()`) rather than sampling

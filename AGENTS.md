@@ -406,7 +406,7 @@ Naming/dispatch scheme, now fully implemented for both engines
     engines via the shared superclass) -- no separate
     `simulate.ertte_aft()`/`simulate.ertte_coxph()` methods, since the
     per-engine mechanics are dispatched one level down, by the internal
-    `.ertte_simulate_draws()` S3 generic (see `R/ertte-core.R`).
+    `.ertte_simulate_draws()` S3 generic (see `R/ertte-aft.R`).
   - `ertte_scm_forward()`/`ertte_scm_backward()`/`ertte_scm_history()`/
     `ertte_add_term()`/`ertte_remove_term()` -- work across both
     engines. `ertte_add_term()`/`ertte_remove_term()` themselves stay
@@ -420,7 +420,7 @@ Naming/dispatch scheme, now fully implemented for both engines
 
 ## Structure
 
-- `R/ertte-core.R` -- `ertte_aft()`, the `ertte_predict()`/`ertte_fun()`
+- `R/ertte-aft.R` -- `ertte_aft()`, the `ertte_predict()`/`ertte_fun()`
   generics plus their `ertte_predict.ertte_aft()`/`ertte_fun.ertte_aft()`
   methods, and the `.ertte_simulate_draws()` S3 generic (with its
   `ertte_aft` method here; the `ertte_coxph` method is in
