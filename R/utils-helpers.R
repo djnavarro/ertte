@@ -216,9 +216,11 @@
 # All four tested/supported `survreg()` distributions are log-location-scale
 # families: log(T) = mu + scale * W, where W has a "base" distribution that
 # depends only on `dist`, not on the covariates. This table gives the CDF
-# (`pbase`) and quantile function (`qbase`) of that base distribution, used
-# by `ertte_predict()` (survival probabilities) and `.ertte_simulate_draws()`
-# (inverse-CDF sampling of event times).
+# (`pbase`), quantile function (`qbase`), and density (`dbase`) of that base
+# distribution. `pbase`/`qbase` are used by `ertte_predict()` (survival
+# probabilities) and `.ertte_simulate_draws()` (inverse-CDF sampling of
+# event times); `dbase` is used by `ertte_rmst.ertte_aft()` (its delta-method
+# gradient, `d/dmu S(t|x) = dbase(z) / scale`, needs the base density).
 .ertte_dist_info <- function(dist) {
   .ertte_check_dist(dist)
   switch(
@@ -226,10 +228,11 @@
     exponential = ,
     weibull = list(
       pbase = function(z) 1 - exp(-exp(z)),
-      qbase = function(p) log(-log(1 - p))
+      qbase = function(p) log(-log(1 - p)),
+      dbase = function(z) exp(z - exp(z))
     ),
-    lognormal = list(pbase = stats::pnorm, qbase = stats::qnorm),
-    loglogistic = list(pbase = stats::plogis, qbase = stats::qlogis)
+    lognormal = list(pbase = stats::pnorm, qbase = stats::qnorm, dbase = stats::dnorm),
+    loglogistic = list(pbase = stats::plogis, qbase = stats::qlogis, dbase = stats::dlogis)
   )
 }
 

@@ -54,8 +54,11 @@ potentially many times per row), \code{landmark_time} must be a single
 fixed value -- a landmark is by definition evaluated at one time.
 
 Restricted mean survival time (RMST), the other scalar E-R
-reduction the design issue mentions, is not implemented here (see
-AGENTS.md's "Planned work").
+reduction the design issue mentions, is implemented separately as
+\code{\link[=ertte_rmst]{ertte_rmst()}} -- unlike \code{ertte_landmark()}, it's a genuine generic
+rather than a thin wrapper around \code{ertte_predict()}, since an area
+under the curve needs the whole survival curve, not a single time
+point.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)

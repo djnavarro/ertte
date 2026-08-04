@@ -187,9 +187,9 @@ plotting packages in package code.
   candidate set -- deliberately left to the user's judgement, consistent
   with how term handling elsewhere in ertte doesn't reason about variable
   semantics.
-- **`er_predict.ertte_model()`'s real contract -- landmark-binary now
-  implemented; RMST and VPC parity still deferred.** Phase 2's
-  Workstream B1 (scalar E-R views of a TTE endpoint) is partially done:
+- **`er_predict.ertte_model()`'s real contract -- landmark-binary and
+  RMST now both implemented; only VPC parity still deferred.** Phase 2's
+  Workstream B1 (scalar E-R views of a TTE endpoint) is now mostly done:
   a new exported `ertte_landmark(object, newdata, landmark_time,
   conf_level)` (in `R/ertte-landmark.R`) reduces a TTE endpoint to a
   binary landmark response, `P(event by t*) = 1 - S(t*)`, by calling
@@ -210,16 +210,8 @@ plotting packages in package code.
   argument -- has to travel through `...`; omitting it errors
   informatively rather than silently doing nothing).
 
-  Two pieces from the design issue's Workstream B1 are still
-  deliberately deferred, confirmed with the maintainer when scoping
-  this:
-  - **RMST** (restricted mean survival time, the other scalar
-    reduction the issue mentions) -- harder than landmark-binary, since
-    it's an integral of `S(t)` over `[0, tau]`: the AFT engine has a
-    closed-form `S(t)`, so an analytic RMST/CI is plausible, but the
-    Cox engine's baseline hazard is an empirical step function, so its
-    RMST would need numerical integration plus a delta-method or
-    bootstrap CI -- no small addition.
+  One piece from the design issue's Workstream B1 is still deliberately
+  deferred, confirmed with the maintainer when scoping this:
   - **`er_simulate.ertte_model()` landmark-VPC parity.** The issue notes
     a landmark-binary VPC "likewise reuses `er_vpc()` unchanged", but
     that needs `er_simulate.ertte_model()` to also return
@@ -270,6 +262,85 @@ plotting packages in package code.
   documented in earlier revisions of this file is no longer needed and
   has been removed from here; use `predict_args`/`summary_args`/
   `simulate_args` instead.
+- **RMST (restricted mean survival time) -- now implemented**, via a
+  new exported `ertte_rmst(object, newdata, tau, conf_level)` (in
+  `R/ertte-rmst.R`). Unlike `ertte_landmark()`, this is a genuine
+  generic (`ertte_rmst.ertte_aft()`/`ertte_rmst.ertte_coxph()`), since
+  computing an area under the curve needs the whole survival curve, not
+  a single `ertte_predict()` call at one time point -- it doesn't
+  delegate to `ertte_predict()` the way `ertte_landmark()` does.
+  - **AFT method**: `fit_rmst` is `stats::integrate()` of the closed-form
+    `S(t|x)` from 0 to `tau`; `se_rmst` is an analytic delta method
+    differentiating under the integral sign (`d/dmu RMST = integral of
+    dbase(z)/scale`), propagating only `Var(mu)` from `predict(object,
+    newdata, type = "linear", se.fit = TRUE)` -- the same
+    ignore-`scale`-uncertainty simplification `ertte_predict.ertte_aft()`
+    already makes. `.ertte_dist_info()` (in `R/utils-helpers.R`) gained a
+    `dbase` (base-distribution density) entry alongside its existing
+    `pbase`/`qbase`, needed for this gradient.
+  - **Cox method**: since the fitted baseline hazard (and every
+    covariate-adjusted curve) is a right-continuous step function,
+    `fit_rmst` is an *exact* finite sum of rectangle areas between jump
+    times up to `tau` -- not a numerical-quadrature approximation, contra
+    this file's earlier framing of RMST as needing "numerical
+    integration" for the Cox engine. The genuinely hard part turned out
+    to be `se_rmst`, not the integral itself.
+  - **Deriving `se_rmst` for the Cox method -- a real methodological
+    finding.** The first candidate investigated was reusing
+    `survival:::survmean()` (the internal function behind
+    `print.survfit(fit, rmean = tau)`) on a `survfit(coxph_object,
+    newdata = ...)` object. This works mechanically (produces
+    profile-varying `rmean`/`se(rmean)`, vectorises across multi-row
+    `newdata`), and was reimplemented against public `survfit()` fields
+    only (`time`, `surv`, `n.risk`, `n.event`) to avoid depending on the
+    unexported `:::` function -- but reading `survmean()`'s source
+    revealed it estimates the variance-of-mean via a Greenwood-type term
+    (`n.event / (n.risk * (n.risk - n.event))`) computed from `n.risk`/
+    `n.event`, which are **shared identically across every covariate
+    profile** (confirmed via `identical()`) -- i.e. population-level risk
+    sets from the shared baseline hazard, not profile-specific. It never
+    touches `survfit()`'s own `std.err` field, which *does* correctly
+    combine coefficient and baseline-hazard uncertainty per profile
+    (confirmed empirically: `sf$logse == TRUE` and `sf$cumhaz ==
+    -log(sf$surv)` exactly, so `std.err(t)` genuinely estimates
+    `SE[H(t|x)]`). Net effect: for an extreme/leveraged covariate
+    profile, `survmean()`'s SE was found to be roughly 15x *smaller*
+    than a 300-replicate nonparametric bootstrap SE for the same
+    quantity -- a real, not cosmetic, understatement of uncertainty.
+    Fixed by keeping `survmean()`'s exact rectangle/tail-weighted-sum
+    construction (now `.ertte_rmst_pfun_delta()` in `R/ertte-rmst.R`)
+    but substituting the variance-increment source: `diff(std.err^2)`
+    (the increment of the profile-specific `Var[H(t|x)]`) in place of
+    the population Greenwood term. This is an approximation -- the
+    coefficient-uncertainty component of `H(t|x)` is really a single
+    random direction shared across every `t`, not a sum of independent
+    per-jump increments, so treating its increments as accumulating
+    independently (the same simplifying assumption the classic Greenwood
+    formula makes) isn't exactly right -- but cross-validated against
+    the same bootstrap across two contrasting covariate profiles, it
+    tracked the bootstrap SE substantially more closely than both
+    `survmean()`'s naive population term and a cheaper alternative that
+    holds the baseline hazard fixed and only redraws coefficients from
+    `MVN(coef(object), vcov(object))` (which over/understates uncertainty
+    inconsistently depending on how extreme the covariate profile is).
+  - **CI construction, both engines**: `ci_lower`/`ci_upper` are
+    symmetric Wald intervals on the RMST scale (`fit_rmst +/- z *
+    se_rmst`), *not* automatically bounded to `[0, tau]` the way
+    `ertte_predict()`'s survival-probability intervals are bounded to
+    `[0, 1]` by construction (their CDF back-transform keeps them there)
+    -- a known, documented limitation, not yet addressed.
+  - `ertte_rmst.ertte_coxph()` warns if any `tau` exceeds the last
+    observed follow-up time across the fitted cohort: RMST integrates
+    the *entire* curve up to `tau`, so the flat-baseline-hazard
+    extrapolation convention `ertte_predict.ertte_coxph()` already uses
+    for a single time point has a larger, more silent effect on an area.
+    It also inherits `.ertte_check_coxph_nevent()`'s all-censored-data
+    guard, same as `ertte_predict.ertte_coxph()`/`ertte_fun.ertte_coxph()`.
+  - Tests live in `tests/testthat/test-ertte-rmst.R`, including a
+    regression test pinning down that `fit_rmst` matches a hand-computed
+    step-function integral, and a regression test confirming the derived
+    Cox `se_rmst` is *not* numerically equal to `survival:::survmean()`'s
+    naive population-level SE (i.e. that the fix above stays fixed).
 - **Phase 3: `er_tte()` plotting grammar** -- lives in the separate
   `erplots` repo, co-designed with ertte per the issue. Not started.
 - ~~Broader edge-case test coverage~~ -- **addressed** for the three
@@ -417,6 +488,12 @@ Naming/dispatch scheme, now fully implemented for both engines
     here.
   - `ertte_select_distribution()` -- stays AFT-only, no Cox PH
     equivalent.
+  - `ertte_rmst()` -- a generic, with methods for both engines:
+    `ertte_rmst.ertte_aft()` (quadrature + analytic delta method) and
+    `ertte_rmst.ertte_coxph()` (exact step-function sum + a delta method
+    on the profile-specific `std.err` field) -- see "Planned work" above
+    for the derivation and the bootstrap cross-check behind the Cox
+    method's confidence interval.
 
 ## Structure
 
@@ -439,6 +516,14 @@ Naming/dispatch scheme, now fully implemented for both engines
   and `.ertte_simulate_draws.ertte_coxph()` (event-time simulation by
   inverting the fitted baseline cumulative hazard, via
   `.ertte_coxph_invert_basehaz()`).
+- `R/ertte-rmst.R` -- `ertte_rmst()`: the restricted-mean-survival-time
+  scalar E-R reduction, with `ertte_rmst.ertte_aft()` (quadrature +
+  analytic delta method) and `ertte_rmst.ertte_coxph()` (exact
+  step-function sum, via the internal `.ertte_rmst_pfun_delta()`
+  helper, plus a delta method built on `survfit()`'s profile-specific
+  `std.err` field) methods. Unlike `ertte_landmark()`, a genuine
+  generic -- see "Planned work" above for why, and for the derivation
+  of the Cox method's confidence interval.
 - `R/ertte-landmark.R` -- `ertte_landmark()`: the landmark-binary
   scalar E-R reduction (`P(event by t*) = 1 - S(t*)`) that
   `er_predict.ertte_model()` (`R/er-methods.R`) forwards to. A single

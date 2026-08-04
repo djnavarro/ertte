@@ -43,8 +43,11 @@
 #' fixed value -- a landmark is by definition evaluated at one time.
 #'
 #' Restricted mean survival time (RMST), the other scalar E-R
-#' reduction the design issue mentions, is not implemented here (see
-#' AGENTS.md's "Planned work").
+#' reduction the design issue mentions, is implemented separately as
+#' [ertte_rmst()] -- unlike `ertte_landmark()`, it's a genuine generic
+#' rather than a thin wrapper around `ertte_predict()`, since an area
+#' under the curve needs the whole survival curve, not a single time
+#' point.
 #'
 #' @export
 #' @examples
