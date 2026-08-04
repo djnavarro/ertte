@@ -203,13 +203,18 @@ ertte_fun.ertte_aft <- function(object, ...) {
   }
 }
 
-# shared helper: draws `nsim` sets of location coefficients from the
-# sampling distribution implied by the model's variance-covariance
-# matrix, and for each draw simulates an event time per row of `newdata`
-# via inverse-CDF sampling from the fitted AFT distribution. Used
-# directly by `simulate.ertte_aft()` (dispatched via `simulate.ertte_model()`)
-# and `er_simulate.ertte_model()`
-# (used by erplots, if installed, for TTE visual predictive checks).
+# shared generic: draws `nsim` sets of coefficients from the sampling
+# distribution implied by the model's variance-covariance matrix, and
+# for each draw simulates an event time per row of `newdata` via
+# inverse-CDF sampling. A generic (not a single function) because the
+# sampling mechanics genuinely differ by engine -- AFT samples directly
+# from the fitted log-location-scale distribution
+# (`.ertte_simulate_draws.ertte_aft()`), while Cox PH inverts the
+# fitted baseline cumulative hazard (`.ertte_simulate_draws.ertte_coxph()`,
+# in `R/ertte-coxph.R`). Used directly by `simulate.ertte_model()` (via
+# `.ertte_resample()`) and `er_simulate.ertte_model()` (used by
+# erplots, if installed, for TTE visual predictive checks) -- both work
+# for either engine automatically via this dispatch.
 #
 # Administrative/observed censoring is reproduced by capping each
 # simulated event time at that row's *observed* exit time (the `time`
@@ -218,21 +223,16 @@ ertte_fun.ertte_aft <- function(object, ...) {
 # administrative censoring time (if later than an observed event) isn't
 # otherwise available, so the observed exit time is used as a stand-in
 # upper bound. `newdata` must therefore contain the original response
-# columns (`time`/`event`, named as in the model's `Surv()` call).
+# columns (`time`/`event`, named as in the model's `Surv()` call) --
+# see `.ertte_check_newdata_response()`.
 .ertte_simulate_draws <- function(object, newdata, nsim = 100, seed = NULL) {
+  UseMethod(".ertte_simulate_draws")
+}
+
+.ertte_simulate_draws.ertte_aft <- function(object, newdata, nsim = 100, seed = NULL) {
   .ertte_check_nsim(nsim)
-  if (is.null(seed)) {
-    seed <- .pick_seed()
-    rlang::inform(paste0("Using seed = ", seed, ". Pass `seed = ", seed, "` to reproduce this result."))
-  }
-  vars <- .ertte_response_vars(object)
-  if (!all(c(vars$time, vars$event) %in% names(newdata))) {
-    rlang::abort(paste0(
-      "`newdata` must contain the original response columns `", vars$time,
-      "` and `", vars$event, "` (used to cap simulated event times at the ",
-      "observed exit time)."
-    ))
-  }
+  seed <- .ertte_pick_seed(seed)
+  vars <- .ertte_check_newdata_response(object, newdata)
   info <- .ertte_dist_info(object$ertte$type)
   scale <- object$scale
   obs_time <- newdata[[vars$time]]
@@ -247,7 +247,7 @@ ertte_fun.ertte_aft <- function(object, ...) {
         # scale is estimated jointly with the location coefficients);
         # only the location-coefficient block is needed here, since
         # `scale` itself is held fixed at its point estimate throughout
-        # this package (see `ertte_model()` Details).
+        # this package (see `ertte_aft()` Details).
         sigma = stats::vcov(object)[coef_names, coef_names, drop = FALSE]
       )
       sim <- list()
@@ -259,7 +259,7 @@ ertte_fun.ertte_aft <- function(object, ...) {
         sim_time_raw <- exp(mu + scale * info$qbase(u))
         dd_sim$sim_time <- pmin(sim_time_raw, obs_time)
         dd_sim$sim_event <- as.numeric(sim_time_raw <= obs_time)
-        coef_draw <- stats::setNames(as.list(par[ii, ]), paste0("coef_", names(stats::coef(object))))
+        coef_draw <- stats::setNames(as.list(par[ii, ]), paste0("coef_", coef_names))
         dd_sim <- dd_sim |> dplyr::bind_cols(tibble::as_tibble(coef_draw))
         sim[[ii]] <- dd_sim
       }

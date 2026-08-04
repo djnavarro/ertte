@@ -25,9 +25,10 @@
 #'
 #' `ertte_predict()` and `ertte_fun()` have `ertte_coxph` methods (see
 #' [ertte_predict.ertte_coxph()]/[ertte_fun.ertte_coxph()]), both built
-#' on the fitted baseline hazard. `simulate()` doesn't yet have an
-#' `ertte_coxph` method -- see AGENTS.md. Calling it on an `ertte_coxph`
-#' object currently errors with "no applicable method".
+#' on the fitted baseline hazard. `simulate()` works too, via the
+#' shared `simulate.ertte_model()` method -- no separate
+#' `simulate.ertte_coxph()` is needed, since it dispatches internally
+#' (via `.ertte_simulate_draws()`) on engine.
 #'
 #' @export
 #' @examples
@@ -178,4 +179,68 @@ ertte_fun.ertte_coxph <- function(object, ...) {
     haz <- .ertte_coxph_basehaz_at(bh, time)
     exp(-haz * exp(lp))
   }
+}
+
+# Inverts a fitted (right-continuous, step-function) baseline
+# cumulative hazard `bh` at arbitrary hazard values: the smallest
+# observed `bh$time` whose cumulative hazard is at least `target_h`, or
+# `Inf` if `target_h` exceeds every observed hazard value (i.e. the
+# simulated event would occur after the last observed follow-up --
+# left `Inf` so it gets capped/censored at the row's observed exit time
+# downstream, the same administrative-censoring convention
+# `.ertte_simulate_draws.ertte_aft()` uses). Used by
+# `.ertte_simulate_draws.ertte_coxph()` for inverse-CDF sampling of
+# event times: `S(t | x) = exp(-H0(t) * exp(lp)) = u` rearranges to
+# `H0(t) = -log(u) / exp(lp)`, so inverting `H0` at that target value
+# gives the simulated event time.
+.ertte_coxph_invert_basehaz <- function(bh, target_h) {
+  idx <- findInterval(target_h, bh$hazard) + 1L
+  ifelse(idx > length(bh$hazard), Inf, bh$time[idx])
+}
+
+# `.ertte_simulate_draws()` method for `ertte_coxph` models -- see the
+# generic's documentation in `R/ertte-core.R`. Coefficients are sampled
+# from the same asymptotic normal approximation as the AFT method, but
+# event times are drawn by inverting the fitted baseline cumulative
+# hazard (via `.ertte_coxph_invert_basehaz()`) rather than sampling
+# directly from a parametric distribution -- the baseline hazard/means
+# are always taken from the fitted `object`, never recomputed for a
+# sampled coefficient draw (recomputing it would need refitting the
+# partial likelihood's risk sets at each draw), the same simplification
+# `ertte_fun.ertte_coxph()` makes for a user-supplied `param`.
+.ertte_simulate_draws.ertte_coxph <- function(object, newdata, nsim = 100, seed = NULL) {
+  .ertte_check_nsim(nsim)
+  seed <- .ertte_pick_seed(seed)
+  vars <- .ertte_check_newdata_response(object, newdata)
+  ff <- stats::delete.response(stats::terms(object))
+  means <- object$means
+  bh <- survival::basehaz(object, centered = TRUE)
+  obs_time <- newdata[[vars$time]]
+  withr::with_seed(
+    seed = seed,
+    code = {
+      coef_names <- names(stats::coef(object))
+      par <- mvtnorm::rmvnorm(
+        n = nsim,
+        mean = stats::coef(object),
+        sigma = stats::vcov(object)[coef_names, coef_names, drop = FALSE]
+      )
+      sim <- list()
+      for (ii in seq_len(nsim)) {
+        dd_sim <- newdata |> dplyr::mutate(row_id = dplyr::row_number(), sim_id = ii)
+        mm <- stats::model.matrix(ff, dd_sim)
+        mm <- mm[, colnames(mm) != "(Intercept)", drop = FALSE]
+        lp <- as.vector(mm %*% par[ii, ]) - as.vector(means %*% par[ii, ])
+        u <- stats::runif(nrow(dd_sim))
+        target_h <- -log(u) / exp(lp)
+        sim_time_raw <- .ertte_coxph_invert_basehaz(bh, target_h)
+        dd_sim$sim_time <- pmin(sim_time_raw, obs_time)
+        dd_sim$sim_event <- as.numeric(sim_time_raw <= obs_time)
+        coef_draw <- stats::setNames(as.list(par[ii, ]), paste0("coef_", coef_names))
+        dd_sim <- dd_sim |> dplyr::bind_cols(tibble::as_tibble(coef_draw))
+        sim[[ii]] <- dd_sim
+      }
+    }
+  )
+  dplyr::bind_rows(sim)
 }

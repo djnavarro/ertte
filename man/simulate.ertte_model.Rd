@@ -7,7 +7,8 @@
 \method{simulate}{ertte_model}(object, nsim = 100, seed = NULL, newdata = NULL, ...)
 }
 \arguments{
-\item{object}{An ertte model object, as returned by \code{\link[=ertte_aft]{ertte_aft()}}}
+\item{object}{An ertte model object, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
+\code{\link[=ertte_coxph]{ertte_coxph()}}}
 
 \item{nsim}{Number of simulation replicates}
 
@@ -29,23 +30,36 @@ simulated event/censoring time), and \code{sim_event} (1 = event, 0 =
 censored).
 }
 \description{
-\code{simulate()} method for \code{ertte_model} objects.
+\code{simulate()} method for \code{ertte_model} objects. Works for both
+\code{ertte_aft} and \code{ertte_coxph} fits via a single shared method --
+there's no separate \code{simulate.ertte_coxph()} -- since the
+engine-specific simulation mechanics are dispatched internally by
+\code{.ertte_simulate_draws()} (see Details).
 }
 \details{
 Coefficients are sampled from the asymptotic sampling
-distribution implied by \code{vcov(object)}, and event times are drawn by
-inverse-CDF sampling from the fitted AFT distribution at each sampled
-coefficient vector (see \code{\link[=ertte_aft]{ertte_aft()}} Details for the
-log-location-scale representation used). Simulated event times are
-capped at each row's \emph{observed} exit time (\code{sim_time <- pmin(sim_time_raw, observed_time)}, with \code{sim_event} set accordingly)
-to reproduce the study's observed censoring/follow-up pattern -- a
-documented simplification, since the true administrative censoring
-time for subjects who had an event isn't otherwise available (see
-\code{.ertte_simulate_draws()}).
+distribution implied by \code{vcov(object)}. Event times are then drawn by
+inverse-CDF sampling, via the internal \code{.ertte_simulate_draws()} S3
+generic, whose per-engine methods differ in exactly how: for
+\code{ertte_aft} fits, directly from the fitted log-location-scale AFT
+distribution (see \code{\link[=ertte_aft]{ertte_aft()}} Details); for \code{ertte_coxph} fits, by
+inverting the fitted baseline cumulative hazard (\code{survival::basehaz()},
+held fixed regardless of the sampled coefficient draw -- the same
+simplification \code{\link[=ertte_fun.ertte_coxph]{ertte_fun.ertte_coxph()}} makes for a user-supplied
+\code{param}). Simulated event times are capped at each row's \emph{observed}
+exit time (\code{sim_time <- pmin(sim_time_raw, observed_time)}, with
+\code{sim_event} set accordingly) to reproduce the study's observed
+censoring/follow-up pattern -- a documented simplification, since the
+true administrative censoring time for subjects who had an event
+isn't otherwise available (see \code{.ertte_simulate_draws()}).
 }
 \examples{
 mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
 sim <- simulate(mod, nsim = 20, seed = 1234)
 sim
+
+mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+sim_cox <- simulate(mod_cox, nsim = 20, seed = 1234)
+sim_cox
 
 }

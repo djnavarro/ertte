@@ -101,6 +101,53 @@ test_that("ertte_add_term()/ertte_remove_term() work for ertte_coxph models", {
   expect_false("sex" %in% attr(stats::terms(mod3), "term.labels"))
 })
 
+test_that("simulate() on ertte_coxph has the expected shape", {
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  sim <- simulate(mod, nsim = 5, seed = 321)
+  expect_s3_class(sim, "tbl_df")
+  expect_equal(nrow(sim), nrow(ertte_data) * 5L)
+  expect_true(all(c("dat_id", "sim_id", "sim_time", "sim_event", "coef_aucss") %in% names(sim)))
+  expect_true(all(sim$sim_event %in% c(0, 1)))
+  expect_true(all(sim$sim_time <= ertte_data$time[sim$dat_id] + 1e-8))
+})
+
+test_that("simulate() on ertte_coxph is reproducible given a seed", {
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  sim_a <- simulate(mod, nsim = 5, seed = 42)
+  sim_b <- simulate(mod, nsim = 5, seed = 42)
+  expect_equal(sim_a, sim_b)
+})
+
+test_that("simulate() on ertte_coxph reports an auto-picked seed", {
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  expect_message(simulate(mod, nsim = 5), "Using seed")
+})
+
+test_that(".ertte_simulate_draws() on ertte_coxph requires response columns in newdata", {
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  expect_error(
+    .ertte_simulate_draws(mod, newdata = ertte_data[c("aucss")], nsim = 5, seed = 1),
+    "must contain"
+  )
+})
+
+test_that("simulate() on ertte_coxph reproduces the fitted baseline survival curve", {
+  # simulating many draws at the reference (mean) covariate profile
+  # should reproduce the fitted S0(t) closely -- a sanity check on the
+  # baseline-hazard inversion, not a tight statistical test. Uses a
+  # row with long observed follow-up (administratively censored at 180
+  # days) so the sim_time <- pmin(sim_time_raw, obs_time) censoring cap
+  # doesn't interfere with the comparison at time = 90.
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  ref_row <- which(ertte_data$time >= 170)[1]
+  nd <- ertte_data[rep(ref_row, 10000), ]
+  nd$aucss <- mean(ertte_data$aucss)
+  sim <- simulate(mod, nsim = 1, newdata = nd, seed = 777)
+  emp_surv_90 <- mean(sim$sim_time > 90)
+  theo_surv_90 <- ertte_predict(mod, nd[1, ], time = 90)$fit_survival
+  expect_equal(emp_surv_90, theo_surv_90, tolerance = 0.05)
+})
+
 test_that("ertte_scm_forward()/ertte_scm_backward() work for ertte_coxph models", {
   mod0 <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
   mod1 <- ertte_scm_forward(mod0, candidates = c("sex", "dose", "age", "weight"), seed = 4821)

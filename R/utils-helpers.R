@@ -96,6 +96,34 @@
   }
 }
 
+# Shared by `.ertte_simulate_draws()`'s per-engine methods: if `seed` is
+# `NULL`, pick one and tell the user (since it determines the actual
+# simulated values returned), otherwise pass it through unchanged.
+.ertte_pick_seed <- function(seed) {
+  if (is.null(seed)) {
+    seed <- .pick_seed()
+    rlang::inform(paste0("Using seed = ", seed, ". Pass `seed = ", seed, "` to reproduce this result."))
+  }
+  seed
+}
+
+# Shared by `.ertte_simulate_draws()`'s per-engine methods: `newdata`
+# must contain the original response columns (`time`/`event`, as named
+# in `object`'s `Surv()` call) -- used to cap simulated event times at
+# each row's observed exit time. Returns the response variable names
+# (from `.ertte_response_vars()`) for convenience at the call site.
+.ertte_check_newdata_response <- function(object, newdata) {
+  vars <- .ertte_response_vars(object)
+  if (!all(c(vars$time, vars$event) %in% names(newdata))) {
+    rlang::abort(paste0(
+      "`newdata` must contain the original response columns `", vars$time,
+      "` and `", vars$event, "` (used to cap simulated event times at the ",
+      "observed exit time)."
+    ))
+  }
+  vars
+}
+
 .as_ertte_aft <- function(mod, dist) {
   # "ertte_aft" (engine-specific subclass) ahead of "ertte_model" (shared
   # superclass) -- see AGENTS.md "API naming: AFT vs Cox PH" for the

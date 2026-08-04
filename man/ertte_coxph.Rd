@@ -38,9 +38,10 @@ work across either engine; functions with engine-specific logic (e.g.
 
 \code{ertte_predict()} and \code{ertte_fun()} have \code{ertte_coxph} methods (see
 \code{\link[=ertte_predict.ertte_coxph]{ertte_predict.ertte_coxph()}}/\code{\link[=ertte_fun.ertte_coxph]{ertte_fun.ertte_coxph()}}), both built
-on the fitted baseline hazard. \code{simulate()} doesn't yet have an
-\code{ertte_coxph} method -- see AGENTS.md. Calling it on an \code{ertte_coxph}
-object currently errors with "no applicable method".
+on the fitted baseline hazard. \code{simulate()} works too, via the
+shared \code{simulate.ertte_model()} method -- no separate
+\code{simulate.ertte_coxph()} is needed, since it dispatches internally
+(via \code{.ertte_simulate_draws()}) on engine.
 }
 \examples{
 mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
