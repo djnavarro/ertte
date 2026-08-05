@@ -134,13 +134,16 @@ ertte_predict.ertte_aft <- function(object, newdata = NULL, time, conf_level = .
 #' `ertte_coxph()` (not yet implemented)
 #' @param ... Passed to methods
 #'
-#' @returns A function with arguments `param`, `data`, and `time`.
-#' - The `param` argument should be a vector of location coefficients;
-#'   defaults to `coef(object)` (the fitted coefficients) if not supplied.
+#' @returns A function with arguments `data`, `time`, and `param`, in
+#' that order -- matching the argument order every other data-taking
+#' entry point in the package uses (`ertte_predict()`, `ertte_landmark()`,
+#' `ertte_rmst()` all take `newdata`/`data` immediately after `object`).
 #' - The `data` argument should be a data frame or tibble; defaults to
 #'   `object$data` (the data the model was fitted to) if not supplied.
 #' - The `time` argument gives the time(s) at which to evaluate the
 #'   survival function; recycled against `data`.
+#' - The `param` argument should be a vector of location coefficients;
+#'   defaults to `coef(object)` (the fitted coefficients) if not supplied.
 #'
 #' @details `ertte_fun()` is a generic, with methods for each supported
 #' engine -- see [ertte_fun.ertte_aft()]. Named `ertte_fun()` for
@@ -186,7 +189,7 @@ ertte_fun.ertte_aft <- function(object, ...) {
   info <- .ertte_dist_info(object$ertte$type)
   scale <- object$scale
   force(ff)
-  function(param = NULL, data = NULL, time) {
+  function(data = NULL, time, param = NULL) {
     .ertte_check_time(time)
     if (is.null(param)) param <- stats::coef(object)
     if (is.null(data)) data <- object$data

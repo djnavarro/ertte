@@ -19,14 +19,17 @@ ertte_fun(object, ...)
 \item{...}{Passed to methods}
 }
 \value{
-A function with arguments \code{param}, \code{data}, and \code{time}.
+A function with arguments \code{data}, \code{time}, and \code{param}, in
+that order -- matching the argument order every other data-taking
+entry point in the package uses (\code{ertte_predict()}, \code{ertte_landmark()},
+\code{ertte_rmst()} all take \code{newdata}/\code{data} immediately after \code{object}).
 \itemize{
-\item The \code{param} argument should be a vector of location coefficients;
-defaults to \code{coef(object)} (the fitted coefficients) if not supplied.
 \item The \code{data} argument should be a data frame or tibble; defaults to
 \code{object$data} (the data the model was fitted to) if not supplied.
 \item The \code{time} argument gives the time(s) at which to evaluate the
 survival function; recycled against \code{data}.
+\item The \code{param} argument should be a vector of location coefficients;
+defaults to \code{coef(object)} (the fitted coefficients) if not supplied.
 }
 }
 \description{

@@ -187,7 +187,7 @@ ertte_fun.ertte_coxph <- function(object, ...) {
   force(ff)
   force(means)
   force(bh)
-  function(param = NULL, data = NULL, time) {
+  function(data = NULL, time, param = NULL) {
     .ertte_check_time(time)
     if (is.null(param)) param <- stats::coef(object)
     if (is.null(data)) data <- object$data

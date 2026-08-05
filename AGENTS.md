@@ -563,11 +563,24 @@ the closure returned silently: `NaN` for the AFT engine (via
 guaranteed) -- neither erroring nor warning informatively, unlike the
 equivalent `ertte_predict()` call. Regression tests live alongside the
 existing `ertte_fun()`/`param`-length tests in
-`tests/testthat/test-ertte-aft.R`/`test-ertte-coxph.R`. Issues #3, #4,
-#5, and #6 (empty `candidates` in `ertte_select_distribution()`, a
-cryptic single-row error from `ertte_coxph()`, `ertte_coxph()` not
-validating `time > 0`, and `ertte_fun()`'s closure argument order
-being `param` before `data`, unlike the rest of the API) remain open.
+`tests/testthat/test-ertte-aft.R`/`test-ertte-coxph.R`. #6
+(`ertte_fun()`'s closure argument order being `param` before `data`,
+unlike the rest of the API) is also fixed: both `ertte_fun.ertte_aft()`'s
+and `ertte_fun.ertte_coxph()`'s returned closures are now
+`function(data = NULL, time, param = NULL)`, matching the "data-first"
+convention `ertte_predict()`/`ertte_landmark()`/`ertte_rmst()` already
+use. No caller inside the package (`R/er-methods.R`'s
+`.ertte_simulate_scalar_resp()`/`.ertte_rmst_fit_resp_curve()` helpers,
+all examples, all existing tests) used positional arguments, so this
+was a pure signature change with no follow-on breakage -- confirmed by
+the full test suite and a clean `devtools::check()` after the change.
+New regression tests (`test-ertte-aft.R`/`test-ertte-coxph.R`) pin down
+the exact argument order via `names(formals(mod_fun))` and confirm a
+positional `mod_fun(newdata, time)` call now behaves the same as the
+equivalent named call. Issues #3, #4, and #5 (empty `candidates` in
+`ertte_select_distribution()`, a cryptic single-row error from
+`ertte_coxph()`, and `ertte_coxph()` not validating `time > 0`) remain
+open.
 
 ## API naming: AFT vs Cox PH
 

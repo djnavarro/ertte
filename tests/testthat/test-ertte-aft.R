@@ -60,3 +60,21 @@ test_that("ertte_fun() validates time the same way ertte_predict() does", {
   # a genuinely positive time still works (no false-positive rejection)
   expect_no_error(mod_fun(time = 60))
 })
+
+test_that("ertte_fun()'s closure takes data before param (issue #6)", {
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  mod_fun <- ertte_fun(mod)
+  expect_identical(names(formals(mod_fun)), c("data", "time", "param"))
+
+  # positional call: newdata first, matching ertte_predict()/ertte_landmark()
+  newdata <- ertte_data[1:5, ]
+  s_positional <- unname(mod_fun(newdata, 60))
+  s_named <- unname(mod_fun(data = newdata, time = 60))
+  expect_equal(s_positional, s_named)
+
+  # param still overridable, by name, after data/time
+  par2 <- coef(mod)
+  par2["(Intercept)"] <- par2["(Intercept)"] + 1
+  s_custom <- unname(mod_fun(newdata, 60, param = par2))
+  expect_false(isTRUE(all.equal(s_positional, s_custom)))
+})
