@@ -46,7 +46,7 @@ jobs:
           # erplots' default branch: it's the only place er_tte()/
           # er_predict_survival() exist so far (see issue #13/PR #14).
           # Switch back to `github::djnavarro/erplots` once that branch
-          # merges upstream.
+          # merges upstream -- tracked in issue #15.
           extra-packages: any::rcmdcheck, github::djnavarro/erplots@feat/er-tte-core-scaffolding
           needs: check
 
