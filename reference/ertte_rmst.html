@@ -115,7 +115,37 @@ integrating the closed-form survival function `S(t|x) = 1 - F((log(t)</p><ul><li
 "linear", se.fit = TRUE)<code>, matching [ertte_predict.ertte_aft()]. The standard error is an analytic delta method that differentiates under the integral sign: </code>d/dmu RMST(tau|x) = integral of dbase(z) / scale
 from 0 to tau<code>, where </code>dbase<code>is the base distribution's density (see</code>.ertte_dist_info()<code>) -- propagating only </code>Var(mu)<code>, not </code>Var(scale)<code>, the same simplification </code>ertte_predict.ertte_aft()` already makes for
 its own confidence intervals.</p></li>
-</ul><p>The <code>ertte_coxph</code> method delegates to
+</ul><p>Both integrals are actually evaluated on the <code>u = log(t)</code> scale
+(substituting <code>t = exp(u)</code>, <code>dt = exp(u) du</code>) rather than directly
+over <code>t in [0, tau]</code>: for a <code>tau</code> many orders of magnitude larger
+than the fitted model's natural timescale, <code><a href="https://rdrr.io/r/stats/integrate.html" class="external-link">stats::integrate()</a></code>'s
+adaptive quadrature can silently fail on the raw time scale –
+returning <code>0</code> with no error or warning, since the interval <code>[0, tau]</code> is enormous relative to the (comparatively tiny) region where
+<code>S(t|x)</code> actually differs from 0 (see issue #12). On the log scale,
+the upper integration bound is <code>log(tau)</code>, which grows only
+logarithmically with <code>tau</code>; the substituted integrand
+(<code>S(t|x) * t</code> / <code>(dbase(z) / scale) * t</code>, as a function of <code>u</code>)
+decays fast enough for every supported distribution that adaptive
+quadrature stays numerically reliable even for absurdly large <code>tau</code>.
+This changes nothing for ordinary <code>tau</code> values (confirmed
+numerically to agree with the untransformed integral to quadrature
+tolerance).</p>
+<p>Even with this fix, <code><a href="https://rdrr.io/r/stats/integrate.html" class="external-link">stats::integrate()</a></code> isn't unconditionally
+reliable for arbitrarily extreme <code>tau</code>: <code>fit_rmst</code> stays accurate to
+quadrature tolerance for <code>tau</code> many orders of magnitude beyond the
+fitting data's own follow-up range, but the delta-method gradient
+behind <code>se_rmst</code> was found (empirically, not from a general proof)
+to occasionally become unreliable somewhat sooner – the density-like
+integrand it evaluates is a much narrower "bump" than the
+broad-plateau survival curve <code>fit_rmst</code> integrates, and is
+correspondingly harder for adaptive quadrature to reliably locate
+once the integration domain is stretched far enough. <code>ertte_rmst()</code>
+warns (rather than silently risking an unreliable interval) if any
+<code>tau</code> exceeds 10,000 times the last observed follow-up time in the
+fitting data – a threshold with a wide empirical safety margin below
+where any instability was actually observed, not a hard numerical
+guarantee.</p>
+<p>The <code>ertte_coxph</code> method delegates to
 <code>survival::survfit(object, newdata, conf.int = conf_level, se.fit = TRUE)</code>, the same call <code><a href="ertte_predict.html">ertte_predict.ertte_coxph()</a></code> uses. Because the
 fitted baseline hazard (and therefore every covariate-adjusted
 survival curve) is a right-continuous step function, <code>fit_rmst</code> is an

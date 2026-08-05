@@ -87,6 +87,39 @@ the closed-form survival function \`S(t\|x) = 1 - F((log(t)
   tau`, where `dbase`is the base distribution's density (see`.ertte_dist_info()`) -- propagating only `Var(mu)`, not `Var(scale)`, the same simplification `ertte_predict.ertte_aft()\`
   already makes for its own confidence intervals.
 
+Both integrals are actually evaluated on the `u = log(t)` scale
+(substituting `t = exp(u)`, `dt = exp(u) du`) rather than directly over
+`t in [0, tau]`: for a `tau` many orders of magnitude larger than the
+fitted model's natural timescale,
+[`stats::integrate()`](https://rdrr.io/r/stats/integrate.html)'s
+adaptive quadrature can silently fail on the raw time scale – returning
+`0` with no error or warning, since the interval `[0, tau]` is enormous
+relative to the (comparatively tiny) region where `S(t|x)` actually
+differs from 0 (see issue \#12). On the log scale, the upper integration
+bound is `log(tau)`, which grows only logarithmically with `tau`; the
+substituted integrand (`S(t|x) * t` / `(dbase(z) / scale) * t`, as a
+function of `u`) decays fast enough for every supported distribution
+that adaptive quadrature stays numerically reliable even for absurdly
+large `tau`. This changes nothing for ordinary `tau` values (confirmed
+numerically to agree with the untransformed integral to quadrature
+tolerance).
+
+Even with this fix,
+[`stats::integrate()`](https://rdrr.io/r/stats/integrate.html) isn't
+unconditionally reliable for arbitrarily extreme `tau`: `fit_rmst` stays
+accurate to quadrature tolerance for `tau` many orders of magnitude
+beyond the fitting data's own follow-up range, but the delta-method
+gradient behind `se_rmst` was found (empirically, not from a general
+proof) to occasionally become unreliable somewhat sooner – the
+density-like integrand it evaluates is a much narrower "bump" than the
+broad-plateau survival curve `fit_rmst` integrates, and is
+correspondingly harder for adaptive quadrature to reliably locate once
+the integration domain is stretched far enough. `ertte_rmst()` warns
+(rather than silently risking an unreliable interval) if any `tau`
+exceeds 10,000 times the last observed follow-up time in the fitting
+data – a threshold with a wide empirical safety margin below where any
+instability was actually observed, not a hard numerical guarantee.
+
 The `ertte_coxph` method delegates to
 `survival::survfit(object, newdata, conf.int = conf_level, se.fit = TRUE)`,
 the same call
