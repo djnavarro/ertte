@@ -68,6 +68,38 @@ from 0 to tau\verb{, where }dbase\verb{is the base distribution's density (see}.
 its own confidence intervals.
 }
 
+Both integrals are actually evaluated on the \code{u = log(t)} scale
+(substituting \code{t = exp(u)}, \verb{dt = exp(u) du}) rather than directly
+over \verb{t in [0, tau]}: for a \code{tau} many orders of magnitude larger
+than the fitted model's natural timescale, \code{stats::integrate()}'s
+adaptive quadrature can silently fail on the raw time scale --
+returning \code{0} with no error or warning, since the interval \verb{[0, tau]} is enormous relative to the (comparatively tiny) region where
+\code{S(t|x)} actually differs from 0 (see issue #12). On the log scale,
+the upper integration bound is \code{log(tau)}, which grows only
+logarithmically with \code{tau}; the substituted integrand
+(\code{S(t|x) * t} / \code{(dbase(z) / scale) * t}, as a function of \code{u})
+decays fast enough for every supported distribution that adaptive
+quadrature stays numerically reliable even for absurdly large \code{tau}.
+This changes nothing for ordinary \code{tau} values (confirmed
+numerically to agree with the untransformed integral to quadrature
+tolerance).
+
+Even with this fix, \code{stats::integrate()} isn't unconditionally
+reliable for arbitrarily extreme \code{tau}: \code{fit_rmst} stays accurate to
+quadrature tolerance for \code{tau} many orders of magnitude beyond the
+fitting data's own follow-up range, but the delta-method gradient
+behind \code{se_rmst} was found (empirically, not from a general proof)
+to occasionally become unreliable somewhat sooner -- the density-like
+integrand it evaluates is a much narrower "bump" than the
+broad-plateau survival curve \code{fit_rmst} integrates, and is
+correspondingly harder for adaptive quadrature to reliably locate
+once the integration domain is stretched far enough. \code{ertte_rmst()}
+warns (rather than silently risking an unreliable interval) if any
+\code{tau} exceeds 10,000 times the last observed follow-up time in the
+fitting data -- a threshold with a wide empirical safety margin below
+where any instability was actually observed, not a hard numerical
+guarantee.
+
 The \code{ertte_coxph} method delegates to
 \code{survival::survfit(object, newdata, conf.int = conf_level, se.fit = TRUE)}, the same call \code{\link[=ertte_predict.ertte_coxph]{ertte_predict.ertte_coxph()}} uses. Because the
 fitted baseline hazard (and therefore every covariate-adjusted

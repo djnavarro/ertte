@@ -116,6 +116,39 @@ ertte_rmst <- function(object, newdata = NULL, tau, conf_level = .95, ...) {
 #' the same simplification `ertte_predict.ertte_aft()` already makes for
 #' its own confidence intervals.
 #'
+#' Both integrals are actually evaluated on the `u = log(t)` scale
+#' (substituting `t = exp(u)`, `dt = exp(u) du`) rather than directly
+#' over `t in [0, tau]`: for a `tau` many orders of magnitude larger
+#' than the fitted model's natural timescale, `stats::integrate()`'s
+#' adaptive quadrature can silently fail on the raw time scale --
+#' returning `0` with no error or warning, since the interval `[0,
+#' tau]` is enormous relative to the (comparatively tiny) region where
+#' `S(t|x)` actually differs from 0 (see issue #12). On the log scale,
+#' the upper integration bound is `log(tau)`, which grows only
+#' logarithmically with `tau`; the substituted integrand
+#' (`S(t|x) * t` / `(dbase(z) / scale) * t`, as a function of `u`)
+#' decays fast enough for every supported distribution that adaptive
+#' quadrature stays numerically reliable even for absurdly large `tau`.
+#' This changes nothing for ordinary `tau` values (confirmed
+#' numerically to agree with the untransformed integral to quadrature
+#' tolerance).
+#'
+#' Even with this fix, `stats::integrate()` isn't unconditionally
+#' reliable for arbitrarily extreme `tau`: `fit_rmst` stays accurate to
+#' quadrature tolerance for `tau` many orders of magnitude beyond the
+#' fitting data's own follow-up range, but the delta-method gradient
+#' behind `se_rmst` was found (empirically, not from a general proof)
+#' to occasionally become unreliable somewhat sooner -- the density-like
+#' integrand it evaluates is a much narrower "bump" than the
+#' broad-plateau survival curve `fit_rmst` integrates, and is
+#' correspondingly harder for adaptive quadrature to reliably locate
+#' once the integration domain is stretched far enough. `ertte_rmst()`
+#' warns (rather than silently risking an unreliable interval) if any
+#' `tau` exceeds 10,000 times the last observed follow-up time in the
+#' fitting data -- a threshold with a wide empirical safety margin below
+#' where any instability was actually observed, not a hard numerical
+#' guarantee.
+#'
 #' @rdname ertte_rmst
 #' @export
 #' @examples
@@ -140,6 +173,7 @@ ertte_rmst.ertte_aft <- function(object, newdata = NULL, tau, conf_level = .95, 
         )
     )
   }
+  .ertte_check_extreme_aft_tau(object, tau)
   info <- .ertte_dist_info(object$ertte$type)
   scale <- object$scale
   z_scale <- -stats::qnorm((1 - conf_level) / 2)
@@ -155,6 +189,20 @@ ertte_rmst.ertte_aft <- function(object, newdata = NULL, tau, conf_level = .95, 
   s_fun <- function(t, mu) 1 - info$pbase((log(t) - mu) / scale)
   grad_fun <- function(t, mu) info$dbase((log(t) - mu) / scale) / scale
 
+  # `s_fun_log()`/`grad_fun_log()` are `s_fun()`/`grad_fun()` reparameterised
+  # to integrate against `u = log(t)` (`t = exp(u)`, so `dt = exp(u) du`)
+  # rather than `t` directly -- see this method's Details for why (issue
+  # #12: raw-time-scale integration over `[0, tau]` can silently fail
+  # for extreme `tau`).
+  s_fun_log <- function(u, mu) {
+    t <- exp(u)
+    s_fun(t, mu) * t
+  }
+  grad_fun_log <- function(u, mu) {
+    t <- exp(u)
+    grad_fun(t, mu) * t
+  }
+
   # named distinctly from the `fit_rmst`/`ci_lower`/`ci_upper` columns the
   # `mutate()` below creates -- `newdata` may already carry columns of
   # those exact names (e.g. when a previous `ertte_rmst()` call's own
@@ -165,8 +213,8 @@ ertte_rmst.ertte_aft <- function(object, newdata = NULL, tau, conf_level = .95, 
   # values. See erplots#12.
   fit_rmst_val <- se_rmst_val <- numeric(length(tau_rep))
   for (i in seq_along(tau_rep)) {
-    fit_rmst_val[i] <- stats::integrate(s_fun, 0, tau_rep[i], mu = mu_rep[i])$value
-    grad <- stats::integrate(grad_fun, 0, tau_rep[i], mu = mu_rep[i])$value
+    fit_rmst_val[i] <- stats::integrate(s_fun_log, -Inf, log(tau_rep[i]), mu = mu_rep[i])$value
+    grad <- stats::integrate(grad_fun_log, -Inf, log(tau_rep[i]), mu = mu_rep[i])$value
     se_rmst_val[i] <- abs(grad) * se_mu_rep[i]
   }
 

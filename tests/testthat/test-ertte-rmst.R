@@ -125,6 +125,33 @@ test_that("ertte_rmst() handles a single-row newdata for both engines", {
   expect_equal(nrow(ertte_rmst(mod_cox, nd, tau = c(30, 60, 90))), 3L)
 })
 
+test_that("ertte_rmst() on ertte_aft doesn't silently return 0 for very large tau (issue #12)", {
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  prof <- ertte_data[1, , drop = FALSE]
+
+  # before the fix, stats::integrate()'s adaptive quadrature silently
+  # failed (returning 0, with no warning) somewhere between tau = 1e5 and
+  # tau = 5e5 for this model/profile -- reparameterising the integral onto
+  # the log(t) scale fixes this; fit_rmst should stay close to its
+  # converged value (well under the RMST horizon) for tau values that used
+  # to trigger the bug.
+  rmst <- suppressWarnings(ertte_rmst(mod, prof, tau = c(1e5, 5e5, 1e6, 1e9)))
+  expect_true(all(rmst$fit_rmst > 1)) # not silently 0
+  # RMST is non-decreasing in tau and must have converged well before
+  # these horizons (the survival curve is negligible long before tau=1e5)
+  expect_equal(rmst$fit_rmst, rep(rmst$fit_rmst[1], nrow(rmst)), tolerance = 1e-4)
+})
+
+test_that("ertte_rmst() on ertte_aft warns for tau far beyond the observed follow-up range", {
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  max_time <- max(ertte_data$time)
+  expect_warning(
+    ertte_rmst(mod, ertte_data[1, , drop = FALSE], tau = max_time * 1e5),
+    "10000x the last observed"
+  )
+  expect_no_warning(ertte_rmst(mod, ertte_data[1, , drop = FALSE], tau = 90))
+})
+
 test_that("ertte_rmst() recomputes fit_rmst/ci_lower/ci_upper even when newdata already has columns of those names", {
   # regression test for erplots#12: `newdata[rep_rows, ] |> mutate(fit_rmst
   # = fit_rmst, ...)` used to resolve the bare `fit_rmst` (and, in turn,

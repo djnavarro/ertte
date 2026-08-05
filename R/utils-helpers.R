@@ -267,6 +267,33 @@
   }
 }
 
+# Warns if any `tau` (as passed to `ertte_rmst.ertte_aft()`) is
+# extreme relative to the fitted model's own data -- specifically, more
+# than `ratio` times the last observed follow-up time. This isn't a
+# hard numerical guarantee (see `ertte_rmst.ertte_aft()`'s Details for
+# the empirical investigation behind it, and issue #12): `fit_rmst`
+# stays reliable (to quadrature tolerance) for `tau` many orders of
+# magnitude beyond this threshold, but the delta-method gradient behind
+# `se_rmst` was found to occasionally become numerically unreliable
+# somewhat sooner, evaluating a much narrower ("bump"-shaped) integrand
+# than `fit_rmst`'s broad-plateau survival curve. `ratio = 1e4` has a
+# wide empirical safety margin below where any instability was actually
+# observed in testing.
+.ertte_check_extreme_aft_tau <- function(object, tau, ratio = 1e4) {
+  vars <- .ertte_response_vars(object)
+  max_obs_time <- max(object$data[[vars$time]], na.rm = TRUE)
+  if (any(tau > ratio * max_obs_time)) {
+    rlang::warn(paste0(
+      "`tau` is more than ", format(ratio, scientific = FALSE), "x the last observed ",
+      "follow-up time (", max_obs_time, ") in the fitting data, for at least one value. ",
+      "`fit_rmst` stays numerically reliable well beyond this point, but `se_rmst`/the ",
+      "confidence interval is computed via numerical integration that can become ",
+      "unreliable for such an extreme horizon -- double-check `tau` isn't a ",
+      "unit-conversion mistake before trusting the interval."
+    ))
+  }
+}
+
 .ertte_pick_seed <- function(seed) {
   if (is.null(seed)) {
     seed <- .pick_seed()
