@@ -15,7 +15,7 @@ response, e.g. \code{Surv(time, event) ~ exposure}.}
 \item{dist}{The AFT distribution to fit, as for \code{survival::survreg()}.
 Defaults to \code{"weibull"}. Tested and officially supported for
 \code{"exponential"}, \code{"weibull"}, \code{"lognormal"}, and \code{"loglogistic"} --
-see \code{\link[=ertte_select_distribution]{ertte_select_distribution()}} for choosing among them by AIC.}
+see \code{\link[=ertte_aft_select_distribution]{ertte_aft_select_distribution()}} for choosing among them by AIC.}
 
 \item{...}{Other arguments passed to \code{survival::survreg()}.}
 }

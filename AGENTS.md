@@ -26,7 +26,7 @@ fully implemented, Phase 3 is not started (see "Planned work" below):
 `ertte_aft()` wraps `survival::survreg()` -- parametric accelerated
 failure time (AFT) model fitting (`ertte_aft()`), survival-probability
 prediction with confidence intervals (`ertte_predict()`), AIC-based
-distribution selection (`ertte_select_distribution()`), stepwise
+distribution selection (`ertte_aft_select_distribution()`), stepwise
 covariate modelling (`ertte_scm_forward()`/`ertte_scm_backward()`/
 `ertte_scm_history()`, built on the single-term
 `ertte_add_term()`/`ertte_remove_term()`), and simulation
@@ -544,6 +544,20 @@ plotting packages in package code.
     negligible there (a continuous quantile function, vs. the Cox
     engine's empirical/step-function baseline hazard, which realistically
     exhausts its support whenever `nsim` is reasonably large).
+- ~~`ertte_select_distribution()` naming~~ -- **renamed**, 2026-08-05, to
+  `ertte_aft_select_distribution()`. It's the one AFT-exclusive function
+  whose name didn't already say so (unlike `ertte_aft()`/`ertte_coxph()`
+  themselves, or the `dist` argument), which read as though it might
+  apply model-agnostically now that the package has two engines -- it
+  never did, and never will, since Cox PH has no `dist` to select over.
+  No back-compat alias, matching the precedent set by the earlier
+  `ertte_model()` -> `ertte_aft()`/`ertte_coxph()` split (see "API
+  naming: AFT vs Cox PH" below). Every reference across the package
+  (source, roxygen cross-links, tests, `_pkgdown.yml`, the `overview.Rmd`
+  article, this file) was updated in the same pass; `devtools::document()`
+  regenerated `NAMESPACE`/`man/ertte_aft_select_distribution.Rd` and
+  deleted the stale `man/ertte_select_distribution.Rd` automatically.
+  Confirmed with a full `devtools::test()` run afterwards.
 
 ## Stress-test findings and fixes
 
@@ -616,13 +630,13 @@ sufficient. The zero-usable-row case (already handled reasonably by
 the same `< 2` check for one consistent message rather than depending
 on which degenerate case happens to already be handled gracefully
 upstream. Regression tests live in `tests/testthat/test-ertte-coxph.R`. Issue #3
-(empty `candidates` in `ertte_select_distribution()`) is also fixed: a
+(empty `candidates` in `ertte_aft_select_distribution()`) is also fixed: a
 new `.ertte_check_dist_candidates()` helper (in `R/utils-helpers.R`) --
 deliberately separate from `ertte_scm_forward()`/`ertte_scm_backward()`'s
 `.ertte_check_candidates()`, which validates formula-term syntax that
 doesn't apply to `dist` names -- checks that `candidates` is a
 non-empty character vector with no missing values, called at the top
-of `ertte_select_distribution()` before the existing per-element
+of `ertte_aft_select_distribution()` before the existing per-element
 `.ertte_check_dist()` loop (which silently did nothing on
 `character(0)`, letting the function fit no candidates at all and
 return a degenerate `list(comparison = <0-row tibble>, model = NULL)`
@@ -744,7 +758,7 @@ originally filed) turned up one more genuine issue:
   time -- a threshold with a wide empirical safety margin below where
   any instability was actually observed.
   - The other minor observation from that pass --
-    `ertte_select_distribution()` not deduplicating duplicate
+    `ertte_aft_select_distribution()` not deduplicating duplicate
     `candidates` -- was investigated and found to be purely cosmetic
     (a `comparison` tibble with redundant rows for a repeated
     distribution name; model selection itself still resolves
@@ -809,8 +823,11 @@ Naming/dispatch scheme, now fully implemented for both engines
     call the matching constructor -- see the "Planned work" bullet
     above for the history of why a plain `stats::update()` doesn't work
     here.
-  - `ertte_select_distribution()` -- stays AFT-only, no Cox PH
-    equivalent.
+  - `ertte_aft_select_distribution()` -- stays AFT-only, no Cox PH
+    equivalent. Named `ertte_select_distribution()` until 2026-08-05,
+    when it was renamed for consistency with this engine-specific
+    naming scheme (see "Planned work" above) -- it was the sole
+    AFT-only function whose name didn't already signal that.
   - `ertte_rmst()` -- a generic, with methods for both engines:
     `ertte_rmst.ertte_aft()` (quadrature + analytic delta method) and
     `ertte_rmst.ertte_coxph()` (exact step-function sum + a delta method
@@ -861,7 +878,7 @@ Naming/dispatch scheme, now fully implemented for both engines
   own, shorter website-only article, `vignettes/articles/landmark.Rmd`
   (see "Development workflow" below), loosely modelled on
   `rmst.Rmd`'s structure.
-- `R/ertte-family.R` -- `ertte_select_distribution()`: fits each
+- `R/ertte-family.R` -- `ertte_aft_select_distribution()`: fits each
   candidate AFT distribution and returns the AIC-ranked comparison plus
   the best-fitting model.
 - `R/ertte-scm.R` -- forward/backward stepwise covariate modelling
@@ -945,7 +962,7 @@ Naming/dispatch scheme, now fully implemented for both engines
   `R/ertte-data.R`, commented out below the function definition (same
   pattern as `erglm_data`). Effect sizes/seed (`seed = 111L`,
   `beta_aucss = -0.0007`, `sex_effect = 0.4`) were tuned so that (a)
-  `ertte_select_distribution()` recovers the true Weibull ground truth
+  `ertte_aft_select_distribution()` recovers the true Weibull ground truth
   with a clear AIC margin, and (b) `ertte_scm_forward()` reliably
   detects the true `sex` effect at the default threshold -- both are
   exercised by regression tests, so if the dataset is ever regenerated

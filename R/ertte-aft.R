@@ -8,7 +8,7 @@
 #' @param dist The AFT distribution to fit, as for `survival::survreg()`.
 #' Defaults to `"weibull"`. Tested and officially supported for
 #' `"exponential"`, `"weibull"`, `"lognormal"`, and `"loglogistic"` --
-#' see [ertte_select_distribution()] for choosing among them by AIC.
+#' see [ertte_aft_select_distribution()] for choosing among them by AIC.
 #' @param ... Other arguments passed to `survival::survreg()`.
 #' @returns A survreg object with extra `ertte_aft`/`ertte_model` classes
 #'

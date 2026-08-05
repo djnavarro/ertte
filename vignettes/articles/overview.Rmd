@@ -138,10 +138,10 @@ consistent with `ertte_data`'s known Weibull AFT ground truth (see
 `?ertte_data`).
 
 Choosing among the four supported distributions by AIC is automated by
-`ertte_select_distribution()`:
+`ertte_aft_select_distribution()`:
 
 ```{r}
-cmp <- ertte_select_distribution(Surv(time, event) ~ aucss, ertte_data)
+cmp <- ertte_aft_select_distribution(Surv(time, event) ~ aucss, ertte_data)
 cmp$comparison
 ```
 

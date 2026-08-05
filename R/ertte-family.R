@@ -27,11 +27,11 @@
 #' @export
 #' @examples
 #' # (uses ertte_aft() internally for each candidate distribution)
-#' cmp <- ertte_select_distribution(Surv(time, event) ~ aucss, ertte_data)
+#' cmp <- ertte_aft_select_distribution(Surv(time, event) ~ aucss, ertte_data)
 #' cmp$comparison
 #' cmp$model
 #'
-ertte_select_distribution <- function(formula, data, candidates = c("exponential", "weibull", "lognormal", "loglogistic")) {
+ertte_aft_select_distribution <- function(formula, data, candidates = c("exponential", "weibull", "lognormal", "loglogistic")) {
   .ertte_check_dist_candidates(candidates)
   for (cc in candidates) .ertte_check_dist(cc)
   fits <- lapply(candidates, function(dd) ertte_aft(formula, data, dist = dd))

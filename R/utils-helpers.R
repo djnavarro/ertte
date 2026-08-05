@@ -50,7 +50,7 @@
 # `.ertte_check_dist_candidates()` (which needs nothing more, since
 # each element is separately checked against the supported
 # distributions by `.ertte_check_dist()`, for
-# `ertte_select_distribution()`'s `candidates`). Both callers name
+# `ertte_aft_select_distribution()`'s `candidates`). Both callers name
 # their argument `candidates`, but `arg_name` is still a parameter
 # (not hardcoded) so the helper stays reusable if a future caller
 # names its argument something else.
@@ -111,11 +111,11 @@
   }
 }
 
-# `candidates` (as passed to `ertte_select_distribution()`) must be a
+# `candidates` (as passed to `ertte_aft_select_distribution()`) must be a
 # non-empty character vector -- each element is separately validated
 # against the supported distributions by `.ertte_check_dist()`, but
 # that per-element loop silently does nothing on `character(0)`, which
-# used to let `ertte_select_distribution()` fit no candidates at all
+# used to let `ertte_aft_select_distribution()` fit no candidates at all
 # and return a degenerate `list(comparison = <0-row tibble>, model =
 # NULL)` instead of erroring (see issue #3). Deliberately a separate
 # function from `.ertte_check_candidates()` (used by
