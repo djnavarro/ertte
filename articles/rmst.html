@@ -31,12 +31,7 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/rmst.html">Restricted mean survival time in ertte</a></li>
-  </ul>
-</li>
+<li class="active nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -468,6 +463,42 @@ observed follow-up time in <code>ertte_data</code>; the returned value
 still assumes survival stays flat beyond that point.</p>
 </div>
 <div class="section level2">
+<h2 id="using-rmst-in-a-visual-predictive-check">Using RMST in a visual predictive check<a class="anchor" aria-label="anchor" href="#using-rmst-in-a-visual-predictive-check"></a>
+</h2>
+<p><code>ertte</code>’s <code>erplots</code> integration also supports
+RMST-based visual predictive checks (VPCs): passing <code>tau</code>
+through <code>simulate_args</code> to
+<code><a href="https://erplots.djnavarro.net/reference/er_vpc_add_simulated.html" class="external-link">erplots::er_vpc_add_simulated()</a></code> reduces each simulated
+replicate to a per-subject restricted survival time,
+<code>min(sim_time, tau)</code>, then compares its distribution against
+the observed data binned by exposure. This reuses the
+<em>already-censored</em> simulated event times – the same
+administrative- censoring convention described above – rather than the
+model’s raw, uncensored draws, since a VPC’s purpose is checking whether
+the model reproduces what you’d actually observe under the study’s real
+censoring pattern.</p>
+<p>A consequence worth knowing about: a simulated replicate that’s
+censored <em>before</em> <code>tau</code> has a genuinely ambiguous
+restricted survival time (we don’t know what would have happened between
+the censoring time and <code>tau</code>), and is dropped (returned as
+<code>NA</code>) rather than imputed or reweighted. This is a
+complete-case convention, applied identically to the observed and
+simulated sides of the comparison – and, unlike a naive complete-case
+<em>point estimate</em>, isn’t obviously the wrong choice here, since
+it’s the observed study’s actual censoring pattern driving both sides
+equally. A more sophisticated correction
+(inverse-probability-of-censoring weighting, or pseudo-observations) was
+considered but isn’t offered: erplots’ VPC aggregation is currently an
+unweighted mean, so there’s nowhere for an IPCW-style weight to be
+applied downstream, and a pseudo-observations approach would need an
+expensive leave-one-out recomputation for every simulated replicate. If
+this convention drops an uncomfortably large fraction of replicates in a
+given analysis, supplying <code>censor_time</code> (a per-subject
+administrative follow-up horizon) to <code>simulate_args</code> changes
+how much ambiguity arises in the first place, rather than trying to
+correct for it after the fact.</p>
+</div>
+<div class="section level2">
 <h2 id="summary-of-assumptions-and-limitations">Summary of assumptions and limitations<a class="anchor" aria-label="anchor" href="#summary-of-assumptions-and-limitations"></a>
 </h2>
 <ul>
@@ -504,6 +535,12 @@ Unlike a hazard ratio, RMST is not a single summary of the whole
 exposure-response relationship – it’s specific to the chosen horizon,
 and different horizons can tell different (both valid) stories about the
 same fitted model.</li>
+<li>
+<strong>RMST-based VPC simulations drop replicates censored before
+<code>tau</code> as ambiguous (complete-case), with no
+IPCW/pseudo-observation alternative currently offered</strong> – see
+“Using RMST in a visual predictive check” above for why, and for the
+<code>censor_time</code> mitigation.</li>
 </ul>
 </div>
 <div class="section level2">

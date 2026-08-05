@@ -374,6 +374,38 @@ The warning above fires because `250` exceeds the longest observed
 follow-up time in `ertte_data`; the returned value still assumes
 survival stays flat beyond that point.
 
+## Using RMST in a visual predictive check
+
+`ertte`’s `erplots` integration also supports RMST-based visual
+predictive checks (VPCs): passing `tau` through `simulate_args` to
+[`erplots::er_vpc_add_simulated()`](https://erplots.djnavarro.net/reference/er_vpc_add_simulated.html)
+reduces each simulated replicate to a per-subject restricted survival
+time, `min(sim_time, tau)`, then compares its distribution against the
+observed data binned by exposure. This reuses the *already-censored*
+simulated event times – the same administrative- censoring convention
+described above – rather than the model’s raw, uncensored draws, since a
+VPC’s purpose is checking whether the model reproduces what you’d
+actually observe under the study’s real censoring pattern.
+
+A consequence worth knowing about: a simulated replicate that’s censored
+*before* `tau` has a genuinely ambiguous restricted survival time (we
+don’t know what would have happened between the censoring time and
+`tau`), and is dropped (returned as `NA`) rather than imputed or
+reweighted. This is a complete-case convention, applied identically to
+the observed and simulated sides of the comparison – and, unlike a naive
+complete-case *point estimate*, isn’t obviously the wrong choice here,
+since it’s the observed study’s actual censoring pattern driving both
+sides equally. A more sophisticated correction
+(inverse-probability-of-censoring weighting, or pseudo-observations) was
+considered but isn’t offered: erplots’ VPC aggregation is currently an
+unweighted mean, so there’s nowhere for an IPCW-style weight to be
+applied downstream, and a pseudo-observations approach would need an
+expensive leave-one-out recomputation for every simulated replicate. If
+this convention drops an uncomfortably large fraction of replicates in a
+given analysis, supplying `censor_time` (a per-subject administrative
+follow-up horizon) to `simulate_args` changes how much ambiguity arises
+in the first place, rather than trying to correct for it after the fact.
+
 ## Summary of assumptions and limitations
 
 - **AFT confidence intervals ignore uncertainty in the scale
@@ -406,6 +438,10 @@ survival stays flat beyond that point.
   is not a single summary of the whole exposure-response relationship –
   it’s specific to the chosen horizon, and different horizons can tell
   different (both valid) stories about the same fitted model.
+- **RMST-based VPC simulations drop replicates censored before `tau` as
+  ambiguous (complete-case), with no IPCW/pseudo-observation alternative
+  currently offered** – see “Using RMST in a visual predictive check”
+  above for why, and for the `censor_time` mitigation.
 
 ## Further reading
 
