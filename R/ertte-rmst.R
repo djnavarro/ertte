@@ -139,20 +139,28 @@ ertte_rmst.ertte_aft <- function(object, newdata = NULL, tau, conf_level = .95, 
   s_fun <- function(t, mu) 1 - info$pbase((log(t) - mu) / scale)
   grad_fun <- function(t, mu) info$dbase((log(t) - mu) / scale) / scale
 
-  fit_rmst <- se_rmst <- numeric(length(tau_rep))
+  # named distinctly from the `fit_rmst`/`ci_lower`/`ci_upper` columns the
+  # `mutate()` below creates -- `newdata` may already carry columns of
+  # those exact names (e.g. when a previous `ertte_rmst()` call's own
+  # output is reused as `newdata`, as `erplots::er_plot()`'s model-curve
+  # grid naturally does), and `dplyr::mutate()`'s data mask would resolve
+  # a bare `fit_rmst` reference against that pre-existing column instead
+  # of this freshly computed vector, silently passing through stale
+  # values. See erplots#12.
+  fit_rmst_val <- se_rmst_val <- numeric(length(tau_rep))
   for (i in seq_along(tau_rep)) {
-    fit_rmst[i] <- stats::integrate(s_fun, 0, tau_rep[i], mu = mu_rep[i])$value
+    fit_rmst_val[i] <- stats::integrate(s_fun, 0, tau_rep[i], mu = mu_rep[i])$value
     grad <- stats::integrate(grad_fun, 0, tau_rep[i], mu = mu_rep[i])$value
-    se_rmst[i] <- abs(grad) * se_mu_rep[i]
+    se_rmst_val[i] <- abs(grad) * se_mu_rep[i]
   }
 
   newdata[rep_rows, , drop = FALSE] |>
     tibble::as_tibble() |>
     dplyr::mutate(
       tau = unname(tau_rep),
-      fit_rmst = fit_rmst,
-      ci_lower = fit_rmst - z_scale * se_rmst,
-      ci_upper = fit_rmst + z_scale * se_rmst,
+      fit_rmst = unname(fit_rmst_val),
+      ci_lower = unname(fit_rmst_val - z_scale * se_rmst_val),
+      ci_upper = unname(fit_rmst_val + z_scale * se_rmst_val),
     )
 }
 
@@ -221,15 +229,18 @@ ertte_rmst.ertte_coxph <- function(object, newdata = NULL, tau, conf_level = .95
 
   rep_rows <- rep(seq_len(n), each = k)
   tau_rep <- rep(tau, times = n)
-  fit_rmst <- res_mat[, "rmean"]
-  se_rmst <- res_mat[, "se_rmean"]
+  # named distinctly from the `fit_rmst`/`ci_lower`/`ci_upper` columns the
+  # `mutate()` below creates -- see the matching comment in
+  # `ertte_rmst.ertte_aft()` above (erplots#12).
+  fit_rmst_val <- res_mat[, "rmean"]
+  se_rmst_val <- res_mat[, "se_rmean"]
 
   newdata[rep_rows, , drop = FALSE] |>
     tibble::as_tibble() |>
     dplyr::mutate(
       tau = unname(tau_rep),
-      fit_rmst = unname(fit_rmst),
-      ci_lower = unname(fit_rmst - z_scale * se_rmst),
-      ci_upper = unname(fit_rmst + z_scale * se_rmst),
+      fit_rmst = unname(fit_rmst_val),
+      ci_lower = unname(fit_rmst_val - z_scale * se_rmst_val),
+      ci_upper = unname(fit_rmst_val + z_scale * se_rmst_val),
     )
 }

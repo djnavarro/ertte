@@ -156,6 +156,29 @@ test_that("tau reaches er_predict.ertte_model() through erplots' er_plot_add_mod
   expect_s3_class(built$output, "patchwork")
 })
 
+test_that("er_plot()'s RMST model curve is correct when built from a reused ertte_rmst() output (erplots#12)", {
+  # `built$output`'s class alone (checked above) doesn't catch a curve
+  # that renders but is numerically wrong. erplots' `.get_model_predictions()`
+  # fills its exposure grid with reference values for every other column of
+  # the plot's own data -- including, here, `rmst_ref`'s own `fit_rmst`/
+  # `ci_lower`/`ci_upper` columns -- which used to trigger a dplyr
+  # data-mask shadowing bug in `ertte_rmst()` (fixed in R/ertte-rmst.R)
+  # that made the model curve flat instead of varying with exposure.
+  skip_if_not_installed("erplots")
+  skip_if_not("predict_args" %in% names(formals(erplots::er_plot_add_model)))
+
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  rmst_ref <- ertte_rmst(mod, ertte_data, tau = 90)
+
+  p <- erplots::er_plot(rmst_ref, aucss, fit_rmst) |>
+    erplots::er_plot_add_model(mod, predict_args = list(tau = 90))
+  built <- erplots::er_plot_build(p)
+
+  curve <- built$layer$model$config$predictions
+  expect_true(all(diff(curve$fit_resp) < 0))
+  expect_gt(diff(range(curve$fit_resp)), 30)
+})
+
 test_that("landmark_time reaches a landmark-binary VPC through erplots' er_vpc_add_simulated(simulate_args = ...)", {
   skip_if_not_installed("erplots")
   skip_if_not("simulate_args" %in% names(formals(erplots::er_vpc_add_simulated)))
