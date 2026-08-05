@@ -13,23 +13,57 @@
 # installed for ertte's modelling functions to work standalone.
 #
 # `er_predict.ertte_model()` implements phase 2's Workstream B1 --
-# scalar E-R views of a TTE endpoint -- via the landmark-binary
-# reduction only: `P(event by t*)` as a function of exposure, computed
-# by `ertte_landmark()` (see `R/ertte-landmark.R`). `landmark_time`
-# (the fixed `t*`) has to be threaded through `...`, since erplots'
-# `er_predict(model, newdata, conf_level)` contract has a fixed
-# signature with no TTE-specific argument. RMST (the other scalar
-# reduction the design issue mentions) and landmark-VPC parity for
-# `er_simulate.ertte_model()` (below -- which still returns per-row
-# `sim_time`/`sim_event`, not a landmark-transformed draw) are
-# deliberately deferred -- see AGENTS.md's "Planned work".
+# scalar E-R views of a TTE endpoint -- via both of the design issue's
+# scalar reductions: landmark-binary (`P(event by t*)`, via
+# `ertte_landmark()`, see `R/ertte-landmark.R`) and RMST (via
+# `ertte_rmst()`, see `R/ertte-rmst.R`). Since erplots' `er_predict(model,
+# newdata, conf_level)` contract has a fixed signature with no
+# TTE-specific argument, the reduction-specific argument (`landmark_time`
+# or `tau`) has to be threaded through `...`; which one is supplied
+# selects which reduction runs (supplying both, or neither, errors
+# informatively rather than silently picking one or doing nothing).
+# `ertte_rmst()`'s own `tau` argument accepts a vector (evaluating
+# multiple horizons at once), but only a single value is accepted here,
+# since erplots' scalar E-R grammar expects exactly one row per `newdata`
+# row. Both branches rename their reduction-specific fitted-value column
+# (`fit_resp`/`fit_rmst`) to the shared `fit_resp` name erplots' plotting
+# grammar expects, regardless of which reduction produced it. Landmark-VPC
+# parity for `er_simulate.ertte_model()` (below -- which still returns
+# per-row `sim_time`/`sim_event`, not a landmark-transformed draw) is
+# still deliberately deferred -- see AGENTS.md's "Planned work".
 
 er_predict.ertte_model <- function(model, newdata, conf_level = 0.95, ...) {
   dots <- list(...)
+  has_landmark <- !is.null(dots$landmark_time)
+  has_tau <- !is.null(dots$tau)
+
+  if (has_landmark && has_tau) {
+    rlang::abort(paste0(
+      "`er_predict.ertte_model()` accepts only one of `landmark_time` or ",
+      "`tau` (via `...`) per call -- they select different scalar E-R ",
+      "reductions (landmark-binary vs restricted mean survival time)."
+    ))
+  }
+
+  if (has_tau) {
+    tau <- dots$tau
+    if (!is.numeric(tau) || length(tau) != 1L || is.na(tau) || tau <= 0) {
+      rlang::abort(paste0(
+        "`tau` (passed via `...` to `er_predict()`) must be a single, ",
+        "strictly positive number -- erplots' scalar E-R plotting grammar ",
+        "expects one row per `newdata` row, so `ertte_rmst()`'s vectorised ",
+        "`tau` argument isn't supported through this interface."
+      ))
+    }
+    rmst <- ertte_rmst(object = model, newdata = newdata, tau = tau, conf_level = conf_level)
+    return(dplyr::rename(rmst, fit_resp = fit_rmst))
+  }
+
   landmark_time <- dots$landmark_time %||% rlang::abort(paste0(
-    "er_predict.ertte_model() requires a `landmark_time` argument ",
-    "(via `...`), giving the fixed time t* at which to compute ",
-    "P(event by t*) -- see `ertte_landmark()`."
+    "er_predict.ertte_model() requires either a `landmark_time` argument ",
+    "(via `...`), giving the fixed time t* at which to compute P(event by ",
+    "t*) -- see `ertte_landmark()` -- or a `tau` argument, giving the ",
+    "restricted mean survival time horizon -- see `ertte_rmst()`."
   ))
   ertte_landmark(object = model, newdata = newdata, landmark_time = landmark_time, conf_level = conf_level)
 }

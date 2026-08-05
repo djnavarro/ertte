@@ -210,6 +210,20 @@ plotting packages in package code.
   argument -- has to travel through `...`; omitting it errors
   informatively rather than silently doing nothing).
 
+  `er_predict.ertte_model()` now also forwards to `ertte_rmst()` when a
+  `tau` argument (rather than `landmark_time`) arrives through `...`,
+  since RMST is the other scalar E-R reduction the design issue
+  mentions. Supplying both `landmark_time` and `tau` in the same call
+  errors (they select different reductions), and -- unlike
+  `ertte_rmst()`'s own vectorised `tau` argument, which can evaluate
+  several horizons at once -- only a single `tau` value is accepted
+  here, since erplots' scalar E-R grammar expects exactly one row per
+  `newdata` row. Both branches rename their reduction's fitted-value
+  column (`ertte_landmark()`'s `fit_resp` already matches; `ertte_rmst()`'s
+  `fit_rmst` is renamed to `fit_resp`) to the single shared name
+  erplots' plotting grammar expects, regardless of which reduction
+  produced it.
+
   One piece from the design issue's Workstream B1 is still deliberately
   deferred, confirmed with the maintainer when scoping this:
   - **`er_simulate.ertte_model()` landmark-VPC parity.** The issue notes

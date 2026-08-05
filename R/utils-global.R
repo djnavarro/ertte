@@ -3,8 +3,8 @@
 # declared here so `R CMD check` doesn't flag them as undefined globals.
 utils::globalVariables(c(
   "aic", "aucss", "ci_lower", "ci_upper", "dat_id", "dose",
-  "dropout_time", "fit_survival", "iteration", "model_updated", "mu",
-  "new_ci_lower", "new_ci_upper", "row_id", "sex", "sim_event",
+  "dropout_time", "fit_rmst", "fit_survival", "iteration", "model_updated",
+  "mu", "new_ci_lower", "new_ci_upper", "row_id", "sex", "sim_event",
   "sim_id", "sim_time", "time", "time_true", "weight"
 ))
 

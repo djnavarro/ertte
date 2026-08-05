@@ -2,6 +2,11 @@ url: https://ertte.djnavarro.net/
 template:
   package: waeponwifestre
 
+articles:
+- title: Articles
+  contents:
+  - rmst
+
 reference:
 - title: Build
   desc: Fit exposure-response time-to-event models based on survreg()/coxph()
