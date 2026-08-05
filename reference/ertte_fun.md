@@ -56,7 +56,11 @@ numeric and has one entry per column of the model matrix implied by
 "non-conformable arguments" error from matrix multiplication. `scale` is
 always taken from the fitted `object`, not from `param` (the coefficient
 vector from [`coef()`](https://rdrr.io/r/stats/coef.html) never includes
-it).
+it). `time` is validated the same way
+[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
+validates it (a numeric vector of strictly positive values) – a
+non-positive `time` previously returned a silent `NaN` (via
+[`log()`](https://rdrr.io/r/base/Log.html)) instead of erroring.
 
 The `ertte_coxph` method returns a function that evaluates
 `S(t | x) = S0(t)^exp((x - xbar)'param)`, where `S0(t)` is the fitted
@@ -74,7 +78,11 @@ partial likelihood's risk sets) – matching the level of approximation
 used elsewhere in this package (e.g. `scale` for AFT models is likewise
 held fixed). Since Cox models have no intercept, `param` has one entry
 per covariate with no `"(Intercept)"` column, unlike
-`ertte_fun.ertte_aft()`.
+`ertte_fun.ertte_aft()`. `time` is validated the same way
+[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
+validates it (a numeric vector of strictly positive values) – a
+non-positive `time` previously returned a silent `1` (as if survival
+were guaranteed) instead of erroring.
 
 ## Examples
 

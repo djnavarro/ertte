@@ -92,7 +92,10 @@ matrix implied by <code>data</code>, erroring informatively rather than failing
 with a cryptic "non-conformable arguments" error from matrix
 multiplication. <code>scale</code> is always taken from the fitted <code>object</code>, not
 from <code>param</code> (the coefficient vector from <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> never includes
-it).</p>
+it). <code>time</code> is validated the same way <code><a href="ertte_predict.html">ertte_predict()</a></code> validates it
+(a numeric vector of strictly positive values) – a non-positive
+<code>time</code> previously returned a silent <code>NaN</code> (via <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code>) instead of
+erroring.</p>
 <p>The <code>ertte_coxph</code> method returns a function that evaluates
 <code>S(t | x) = S0(t)^exp((x - xbar)'param)</code>, where <code>S0(t)</code> is the fitted
 baseline survival curve (via <code>survival::basehaz(object, centered = TRUE)</code>, held constant beyond the last observed time, matching
@@ -107,7 +110,10 @@ partial likelihood's risk sets) – matching the level of
 approximation used elsewhere in this package (e.g. <code>scale</code> for AFT
 models is likewise held fixed). Since Cox models have no intercept,
 <code>param</code> has one entry per covariate with no <code>"(Intercept)"</code> column,
-unlike <code>ertte_fun.ertte_aft()</code>.</p>
+unlike <code>ertte_fun.ertte_aft()</code>. <code>time</code> is validated the same way
+<code><a href="ertte_predict.html">ertte_predict()</a></code> validates it (a numeric vector of strictly positive
+values) – a non-positive <code>time</code> previously returned a silent <code>1</code>
+(as if survival were guaranteed) instead of erroring.</p>
     </div>
 
     <div class="section level2">
