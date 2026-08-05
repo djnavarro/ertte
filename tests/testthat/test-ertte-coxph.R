@@ -39,6 +39,31 @@ test_that("ertte_coxph() validates that response times are strictly positive (is
   expect_no_error(ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data))
 })
 
+test_that("ertte_coxph() gives an informative error on fewer than 2 usable rows (issue #4)", {
+  expect_error(
+    ertte_coxph(survival::Surv(time, event) ~ sex, ertte_data[1, ]),
+    "at least 2 usable rows"
+  )
+  expect_error(
+    ertte_coxph(survival::Surv(time, event) ~ sex, ertte_data[0, ]),
+    "at least 2 usable rows"
+  )
+
+  # 2 raw rows but only 1 usable (missing covariate) is just as broken
+  # as literally supplying 1 row
+  d_one_usable <- ertte_data[1:2, ]
+  d_one_usable$sex[2] <- NA
+  expect_error(
+    ertte_coxph(survival::Surv(time, event) ~ sex, d_one_usable),
+    "at least 2 usable rows"
+  )
+
+  # 2 usable rows fits (with a convergence warning, not an error)
+  expect_no_error(
+    suppressWarnings(ertte_coxph(survival::Surv(time, event) ~ sex, ertte_data[1:2, ]))
+  )
+})
+
 test_that("ertte_fun() on ertte_coxph reproduces the fitted model's own predictions", {
   mod <- ertte_coxph(survival::Surv(time, event) ~ aucss + sex, ertte_data)
   mod_fun <- ertte_fun(mod)

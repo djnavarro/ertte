@@ -597,9 +597,27 @@ model takes `log(time)`, undefined for non-positive values, and
 distribution") -- there was no gap to close there, just an engine
 inconsistency (`coxph()` has no equivalent check of its own) that this
 fix closes from the `ertte_coxph()` side. Regression tests live in
-`tests/testthat/test-ertte-coxph.R`. Issues #3 and #4 (empty
-`candidates` in `ertte_select_distribution()`, and a cryptic
-single-row error from `ertte_coxph()`) remain open.
+`tests/testthat/test-ertte-coxph.R`. #4 (a cryptic single-row error
+from `ertte_coxph()`) is also fixed: `survival::coxph()` crashes with
+`'x' must be an array of at least two dimensions` (from `rowSums()` on
+its own post-fit `influence` diagnostics, which degrades from a matrix
+to a plain vector with only one observation) when fitting on exactly
+one usable row. A new `.ertte_check_coxph_data_size()` helper (in
+`R/utils-helpers.R`, called from `ertte_coxph()` right after
+`.ertte_check_response_time()`) checks up front that at least 2 usable
+rows are available, erroring informatively otherwise. "Usable rows" is
+approximated via a plain `stats::model.frame(formula, data)` (relying
+on its default `na.action`, `na.omit`, to match `coxph()`'s own
+default) rather than `nrow(data)` -- confirmed empirically that 2 raw
+rows with a missing covariate on one of them crashes identically to
+truly supplying 1 row, so counting raw rows wouldn't have been
+sufficient. The zero-usable-row case (already handled reasonably by
+`coxph()` itself, with "No (non-missing) observations") is folded into
+the same `< 2` check for one consistent message rather than depending
+on which degenerate case happens to already be handled gracefully
+upstream. Regression tests live in `tests/testthat/test-ertte-coxph.R`.
+Issue #3 (empty `candidates` in `ertte_select_distribution()`) remains
+open.
 
 ## API naming: AFT vs Cox PH
 

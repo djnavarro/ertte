@@ -67,6 +67,13 @@
 #' for non-positive values), but `coxph()` has no equivalent check --
 #' this closes that gap so behaviour is consistent across both engines.
 #'
+#' `ertte_coxph()` also checks up front that at least 2 usable rows
+#' (after accounting for missing values) are available to fit:
+#' `survival::coxph()` fails with a cryptic, low-level error
+#' (`'x' must be an array of at least two dimensions`, from its own
+#' post-fit diagnostics) when fitting on exactly one usable row, rather
+#' than a message that points at the real problem.
+#'
 #' @export
 #' @examples
 #' mod <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
@@ -84,6 +91,7 @@ ertte_coxph <- function(formula, data, ...) {
   # `survfit()`'s caller's frame. Storing the model frame directly
   # sidesteps that.
   .ertte_check_response_time(formula, data)
+  .ertte_check_coxph_data_size(formula, data)
   mod <- survival::coxph(formula = formula, data = data, model = TRUE, ...)
   # as with `ertte_aft()`/`survreg()`, `coxph()` doesn't retain the
   # fitting data on the returned object -- store it explicitly so

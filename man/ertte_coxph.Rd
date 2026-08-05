@@ -52,6 +52,13 @@ effect of \code{survival::survreg()}'s own internal check (a
 log-location-scale AFT model takes \code{log(time)}, which is undefined
 for non-positive values), but \code{coxph()} has no equivalent check --
 this closes that gap so behaviour is consistent across both engines.
+
+\code{ertte_coxph()} also checks up front that at least 2 usable rows
+(after accounting for missing values) are available to fit:
+\code{survival::coxph()} fails with a cryptic, low-level error
+(\verb{'x' must be an array of at least two dimensions}, from its own
+post-fit diagnostics) when fitting on exactly one usable row, rather
+than a message that points at the real problem.
 }
 \examples{
 mod <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)

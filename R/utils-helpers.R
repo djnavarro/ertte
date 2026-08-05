@@ -169,6 +169,43 @@
   }
 }
 
+# `survival::coxph()` crashes with a cryptic, low-level error when
+# fitting on exactly one usable row -- `'x' must be an array of at
+# least two dimensions`, from `rowSums(fit$influence[, 1:3])` inside
+# `coxph()`'s own post-fit diagnostics, triggered because `influence`
+# degrades from a matrix to a plain vector when there's only one
+# observation (see issue #4). With zero usable rows, `coxph()` already
+# fails with a reasonably clear message of its own ("No (non-missing)
+# observations"), so this isn't strictly needed there, but checking
+# `< 2` uniformly gives one clear message for both degenerate cases
+# rather than depending on which one happens to already be handled
+# gracefully upstream.
+#
+# "Usable rows" means after `coxph()`'s own missing-data handling would
+# apply, not simply `nrow(data)` -- a formula with a covariate that is
+# `NA` on all-but-one row is just as broken as literally supplying one
+# row of data (confirmed empirically). This is approximated by building
+# a plain `stats::model.frame()` on `formula`/`data` (with the default
+# `na.action`, `na.omit`, matching `coxph()`'s own default) and counting
+# its rows -- this only approximates `coxph()`'s real fitting pathway
+# (e.g. it ignores `subset`/a caller-supplied `na.action`/`weights` in
+# `...`), so it's a heuristic pre-flight check, not a guarantee.
+.ertte_check_coxph_data_size <- function(formula, data) {
+  mf <- suppressWarnings(
+    tryCatch(stats::model.frame(formula, data), error = function(e) NULL)
+  )
+  n <- if (is.null(mf)) 0L else nrow(mf)
+  if (n < 2L) {
+    rlang::abort(paste0(
+      "ertte_coxph() needs at least 2 usable rows (after removing rows ",
+      "with missing values) to fit a Cox model, but only ", n, " row",
+      if (n != 1L) "s were" else " was", " available. `survival::coxph()` ",
+      "itself fails with a cryptic, low-level error when there's exactly ",
+      "one usable row, so this is checked explicitly up front."
+    ))
+  }
+}
+
 # Shared by `.ertte_simulate_draws()`'s per-engine methods: if `seed` is
 # `NULL`, pick one and tell the user (since it determines the actual
 # simulated values returned), otherwise pass it through unchanged.
