@@ -32,6 +32,12 @@ selects the best fit by AIC.
 Ties (to floating point) are broken by the order \code{candidates}
 is given in, i.e. the first-listed of the tied candidates is
 returned as \code{model}.
+
+\code{candidates} must be a non-empty character vector with no missing
+values; each element must also separately name one of the
+tested/supported distributions (see \code{\link[=ertte_aft]{ertte_aft()}}'s \code{dist}
+argument). \code{candidates = character(0)} errors rather than silently
+fitting nothing and returning a degenerate \verb{list(comparison = <0-row tibble>, model = NULL)}.
 }
 \examples{
 # (uses ertte_aft() internally for each candidate distribution)

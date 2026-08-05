@@ -17,6 +17,13 @@
 #' is given in, i.e. the first-listed of the tied candidates is
 #' returned as `model`.
 #'
+#' `candidates` must be a non-empty character vector with no missing
+#' values; each element must also separately name one of the
+#' tested/supported distributions (see [ertte_aft()]'s `dist`
+#' argument). `candidates = character(0)` errors rather than silently
+#' fitting nothing and returning a degenerate `list(comparison = <0-row
+#' tibble>, model = NULL)`.
+#'
 #' @export
 #' @examples
 #' # (uses ertte_aft() internally for each candidate distribution)
@@ -25,6 +32,7 @@
 #' cmp$model
 #'
 ertte_select_distribution <- function(formula, data, candidates = c("exponential", "weibull", "lognormal", "loglogistic")) {
+  .ertte_check_dist_candidates(candidates)
   for (cc in candidates) .ertte_check_dist(cc)
   fits <- lapply(candidates, function(dd) ertte_aft(formula, data, dist = dd))
   names(fits) <- candidates

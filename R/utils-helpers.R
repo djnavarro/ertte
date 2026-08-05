@@ -96,6 +96,25 @@
   }
 }
 
+# `candidates` (as passed to `ertte_select_distribution()`) must be a
+# non-empty character vector -- each element is separately validated
+# against the supported distributions by `.ertte_check_dist()`, but
+# that per-element loop silently does nothing on `character(0)`, which
+# used to let `ertte_select_distribution()` fit no candidates at all
+# and return a degenerate `list(comparison = <0-row tibble>, model =
+# NULL)` instead of erroring (see issue #3). Deliberately not the same
+# helper as `.ertte_check_candidates()` (used by
+# `ertte_scm_forward()`/`ertte_scm_backward()`): that one validates
+# formula *term* syntax, which doesn't apply to `dist` names.
+.ertte_check_dist_candidates <- function(candidates) {
+  if (!is.character(candidates) || length(candidates) == 0L || anyNA(candidates)) {
+    rlang::abort(paste0(
+      "`candidates` must be a non-empty character vector with no missing ",
+      "values, not ", .fmt_bad_value(candidates), "."
+    ))
+  }
+}
+
 # `time` (as passed to `ertte_predict()` and to the closures returned by
 # `ertte_fun()`) must be a numeric vector of strictly positive values --
 # `log(time)` (AFT) / the baseline-hazard lookup (Cox) are both undefined

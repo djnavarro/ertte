@@ -615,9 +615,20 @@ sufficient. The zero-usable-row case (already handled reasonably by
 `coxph()` itself, with "No (non-missing) observations") is folded into
 the same `< 2` check for one consistent message rather than depending
 on which degenerate case happens to already be handled gracefully
-upstream. Regression tests live in `tests/testthat/test-ertte-coxph.R`.
-Issue #3 (empty `candidates` in `ertte_select_distribution()`) remains
-open.
+upstream. Regression tests live in `tests/testthat/test-ertte-coxph.R`. Issue #3
+(empty `candidates` in `ertte_select_distribution()`) is also fixed: a
+new `.ertte_check_dist_candidates()` helper (in `R/utils-helpers.R`) --
+deliberately separate from `ertte_scm_forward()`/`ertte_scm_backward()`'s
+`.ertte_check_candidates()`, which validates formula-term syntax that
+doesn't apply to `dist` names -- checks that `candidates` is a
+non-empty character vector with no missing values, called at the top
+of `ertte_select_distribution()` before the existing per-element
+`.ertte_check_dist()` loop (which silently did nothing on
+`character(0)`, letting the function fit no candidates at all and
+return a degenerate `list(comparison = <0-row tibble>, model = NULL)`
+instead of erroring). Regression tests live in
+`tests/testthat/test-ertte-family.R`. All five stress-test findings
+(issues #3-#7) are now fixed.
 
 ## API naming: AFT vs Cox PH
 

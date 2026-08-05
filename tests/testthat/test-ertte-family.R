@@ -16,3 +16,18 @@ test_that("ertte_select_distribution() validates candidates", {
     "`dist`"
   )
 })
+
+test_that("ertte_select_distribution() rejects empty/missing candidates (issue #3)", {
+  expect_error(
+    ertte_select_distribution(survival::Surv(time, event) ~ aucss, ertte_data, candidates = character(0)),
+    "non-empty"
+  )
+  expect_error(
+    ertte_select_distribution(survival::Surv(time, event) ~ aucss, ertte_data, candidates = NULL),
+    "non-empty"
+  )
+  expect_error(
+    ertte_select_distribution(survival::Surv(time, event) ~ aucss, ertte_data, candidates = c("weibull", NA)),
+    "non-empty"
+  )
+})
