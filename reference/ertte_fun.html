@@ -69,12 +69,15 @@
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A function with arguments <code>param</code>, <code>data</code>, and <code>time</code>.</p><ul><li><p>The <code>param</code> argument should be a vector of location coefficients;
-defaults to <code>coef(object)</code> (the fitted coefficients) if not supplied.</p></li>
-<li><p>The <code>data</code> argument should be a data frame or tibble; defaults to
+    <p>A function with arguments <code>data</code>, <code>time</code>, and <code>param</code>, in
+that order – matching the argument order every other data-taking
+entry point in the package uses (<code><a href="ertte_predict.html">ertte_predict()</a></code>, <code><a href="ertte_landmark.html">ertte_landmark()</a></code>,
+<code><a href="ertte_rmst.html">ertte_rmst()</a></code> all take <code>newdata</code>/<code>data</code> immediately after <code>object</code>).</p><ul><li><p>The <code>data</code> argument should be a data frame or tibble; defaults to
 <code>object$data</code> (the data the model was fitted to) if not supplied.</p></li>
 <li><p>The <code>time</code> argument gives the time(s) at which to evaluate the
 survival function; recycled against <code>data</code>.</p></li>
+<li><p>The <code>param</code> argument should be a vector of location coefficients;
+defaults to <code>coef(object)</code> (the fitted coefficients) if not supplied.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

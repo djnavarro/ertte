@@ -29,16 +29,22 @@ ertte_fun(object, ...)
 
 ## Value
 
-A function with arguments `param`, `data`, and `time`.
-
-- The `param` argument should be a vector of location coefficients;
-  defaults to `coef(object)` (the fitted coefficients) if not supplied.
+A function with arguments `data`, `time`, and `param`, in that order –
+matching the argument order every other data-taking entry point in the
+package uses
+([`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md),
+[`ertte_landmark()`](https://ertte.djnavarro.net/reference/ertte_landmark.md),
+[`ertte_rmst()`](https://ertte.djnavarro.net/reference/ertte_rmst.md)
+all take `newdata`/`data` immediately after `object`).
 
 - The `data` argument should be a data frame or tibble; defaults to
   `object$data` (the data the model was fitted to) if not supplied.
 
 - The `time` argument gives the time(s) at which to evaluate the
   survival function; recycled against `data`.
+
+- The `param` argument should be a vector of location coefficients;
+  defaults to `coef(object)` (the fitted coefficients) if not supplied.
 
 ## Details
 
