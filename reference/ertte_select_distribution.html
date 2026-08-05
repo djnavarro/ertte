@@ -84,6 +84,11 @@ with lowest AIC).</p>
     <p>Ties (to floating point) are broken by the order <code>candidates</code>
 is given in, i.e. the first-listed of the tied candidates is
 returned as <code>model</code>.</p>
+<p><code>candidates</code> must be a non-empty character vector with no missing
+values; each element must also separately name one of the
+tested/supported distributions (see <code><a href="ertte_aft.html">ertte_aft()</a></code>'s <code>dist</code>
+argument). <code>candidates = character(0)</code> errors rather than silently
+fitting nothing and returning a degenerate <code>list(comparison = &lt;0-row tibble&gt;, model = NULL)</code>.</p>
     </div>
 
     <div class="section level2">

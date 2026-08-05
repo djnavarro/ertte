@@ -41,6 +41,14 @@ lowest AIC).
 Ties (to floating point) are broken by the order `candidates` is given
 in, i.e. the first-listed of the tied candidates is returned as `model`.
 
+`candidates` must be a non-empty character vector with no missing
+values; each element must also separately name one of the
+tested/supported distributions (see
+[`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)'s
+`dist` argument). `candidates = character(0)` errors rather than
+silently fitting nothing and returning a degenerate
+`list(comparison = <0-row tibble>, model = NULL)`.
+
 ## Examples
 
 ``` r
