@@ -654,6 +654,117 @@ row-count check, the `ertte_fun()` closure argument reorder, and
 previously-duplicated inline logic in the two `ertte_predict()`
 methods) don't share meaningful code with anything else in the file.
 
+A second stress-testing pass, run after #3-#7 were fixed, probed areas
+not covered by the first round -- `er_plot()`/`er_vpc()` interop (via
+the companion `erplots` package), SCM edge cases, and RMST/landmark
+boundary conditions -- and found four more genuine issues, filed as
+#8-#11 and all now fixed:
+
+- **#8/#9 -- SCM no longer misattributes or crashes on a bad
+  candidate.** `.ertte_once_forward()`/`.ertte_once_backward()` (in
+  `R/ertte-scm.R`) now wrap each candidate's `ertte_add_term()`/
+  `ertte_remove_term()` refit in `tryCatch()`. A candidate whose refit
+  throws (e.g. a single-level factor triggering a `contrasts` error)
+  used to crash the entire search; it's now skipped with a warning
+  quoting the actual error, and the rest of the candidate set is still
+  tried (#9). A candidate that can't be added/removed at all (e.g. it
+  references a variable not in the fitting data, so
+  `ertte_add_term()`/`ertte_remove_term()` silently return `mod`
+  unchanged) used to be diagnosed by running `anova()` on the unchanged
+  model against itself, producing an `NA` p-value misreported as
+  "aliased/collinear"; this is now detected directly by comparing the
+  refit's formula to the current model's, with an accurate warning
+  (#8). Both failure modes still log a history row (so
+  `ertte_scm_history()` stays a complete audit trail), and both were
+  verified across both engines.
+- **#10 -- `ertte_predict()`/`ertte_rmst()`/`ertte_landmark()` handle a
+  zero-row `newdata` consistently across engines.** `ertte_aft()`'s
+  methods already worked by incidental behaviour of `predict.survreg()`/
+  a zero-length `stats::integrate()` loop; `ertte_coxph()`'s methods
+  didn't -- `survival::survfit(object, newdata = <0 rows>, ...)` errors
+  with a cryptic "all rows of newdata have missing values" message.
+  Both engines now short-circuit to a zero-row tibble (with the
+  expected columns) before calling into `survival`, in
+  `R/ertte-aft.R`/`R/ertte-coxph.R`/`R/ertte-rmst.R`.
+- **#11 -- `ertte_predict.ertte_coxph()`/`ertte_rmst.ertte_coxph()`
+  handle `conf_level = 0`/`1` like the AFT engine does.**
+  `.ertte_check_conf_level()` documents 0/1 as legitimate degenerate
+  endpoints, and `ertte_aft()`'s methods already handle them correctly
+  (their CDF back-transform naturally collapses/bounds the interval at
+  these values) -- but `survival::survfit()`'s own `conf.int` argument
+  rejects exactly 0 or 1, so the Cox methods errored. Fixed
+  per-function, matched to how each actually uses `survfit()`'s output:
+  `ertte_predict.ertte_coxph()` now special-cases 0/1 directly (point
+  estimate for both bounds at 0; `[0, 1]` at 1), calling `survfit()`
+  with a safe internal placeholder `conf.int`; `ertte_rmst.ertte_coxph()`
+  only ever uses `survfit()`'s `$time`/`$surv`/`$std.err` (never
+  `$lower`/`$upper` -- its own delta-method construction computes
+  `z_scale` separately via `qnorm()`), so it now always passes a fixed
+  valid placeholder to `conf.int` and lets the existing `z_scale` logic
+  handle 0/1 naturally (confirmed `$surv`/`$std.err`/`$time` don't
+  depend on the requested `conf.int` value at all).
+
+A follow-up triage of two more minor observations from that pass (not
+originally filed) turned up one more genuine issue:
+
+- **#12 -- `ertte_rmst.ertte_aft()` no longer silently returns 0 for
+  extreme `tau`.** Investigating "a raw `integrate()` error for absurd
+  `tau`" more closely found something worse than an error: for
+  sufficiently large `tau`, `stats::integrate(s_fun, 0, tau, mu =
+  mu)`'s adaptive quadrature silently returned `0` -- no error, no
+  warning -- once `[0, tau]` was many orders of magnitude wider than
+  the region where the survival curve is non-negligible (confirmed:
+  broke somewhere between `tau = 1e5` and `5e5` for a representative
+  Weibull fit). This violated RMST's own monotonicity (a smaller `tau`
+  gave a strictly larger, correct value) with no signal to the caller.
+  Fixed by reparameterising both integrals in `ertte_rmst.ertte_aft()`
+  (the survival-curve integral behind `fit_rmst`, and the delta-method
+  gradient integral behind `se_rmst`) onto the `u = log(t)` scale
+  (`t = exp(u)`, `dt = exp(u) du`) rather than integrating directly
+  over `[0, tau]`: since the upper bound becomes `log(tau)`, the
+  integration domain only grows logarithmically with `tau`, keeping
+  quadrature reliable up to at least `tau ~ 1e9` for the same
+  model/profile -- verified across all four supported distributions,
+  and cross-checked against a known mathematical identity (the
+  gradient integral converges to `fit_rmst` itself as `tau ->
+  infinity`, matching `d/dmu E[T] = E[T]` for a log-location-scale
+  model). This changes nothing for ordinary `tau` (confirmed
+  numerically to agree with the untransformed integral to quadrature
+  tolerance). Even with this fix, `tau` several more orders of
+  magnitude out was found to occasionally destabilise the
+  delta-method gradient specifically (it evaluates a much narrower,
+  "bump"-shaped integrand than `fit_rmst`'s broad-plateau survival
+  curve, and is correspondingly harder for adaptive quadrature to
+  reliably locate once the domain is stretched far enough) -- rather
+  than chase a fully bulletproof numerical guarantee for a pathological
+  input space, `ertte_rmst.ertte_aft()` now warns (via a new
+  `.ertte_check_extreme_aft_tau()` in `R/utils-helpers.R`, mirroring
+  `ertte_rmst.ertte_coxph()`'s existing out-of-range-`tau` warning) if
+  any `tau` exceeds 10,000x the fitting data's last observed follow-up
+  time -- a threshold with a wide empirical safety margin below where
+  any instability was actually observed.
+  - The other minor observation from that pass --
+    `ertte_select_distribution()` not deduplicating duplicate
+    `candidates` -- was investigated and found to be purely cosmetic
+    (a `comparison` tibble with redundant rows for a repeated
+    distribution name; model selection itself still resolves
+    correctly) rather than a genuine bug, and wasn't filed.
+  - Separately checked whether `ertte_predict.ertte_aft()`/
+    `ertte_fun.ertte_aft()` share an analogous numerical edge case,
+    since they're built on the same log-location-scale machinery:
+    they don't, structurally -- neither ever calls
+    `stats::integrate()` (confirmed by search), instead evaluating the
+    base distribution's CDF/density directly via closed-form
+    expressions (`pbase()`/`dbase()`), which stress-testing (extreme
+    `time` values up to `Inf`, extreme covariate-driven linear
+    predictors, degenerate tiny-sample fits) confirmed saturate
+    cleanly to `0`/`1` without errors or silently wrong results.
+
+All nine stress-test findings across both passes (issues #3-#12,
+`ertte_rmst.ertte_aft()`'s extreme-`tau` warning counted as part of
+#12) are now fixed and closed; only the original design-scoping issue
+#1 remains open.
+
 ## API naming: AFT vs Cox PH
 
 `ertte_aft()` (wraps `survreg()`) and `ertte_coxph()` (wraps `coxph()`)
