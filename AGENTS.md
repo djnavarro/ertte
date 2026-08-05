@@ -630,6 +630,30 @@ instead of erroring). Regression tests live in
 `tests/testthat/test-ertte-family.R`. All five stress-test findings
 (issues #3-#7) are now fixed.
 
+A follow-up pass reviewing the five fixes together for duplication
+found and consolidated two genuine cases (no behaviour change --
+error messages are byte-identical, confirmed by the existing test
+suite passing unchanged): `.ertte_check_dist_candidates()` (#3) and
+`.ertte_check_candidates()` (pre-existing, used by SCM) both started
+with the identical "non-empty character vector, no missing values"
+check -- factored out into a shared `.ertte_check_nonempty_character()`
+base helper that both now call, with `.ertte_check_candidates()`
+layering its extra per-element formula-term validation on top.
+Separately, the new `.ertte_surv_vars_from_formula()` (#5) duplicated
+the pre-existing `.ertte_response_vars()`'s `Surv()`-parsing logic
+almost exactly -- one worked on a plain formula (needed to validate
+`ertte_coxph()`'s `time > 0` *before* fitting), the other on a fitted
+object's `$terms`. Since a fitted object's `$terms` is itself a
+`"terms"`/`"formula"` object, `.ertte_response_vars()` now just
+delegates to `.ertte_surv_vars_from_formula(object$terms)` rather than
+re-implementing the same parsing. The other three fixes (#4, #6, #7)
+each introduced genuinely new logic with no overlap worth
+consolidating -- `.ertte_check_coxph_data_size()`'s `model.frame()`-based
+row-count check, the `ertte_fun()` closure argument reorder, and
+`.ertte_check_time()` (already itself a consolidation of
+previously-duplicated inline logic in the two `ertte_predict()`
+methods) don't share meaningful code with anything else in the file.
+
 ## API naming: AFT vs Cox PH
 
 `ertte_aft()` (wraps `survreg()`) and `ertte_coxph()` (wraps `coxph()`)

@@ -43,17 +43,32 @@
   }
 }
 
+# Shared base check for "must be a non-empty character vector with no
+# missing values" -- used by both `.ertte_check_candidates()` (which
+# layers additional formula-term validation on top, for
+# `ertte_scm_forward()`/`ertte_scm_backward()`'s `candidates`) and
+# `.ertte_check_dist_candidates()` (which needs nothing more, since
+# each element is separately checked against the supported
+# distributions by `.ertte_check_dist()`, for
+# `ertte_select_distribution()`'s `candidates`). Both callers name
+# their argument `candidates`, but `arg_name` is still a parameter
+# (not hardcoded) so the helper stays reusable if a future caller
+# names its argument something else.
+.ertte_check_nonempty_character <- function(x, arg_name = "candidates") {
+  if (!is.character(x) || length(x) == 0L || anyNA(x)) {
+    rlang::abort(paste0(
+      "`", arg_name, "` must be a non-empty character vector with no ",
+      "missing values, not ", .fmt_bad_value(x), "."
+    ))
+  }
+}
+
 # `candidates` (as passed to `ertte_scm_forward()`/`ertte_scm_backward()`)
 # must be a non-empty character vector where every element names exactly
 # one covariate term -- validated up front, same rationale as erglm's
 # `.erglm_check_candidates()`.
 .ertte_check_candidates <- function(candidates) {
-  if (!is.character(candidates) || length(candidates) == 0L || anyNA(candidates)) {
-    rlang::abort(paste0(
-      "`candidates` must be a non-empty character vector with no missing ",
-      "values, not ", .fmt_bad_value(candidates), "."
-    ))
-  }
+  .ertte_check_nonempty_character(candidates)
   for (cc in candidates) {
     add <- tryCatch(stats::as.formula(paste("~", cc)), error = function(e) NULL)
     if (is.null(add)) {
@@ -102,17 +117,14 @@
 # that per-element loop silently does nothing on `character(0)`, which
 # used to let `ertte_select_distribution()` fit no candidates at all
 # and return a degenerate `list(comparison = <0-row tibble>, model =
-# NULL)` instead of erroring (see issue #3). Deliberately not the same
-# helper as `.ertte_check_candidates()` (used by
+# NULL)` instead of erroring (see issue #3). Deliberately a separate
+# function from `.ertte_check_candidates()` (used by
 # `ertte_scm_forward()`/`ertte_scm_backward()`): that one validates
-# formula *term* syntax, which doesn't apply to `dist` names.
+# formula *term* syntax on top of the shared base check, which doesn't
+# apply to `dist` names -- but both share the same underlying
+# non-empty-character-vector check, via `.ertte_check_nonempty_character()`.
 .ertte_check_dist_candidates <- function(candidates) {
-  if (!is.character(candidates) || length(candidates) == 0L || anyNA(candidates)) {
-    rlang::abort(paste0(
-      "`candidates` must be a non-empty character vector with no missing ",
-      "values, not ", .fmt_bad_value(candidates), "."
-    ))
-  }
+  .ertte_check_nonempty_character(candidates)
 }
 
 # `time` (as passed to `ertte_predict()` and to the closures returned by
@@ -383,19 +395,16 @@
 }
 
 # Extracts the names of the time/event variables from the two-sided
-# `Surv(time, event) ~ ...` formula a fitted `ertte_model` was built from --
-# used by `.ertte_simulate_draws()` to find the observed censoring/follow-up
-# time to cap simulated event times at.
+# `Surv(time, event) ~ ...` formula a fitted `ertte_model` was built
+# from -- used by `.ertte_simulate_draws()` to find the observed
+# censoring/follow-up time to cap simulated event times at. A fitted
+# object's `$terms` is itself a `"terms"`/`"formula"` object, so this
+# just delegates to `.ertte_surv_vars_from_formula()` -- the two used to
+# duplicate the same `Surv()`-parsing logic (one working on a fitted
+# object's `$terms`, the other on a plain formula, for validating an
+# `ertte_coxph()` call's `time > 0` before fitting -- see issue #5).
 .ertte_response_vars <- function(object) {
-  lhs <- object$terms[[2]]
-  # allow both `Surv(...)` and `survival::Surv(...)`
-  fn_name <- if (is.call(lhs)) deparse(lhs[[1]]) else ""
-  if (!grepl("(^|::)Surv$", fn_name)) {
-    rlang::abort("The model's response must be a `survival::Surv()` object.")
-  }
-  args <- as.list(lhs)[-1]
-  vars <- vapply(args, deparse, character(1))
-  list(time = vars[1], event = vars[2])
+  .ertte_surv_vars_from_formula(object$terms)
 }
 
 .ertte_term_in_model <- function(mod, term) {
