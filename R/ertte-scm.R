@@ -31,6 +31,20 @@
 #' it. That candidate is skipped for the step (with a warning) rather
 #' than being selected or crashing the search.
 #'
+#' Two further failure modes are also handled per-candidate, rather than
+#' aborting the whole search: if refitting with a candidate added/removed
+#' throws an error (e.g. a single-level factor candidate that `coxph()`/
+#' `survreg()` can't build contrasts for), that candidate is skipped with
+#' a warning quoting the underlying error, and the rest of the candidate
+#' set is still tried. Separately, if a candidate can't be added/removed
+#' at all (e.g. it references a variable not present in the fitting
+#' data, so [ertte_add_term()]/[ertte_remove_term()] return `mod`
+#' unchanged), that's detected directly (the refit formula is identical
+#' to the current model's) and the candidate is skipped with a warning
+#' explaining why -- rather than comparing the unchanged model to itself
+#' via `anova()`, which would produce an `NA` p-value and be misreported
+#' as aliasing/collinearity.
+#'
 #' `candidates` is validated up front: every element must be parseable
 #' as a formula and name exactly one covariate term (e.g. `"sex"`, not
 #' `"sex + dose"` or `"not a formula"`).
@@ -147,7 +161,55 @@ ertte_scm_history <- function(mod) {
     add <- stats::as.formula(paste("~", cc))
     attm <- attm + 1L
     if (!.ertte_term_in_model(mod, add)) {
-      mod_new <- ertte_add_term(mod, add, quiet = TRUE)
+      mod_new <- tryCatch(
+        ertte_add_term(mod, add, quiet = TRUE),
+        error = function(e) e
+      )
+      if (inherits(mod_new, "error")) {
+        history_row <- tibble::tibble(
+          iteration = iter,
+          attempt = attm,
+          step = "forward",
+          action = "add",
+          term_tested = deparse(add),
+          model_tested = NA_character_,
+          model_converged = FALSE,
+          term_p_value = NA_real_,
+          model_aic = NA_real_,
+          model_bic = NA_real_,
+          model_updated = NA
+        )
+        history <- tibble::add_row(history, history_row)
+        rlang::warn(paste0(
+          "Skipping candidate term `", deparse(add), "` in forward step ",
+          iter, ": refitting the model with this term failed with error: ",
+          conditionMessage(mod_new)
+        ))
+        next
+      }
+      if (identical(stats::formula(mod_new), stats::formula(mod))) {
+        history_row <- tibble::tibble(
+          iteration = iter,
+          attempt = attm,
+          step = "forward",
+          action = "add",
+          term_tested = deparse(add),
+          model_tested = deparse(stats::formula(mod_new)),
+          model_converged = isTRUE(mod_new$converged) || is.null(mod_new$converged),
+          term_p_value = NA_real_,
+          model_aic = stats::AIC(mod_new),
+          model_bic = stats::BIC(mod_new),
+          model_updated = NA
+        )
+        history <- tibble::add_row(history, history_row)
+        rlang::warn(paste0(
+          "Skipping candidate term `", deparse(add), "` in forward step ",
+          iter, ": the term could not be added -- it may reference a ",
+          "variable not present in the fitting data. See ertte_add_term() ",
+          "for details."
+        ))
+        next
+      }
       p_val <- .ertte_anova_p(mod, mod_new)
       history_row <- tibble::tibble(
         iteration = iter,
@@ -204,7 +266,54 @@ ertte_scm_history <- function(mod) {
     del <- stats::as.formula(paste("~", cc))
     attm <- attm + 1L
     if (.ertte_term_in_model(mod, del)) {
-      mod_new <- ertte_remove_term(mod, del, quiet = TRUE)
+      mod_new <- tryCatch(
+        ertte_remove_term(mod, del, quiet = TRUE),
+        error = function(e) e
+      )
+      if (inherits(mod_new, "error")) {
+        history_row <- tibble::tibble(
+          iteration = iter,
+          attempt = attm,
+          step = "backward",
+          action = "remove",
+          term_tested = deparse(del),
+          model_tested = NA_character_,
+          model_converged = FALSE,
+          term_p_value = NA_real_,
+          model_aic = NA_real_,
+          model_bic = NA_real_,
+          model_updated = NA
+        )
+        history <- tibble::add_row(history, history_row)
+        rlang::warn(paste0(
+          "Skipping candidate term `", deparse(del), "` in backward step ",
+          iter, ": refitting the model without this term failed with error: ",
+          conditionMessage(mod_new)
+        ))
+        next
+      }
+      if (identical(stats::formula(mod_new), stats::formula(mod))) {
+        history_row <- tibble::tibble(
+          iteration = iter,
+          attempt = attm,
+          step = "backward",
+          action = "remove",
+          term_tested = deparse(del),
+          model_tested = deparse(stats::formula(mod_new)),
+          model_converged = isTRUE(mod_new$converged) || is.null(mod_new$converged),
+          term_p_value = NA_real_,
+          model_aic = stats::AIC(mod_new),
+          model_bic = stats::BIC(mod_new),
+          model_updated = NA
+        )
+        history <- tibble::add_row(history, history_row)
+        rlang::warn(paste0(
+          "Skipping candidate term `", deparse(del), "` in backward step ",
+          iter, ": the term could not be removed. See ertte_remove_term() ",
+          "for details."
+        ))
+        next
+      }
       p_val <- .ertte_anova_p(mod, mod_new)
       history_row <- tibble::tibble(
         iteration = iter,

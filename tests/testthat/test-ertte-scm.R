@@ -57,3 +57,62 @@ test_that("ertte_scm_forward()/ertte_scm_backward() validate candidates", {
   expect_error(ertte_scm_forward(mod, candidates = "sex + dose"), "exactly one")
   expect_error(ertte_scm_backward(mod, candidates = character(0)), "non-empty")
 })
+
+test_that("ertte_scm_forward() skips (rather than misattributes) a candidate referencing a missing variable", {
+  # Issue #8: a candidate whose variable isn't in the data used to make
+  # ertte_add_term() silently no-op, leading to an anova() NA p-value
+  # misreported as "aliased/collinear" rather than "variable not found".
+  mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  expect_warning(
+    mod1 <- ertte_scm_forward(
+      mod0,
+      candidates = c("not_a_real_column", "sex"),
+      seed = 77
+    ),
+    "not present in the fitting data"
+  )
+  # the valid candidate is still tried and selected
+  expect_true("sex" %in% attr(stats::terms(mod1), "term.labels"))
+  h1 <- ertte_scm_history(mod1)
+  skipped_row <- h1[h1$term_tested %in% "~not_a_real_column", ]
+  expect_true(nrow(skipped_row) >= 1L)
+  expect_true(all(is.na(skipped_row$term_p_value)))
+})
+
+test_that("ertte_scm_forward()/ertte_scm_backward() skip a candidate whose refit errors, instead of crashing", {
+  # Issue #9: a single-level factor candidate crashed the whole search
+  # (contrasts error), rather than being skipped like other bad candidates.
+  d <- ertte_data
+  d$sex_single <- factor(rep("male", nrow(d)))
+  mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss, d)
+  expect_warning(
+    mod1 <- ertte_scm_forward(
+      mod0,
+      candidates = c("sex_single", "dose"),
+      seed = 88
+    ),
+    "refitting the model with this term failed"
+  )
+  # the search completed and considered the other candidate
+  h1 <- ertte_scm_history(mod1)
+  expect_true("~dose" %in% h1$term_tested)
+  failed_row <- h1[h1$term_tested %in% "~sex_single", ]
+  expect_true(nrow(failed_row) >= 1L)
+  expect_false(any(failed_row$model_converged))
+})
+
+test_that("ertte_scm_forward() skip-on-error behaviour also works for ertte_coxph()", {
+  d <- ertte_data
+  d$sex_single <- factor(rep("male", nrow(d)))
+  mod0 <- ertte_coxph(survival::Surv(time, event) ~ aucss, d)
+  expect_warning(
+    mod1 <- ertte_scm_forward(
+      mod0,
+      candidates = c("sex_single", "dose"),
+      seed = 90
+    ),
+    "refitting the model with this term failed"
+  )
+  h1 <- ertte_scm_history(mod1)
+  expect_true("~dose" %in% h1$term_tested)
+})

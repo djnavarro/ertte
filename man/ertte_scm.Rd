@@ -52,6 +52,20 @@ already in the model, \code{stats::anova()} reports an \code{NA} p-value for
 it. That candidate is skipped for the step (with a warning) rather
 than being selected or crashing the search.
 
+Two further failure modes are also handled per-candidate, rather than
+aborting the whole search: if refitting with a candidate added/removed
+throws an error (e.g. a single-level factor candidate that \code{coxph()}/
+\code{survreg()} can't build contrasts for), that candidate is skipped with
+a warning quoting the underlying error, and the rest of the candidate
+set is still tried. Separately, if a candidate can't be added/removed
+at all (e.g. it references a variable not present in the fitting
+data, so \code{\link[=ertte_add_term]{ertte_add_term()}}/\code{\link[=ertte_remove_term]{ertte_remove_term()}} return \code{mod}
+unchanged), that's detected directly (the refit formula is identical
+to the current model's) and the candidate is skipped with a warning
+explaining why -- rather than comparing the unchanged model to itself
+via \code{anova()}, which would produce an \code{NA} p-value and be misreported
+as aliasing/collinearity.
+
 \code{candidates} is validated up front: every element must be parseable
 as a formula and name exactly one covariate term (e.g. \code{"sex"}, not
 \code{"sex + dose"} or \code{"not a formula"}).
