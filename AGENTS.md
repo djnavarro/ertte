@@ -290,6 +290,37 @@ plotting packages in package code.
     `er_simulate.ertte_model()`, replacing the inline check
     `er_predict.ertte_model()` previously had (no behaviour change,
     just avoiding duplicating the same validation message twice).
+  - **The complete-case (NA-for-ambiguous-censoring) convention was
+    considered for a configurable IPCW alternative, and rejected for
+    now.** Inverse-probability-of-censoring weighting (Robins-style:
+    keep every known-outcome replicate but upweight it by `1/Ĝ(t)`,
+    `Ĝ` a KM fit on the censoring indicator, to compensate for peers
+    dropped as ambiguous) is the standard fix for informative censoring
+    bias -- but checking erplots' actual aggregation code
+    (`R/er-vpc-layer.R` in the `erplots` repo) confirmed every
+    observed/simulated summary is a plain unweighted `mean(...,
+    na.rm = TRUE)`; there's no weight column anywhere in the VPC
+    contract for a per-replicate weight to reach. A pseudo-observations
+    alternative (Andersen-Perme-style: reduce each censored outcome to
+    a single continuous value compatible with ordinary averaging,
+    avoiding the missing-weight-column problem) would fit the contract
+    mechanically, but needs a leave-one-out KM/RMST jackknife
+    recomputation across the sample -- doing that *per simulated
+    replicate* (`nsim` separate leave-one-out passes over `n`
+    observations) is a real computational cost, and conceptually
+    murky besides: pseudo-values correct for censoring bias in an
+    unknown population, but every simulated replicate here is already a
+    fully known draw from the fitted model, so it's unclear what
+    "correcting for censoring bias" would even mean applied to data
+    ertte generated itself. Net conclusion: a real IPCW/pseudo-value
+    toggle would need an erplots-side contract change first (a weighted
+    aggregation path, mirroring the erplots#10/#11 pattern below) before
+    it could be usefully added here. In the meantime, `censor_time` (via
+    `simulate_args`) is the existing lever for reducing how much
+    ambiguity arises in the first place -- supplying the true
+    administrative follow-up horizon per subject, rather than falling
+    back to the default (censored rows capped at their observed exit
+    time, event rows left uncensored).
 
   **Caveat discovered end-to-end testing this against erplots'
   `er_plot()` -- now resolved upstream.** `er_plot_add_model(mod,

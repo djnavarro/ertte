@@ -126,6 +126,12 @@ er_simulate.ertte_model <- function(model, newdata, nsim = 100, seed = NULL, ...
 # outcome relative to `tau` is known (an event, or survival to/past
 # `tau`) -- the same construction that gives `E[min(T, tau)] =
 # RMST(tau)` in the population-level formalism (see the `rmst` article).
+# An IPCW or pseudo-observations alternative to this complete-case
+# convention was considered and rejected -- see AGENTS.md's "Planned
+# work" for the full reasoning, but in short: erplots' VPC aggregation
+# is an unweighted mean with nowhere for an IPCW weight to be applied,
+# and pseudo-observations would need an expensive leave-one-out
+# recomputation per simulated replicate.
 #
 # `fit_resp` reuses `ertte_fun(object)` (already implemented,
 # engine-agnostic) evaluated at each replicate's own sampled coefficient
