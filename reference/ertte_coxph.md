@@ -71,6 +71,20 @@ shared
 method – no separate `simulate.ertte_coxph()` is needed, since it
 dispatches internally (via `.ertte_simulate_draws()`) on engine.
 
+Unlike
+[`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html)
+itself, `ertte_coxph()` validates that the response's time variable is
+strictly positive for every non-missing row before fitting, erroring
+informatively rather than silently fitting on (and later
+predicting/simulating from) a negative or zero time value.
+[`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) gets
+this validation "for free" as a side effect of
+[`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html)'s
+own internal check (a log-location-scale AFT model takes `log(time)`,
+which is undefined for non-positive values), but `coxph()` has no
+equivalent check – this closes that gap so behaviour is consistent
+across both engines.
+
 ## Examples
 
 ``` r

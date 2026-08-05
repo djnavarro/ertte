@@ -90,6 +90,15 @@ on the fitted baseline hazard. <code><a href="https://rdrr.io/r/stats/simulate.h
 shared <code><a href="simulate.ertte_model.html">simulate.ertte_model()</a></code> method – no separate
 <code>simulate.ertte_coxph()</code> is needed, since it dispatches internally
 (via <code>.ertte_simulate_draws()</code>) on engine.</p>
+<p>Unlike <code><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">survival::coxph()</a></code> itself, <code>ertte_coxph()</code> validates that the
+response's time variable is strictly positive for every non-missing
+row before fitting, erroring informatively rather than silently
+fitting on (and later predicting/simulating from) a negative or zero
+time value. <code><a href="ertte_aft.html">ertte_aft()</a></code> gets this validation "for free" as a side
+effect of <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code>'s own internal check (a
+log-location-scale AFT model takes <code>log(time)</code>, which is undefined
+for non-positive values), but <code>coxph()</code> has no equivalent check –
+this closes that gap so behaviour is consistent across both engines.</p>
     </div>
 
     <div class="section level2">
