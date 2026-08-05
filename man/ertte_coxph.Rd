@@ -42,6 +42,16 @@ on the fitted baseline hazard. \code{simulate()} works too, via the
 shared \code{simulate.ertte_model()} method -- no separate
 \code{simulate.ertte_coxph()} is needed, since it dispatches internally
 (via \code{.ertte_simulate_draws()}) on engine.
+
+Unlike \code{survival::coxph()} itself, \code{ertte_coxph()} validates that the
+response's time variable is strictly positive for every non-missing
+row before fitting, erroring informatively rather than silently
+fitting on (and later predicting/simulating from) a negative or zero
+time value. \code{ertte_aft()} gets this validation "for free" as a side
+effect of \code{survival::survreg()}'s own internal check (a
+log-location-scale AFT model takes \code{log(time)}, which is undefined
+for non-positive values), but \code{coxph()} has no equivalent check --
+this closes that gap so behaviour is consistent across both engines.
 }
 \examples{
 mod <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)

@@ -14,6 +14,31 @@ test_that("ertte_coxph() stores the fitting data on the object", {
   expect_identical(mod$data, ertte_data)
 })
 
+test_that("ertte_coxph() validates that response times are strictly positive (issue #5)", {
+  d_neg <- ertte_data
+  d_neg$time[1] <- -5
+  expect_error(
+    ertte_coxph(survival::Surv(time, event) ~ aucss, d_neg),
+    "strictly positive"
+  )
+
+  d_zero <- ertte_data
+  d_zero$time[1] <- 0
+  expect_error(
+    ertte_coxph(survival::Surv(time, event) ~ aucss, d_zero),
+    "strictly positive"
+  )
+
+  # a missing time is coxph()'s own concern (rows are silently
+  # dropped), not this validation's -- fitting should still succeed
+  d_na <- ertte_data
+  d_na$time[1] <- NA
+  expect_no_error(ertte_coxph(survival::Surv(time, event) ~ aucss, d_na))
+
+  # ordinary, all-positive data still fits normally
+  expect_no_error(ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data))
+})
+
 test_that("ertte_fun() on ertte_coxph reproduces the fitted model's own predictions", {
   mod <- ertte_coxph(survival::Surv(time, event) ~ aucss + sex, ertte_data)
   mod_fun <- ertte_fun(mod)

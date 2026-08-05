@@ -57,6 +57,16 @@
 #' `simulate.ertte_coxph()` is needed, since it dispatches internally
 #' (via `.ertte_simulate_draws()`) on engine.
 #'
+#' Unlike `survival::coxph()` itself, `ertte_coxph()` validates that the
+#' response's time variable is strictly positive for every non-missing
+#' row before fitting, erroring informatively rather than silently
+#' fitting on (and later predicting/simulating from) a negative or zero
+#' time value. `ertte_aft()` gets this validation "for free" as a side
+#' effect of `survival::survreg()`'s own internal check (a
+#' log-location-scale AFT model takes `log(time)`, which is undefined
+#' for non-positive values), but `coxph()` has no equivalent check --
+#' this closes that gap so behaviour is consistent across both engines.
+#'
 #' @export
 #' @examples
 #' mod <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
@@ -73,6 +83,7 @@ ertte_coxph <- function(formula, data, ...) {
   # local `formula`/`data` bindings, not anything visible in
   # `survfit()`'s caller's frame. Storing the model frame directly
   # sidesteps that.
+  .ertte_check_response_time(formula, data)
   mod <- survival::coxph(formula = formula, data = data, model = TRUE, ...)
   # as with `ertte_aft()`/`survreg()`, `coxph()` doesn't retain the
   # fitting data on the returned object -- store it explicitly so

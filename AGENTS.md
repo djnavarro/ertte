@@ -577,10 +577,29 @@ the full test suite and a clean `devtools::check()` after the change.
 New regression tests (`test-ertte-aft.R`/`test-ertte-coxph.R`) pin down
 the exact argument order via `names(formals(mod_fun))` and confirm a
 positional `mod_fun(newdata, time)` call now behaves the same as the
-equivalent named call. Issues #3, #4, and #5 (empty `candidates` in
-`ertte_select_distribution()`, a cryptic single-row error from
-`ertte_coxph()`, and `ertte_coxph()` not validating `time > 0`) remain
-open.
+equivalent named call. #5 (`ertte_coxph()` not validating `time > 0`)
+is also fixed: a new `.ertte_check_response_time()` helper (in
+`R/utils-helpers.R`, alongside a small `.ertte_surv_vars_from_formula()`
+helper that extracts the time/event variable names from a two-sided
+`Surv(time, event) ~ ...` formula *before* a model has been fit --
+`.ertte_response_vars()` does the same thing but only works on an
+already-fitted object's `$terms`) is called at the top of
+`ertte_coxph()`, before `survival::coxph()` is invoked. It checks that
+the response's time variable is numeric and strictly positive for
+every non-missing row, erroring informatively otherwise; missing time
+values are left alone (that's `coxph()`'s own concern -- rows with
+`NA` are silently dropped, the usual base-R modelling convention).
+`ertte_aft()` was deliberately left unchanged: it already gets
+equivalent validation "for free" as a side effect of
+`survival::survreg()`'s own internal check (a log-location-scale AFT
+model takes `log(time)`, undefined for non-positive values, and
+`survreg()` errors with "Invalid survival times for this
+distribution") -- there was no gap to close there, just an engine
+inconsistency (`coxph()` has no equivalent check of its own) that this
+fix closes from the `ertte_coxph()` side. Regression tests live in
+`tests/testthat/test-ertte-coxph.R`. Issues #3 and #4 (empty
+`candidates` in `ertte_select_distribution()`, and a cryptic
+single-row error from `ertte_coxph()`) remain open.
 
 ## API naming: AFT vs Cox PH
 

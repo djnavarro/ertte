@@ -111,6 +111,64 @@
   }
 }
 
+# Extracts the time/event variable names from a two-sided
+# `Surv(time, event) ~ ...` formula -- like `.ertte_response_vars()`
+# (below), but usable before a model has been fit, since it works
+# directly on the formula the caller supplies rather than a fitted
+# object's `$terms`. Used by `.ertte_check_response_time()`.
+.ertte_surv_vars_from_formula <- function(formula) {
+  if (!inherits(formula, "formula") || length(formula) != 3L) {
+    rlang::abort(
+      "`formula` must be a two-sided formula with a `survival::Surv()` response."
+    )
+  }
+  lhs <- formula[[2]]
+  # allow both `Surv(...)` and `survival::Surv(...)`
+  fn_name <- if (is.call(lhs)) deparse(lhs[[1]]) else ""
+  if (!grepl("(^|::)Surv$", fn_name)) {
+    rlang::abort("The model's response must be a `survival::Surv()` object.")
+  }
+  args <- as.list(lhs)[-1]
+  vars <- vapply(args, deparse, character(1))
+  list(time = vars[1], event = vars[2])
+}
+
+# `ertte_aft()` inherits `time > 0` validation as a side effect of
+# `survival::survreg()`'s own internal check ("Invalid survival times
+# for this distribution"), since a log-location-scale AFT model takes
+# `log(time)`. `survival::coxph()` has no equivalent check -- a
+# negative (or zero) `time` fits silently and produces plausible-
+# looking but meaningless downstream predictions (see issue #5).
+# Called by `ertte_coxph()` before fitting, so behaviour doesn't depend
+# on which underlying engine happens to reject bad input. Only
+# non-missing values are checked -- rows with a missing time are
+# `coxph()`'s/`survreg()`'s own concern (both drop them silently, the
+# base R modelling convention), not this validation's.
+.ertte_check_response_time <- function(formula, data) {
+  vars <- .ertte_surv_vars_from_formula(formula)
+  time_val <- data[[vars$time]]
+  if (is.null(time_val)) {
+    rlang::abort(paste0(
+      "Response variable `", vars$time, "` (from `", deparse(formula[[2]]),
+      "`) was not found in `data`."
+    ))
+  }
+  if (!is.numeric(time_val)) {
+    rlang::abort(paste0(
+      "Response variable `", vars$time, "` must be numeric, not ",
+      class(time_val)[1], "."
+    ))
+  }
+  bad <- time_val[!is.na(time_val)] <= 0
+  if (any(bad)) {
+    rlang::abort(paste0(
+      "Response variable `", vars$time, "` must be strictly positive for ",
+      "every (non-missing) row -- found ", sum(bad), " non-positive value",
+      if (sum(bad) != 1L) "s" else "", "."
+    ))
+  }
+}
+
 # Shared by `.ertte_simulate_draws()`'s per-engine methods: if `seed` is
 # `NULL`, pick one and tell the user (since it determines the actual
 # simulated values returned), otherwise pass it through unchanged.
