@@ -143,6 +143,32 @@ test_that("landmark_time reaches er_predict.ertte_model() through erplots' er_pl
   expect_s3_class(built$output, "patchwork")
 })
 
+test_that("er_plot()'s landmark model curve is correct when built from a reused ertte_landmark() output (erplots#12)", {
+  # analogous to the erplots#12 dplyr data-mask shadowing bug fixed in
+  # ertte_rmst() -- see the matching RMST test below. ertte_landmark()'s
+  # mutate() never bare-references its own output column names on the
+  # RHS, so this isn't expected to reproduce the bug -- kept for test
+  # parity with the RMST coverage and to check curve *values*, not just
+  # `built$output`'s class (the check that let the RMST bug slip through
+  # review originally).
+  skip_if_not_installed("erplots")
+  skip_if_not("predict_args" %in% names(formals(erplots::er_plot_add_model)))
+
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  lmk_ref <- ertte_landmark(mod, ertte_data, landmark_time = 90)
+
+  p <- erplots::er_plot(lmk_ref, aucss, fit_resp) |>
+    erplots::er_plot_add_model(mod, predict_args = list(landmark_time = 90))
+  built <- erplots::er_plot_build(p)
+
+  curve <- built$layer$model$config$predictions
+  # non-decreasing, not strictly increasing: fit_resp saturates to (a
+  # floating-point) 1 at the high end of the exposure grid, producing
+  # ties there rather than a decrease
+  expect_false(is.unsorted(curve$fit_resp))
+  expect_gt(diff(range(curve$fit_resp)), 0.3)
+})
+
 test_that("tau reaches er_predict.ertte_model() through erplots' er_plot_add_model(predict_args = ...)", {
   skip_if_not_installed("erplots")
   skip_if_not("predict_args" %in% names(formals(erplots::er_plot_add_model)))
