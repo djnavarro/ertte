@@ -20,6 +20,10 @@ Fit exposure-response time-to-event models based on survreg()/coxph()
   : Landmark event-probability predictions for exposure-response TTE
   models
 
+- [`ertte_rmst()`](https://ertte.djnavarro.net/reference/ertte_rmst.md)
+  : Restricted mean survival time predictions for exposure-response TTE
+  models
+
 - [`ertte_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_select_distribution.md)
   : Select an AFT distribution by AIC
 
