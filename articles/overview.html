@@ -265,9 +265,9 @@ exposure is associated with a (slightly) <em>shorter</em> time to event,
 holding nothing else fixed – consistent with <code>ertte_data</code>’s
 known Weibull AFT ground truth (see <code><a href="../reference/ertte_data.html">?ertte_data</a></code>).</p>
 <p>Choosing among the four supported distributions by AIC is automated
-by <code><a href="../reference/ertte_select_distribution.html">ertte_select_distribution()</a></code>:</p>
+by <code><a href="../reference/ertte_aft_select_distribution.html">ertte_aft_select_distribution()</a></code>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ertte_select_distribution.html">ertte_select_distribution</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">cmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ertte_aft_select_distribution.html">ertte_aft_select_distribution</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span>
 <span><span class="va">cmp</span><span class="op">$</span><span class="va">comparison</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 5</span></span></span>
 <span><span class="co">#&gt;   dist        logLik   aic   bic converged</span></span>

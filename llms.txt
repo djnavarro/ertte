@@ -90,7 +90,7 @@ Fit exposure-response time-to-event models based on survreg()/coxph()
   : Restricted mean survival time predictions for exposure-response TTE
   models
 
-- [`ertte_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_select_distribution.md)
+- [`ertte_aft_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_aft_select_distribution.md)
   : Select an AFT distribution by AIC
 
 ## Covariate selection

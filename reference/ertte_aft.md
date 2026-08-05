@@ -26,7 +26,7 @@ ertte_aft(formula, data, dist = "weibull", ...)
   [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html).
   Defaults to `"weibull"`. Tested and officially supported for
   `"exponential"`, `"weibull"`, `"lognormal"`, and `"loglogistic"` – see
-  [`ertte_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_select_distribution.md)
+  [`ertte_aft_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_aft_select_distribution.md)
   for choosing among them by AIC.
 
 - ...:

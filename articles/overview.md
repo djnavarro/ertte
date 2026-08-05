@@ -167,11 +167,11 @@ truth (see
 [`?ertte_data`](https://ertte.djnavarro.net/reference/ertte_data.md)).
 
 Choosing among the four supported distributions by AIC is automated by
-[`ertte_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_select_distribution.md):
+[`ertte_aft_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_aft_select_distribution.md):
 
 ``` r
 
-cmp <- ertte_select_distribution(Surv(time, event) ~ aucss, ertte_data)
+cmp <- ertte_aft_select_distribution(Surv(time, event) ~ aucss, ertte_data)
 cmp$comparison
 #> # A tibble: 4 × 5
 #>   dist        logLik   aic   bic converged
