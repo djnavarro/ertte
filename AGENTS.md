@@ -523,13 +523,18 @@ Naming/dispatch scheme, now fully implemented for both engines
   helper, plus a delta method built on `survfit()`'s profile-specific
   `std.err` field) methods. Unlike `ertte_landmark()`, a genuine
   generic -- see "Planned work" above for why, and for the derivation
-  of the Cox method's confidence interval.
+  of the Cox method's confidence interval. A user-facing explanation of
+  the underlying formalism, assumptions, and caveats -- pitched at a
+  pharmacometrician familiar with TTE models but not the statistical
+  details of AFT/Cox PH -- lives in a website-only article,
+  `vignettes/articles/rmst.Rmd` (see "Development workflow" below for
+  why it's an article rather than a package vignette).
 - `R/ertte-landmark.R` -- `ertte_landmark()`: the landmark-binary
   scalar E-R reduction (`P(event by t*) = 1 - S(t*)`) that
   `er_predict.ertte_model()` (`R/er-methods.R`) forwards to. A single
   function, not a generic -- it delegates entirely to
   `ertte_predict()`, which already dispatches per engine. See "Planned
-  work" above for what's deferred (RMST, `er_simulate()` VPC parity).
+  work" above for what's deferred (`er_simulate()` VPC parity).
 - `R/ertte-family.R` -- `ertte_select_distribution()`: fits each
   candidate AFT distribution and returns the AIC-ranked comparison plus
   the best-fitting model.
@@ -567,6 +572,19 @@ Naming/dispatch scheme, now fully implemented for both engines
 
 ## Development workflow
 
+- **Longer explanatory write-ups (formalism, assumptions, caveats) go in
+  website-only articles, not package vignettes.** `vignettes/articles/`
+  (scaffolded via `usethis::use_article()`) holds plain `.Rmd` files with
+  no `VignetteBuilder`/vignette-engine metadata -- `.Rbuildignore` excludes
+  the whole directory from the built package, but pkgdown still discovers
+  and renders them into an "Articles" section on the site. Used for
+  `ertte_rmst()`'s methodology write-up (`vignettes/articles/rmst.Rmd`),
+  since its confidence-interval derivation (see "Planned work" above) is
+  too long and too caveat-heavy for `?ertte_rmst`'s `@details`, but doesn't
+  need the R CMD build/check overhead (or `VignetteBuilder: knitr` in
+  `DESCRIPTION`) a real package vignette would add. Render locally with
+  `rmarkdown::render()` to check it knits before pushing -- pkgdown's build
+  step doesn't run in this repo's CI, only on deploy.
 - Document with roxygen2 (`devtools::document()`); Markdown roxygen is
   enabled (`Roxygen: list(markdown = TRUE)`).
 - Run tests with `devtools::test()`; full checks with `devtools::check()`.
