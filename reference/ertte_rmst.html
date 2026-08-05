@@ -107,6 +107,9 @@ unclipped Wald interval on RMST can, in principle, dip below 0 or
 exceed <code>tau</code> for small samples or near-boundary cases. <code>conf_level</code>
 must be a single number between 0 and 1 (inclusive); other values
 error rather than silently producing a reversed or <code>NaN</code> interval.</p>
+<p>A zero-row <code>newdata</code> returns a zero-row tibble with the expected
+columns for both engines, rather than erroring (see issue #10 for
+why this needed an explicit guard on the <code>ertte_coxph</code> side).</p>
 <p>The <code>ertte_aft</code> method computes <code>fit_rmst</code> by numerically
 integrating the closed-form survival function `S(t|x) = 1 - F((log(t)</p><ul><li><p>mu) / scale)<code>from 0 to</code>tau<code>via</code>stats::integrate()<code>, where </code>mu<code>(and its standard error) comes from</code>predict(object, newdata, type =
 "linear", se.fit = TRUE)<code>, matching [ertte_predict.ertte_aft()]. The standard error is an analytic delta method that differentiates under the integral sign: </code>d/dmu RMST(tau|x) = integral of dbase(z) / scale
@@ -133,6 +136,18 @@ the whole fitted cohort, <code>ertte_rmst()</code> warns: RMST integrates the
 beyond the observed range (the same extrapolation convention
 <code><a href="ertte_predict.html">ertte_predict.ertte_coxph()</a></code> uses for a single time point) has a
 larger effect on an area than on a point-in-time prediction.</p>
+<p><code>conf_level = 0</code>/<code>1</code>, documented (see <code>.ertte_check_conf_level()</code>) as
+legitimate degenerate endpoints, are supported here directly, since
+the delta-method interval is built from <code>z_scale</code> (<code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm()</a></code>-derived,
+<code>0</code> or <code>Inf</code> at these boundaries) rather than <code>survfit()</code>'s own
+<code>conf.int</code> machinery – the latter is only used to request <code>$surv</code>/
+<code>$std.err</code>, which don't depend on the requested confidence level (see
+issue #11); <code>survfit()</code> is always called with a fixed, valid
+placeholder value internally.</p>
+<p>A zero-row <code>newdata</code> returns a zero-row tibble with the expected
+columns rather than erroring: <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code> itself rejects an
+entirely-missing <code>newdata</code> with a cryptic "all rows of newdata have
+missing values" error (see issue #10).</p>
     </div>
 
     <div class="section level2">

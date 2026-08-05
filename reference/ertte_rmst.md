@@ -72,6 +72,10 @@ small samples or near-boundary cases. `conf_level` must be a single
 number between 0 and 1 (inclusive); other values error rather than
 silently producing a reversed or `NaN` interval.
 
+A zero-row `newdata` returns a zero-row tibble with the expected columns
+for both engines, rather than erroring (see issue \#10 for why this
+needed an explicit guard on the `ertte_coxph` side).
+
 The `ertte_aft` method computes `fit_rmst` by numerically integrating
 the closed-form survival function \`S(t\|x) = 1 - F((log(t)
 
@@ -108,6 +112,21 @@ beyond the observed range (the same extrapolation convention
 [`ertte_predict.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
 uses for a single time point) has a larger effect on an area than on a
 point-in-time prediction.
+
+`conf_level = 0`/`1`, documented (see `.ertte_check_conf_level()`) as
+legitimate degenerate endpoints, are supported here directly, since the
+delta-method interval is built from `z_scale`
+([`qnorm()`](https://rdrr.io/r/stats/Normal.html)-derived, `0` or `Inf`
+at these boundaries) rather than `survfit()`'s own `conf.int` machinery
+– the latter is only used to request `$surv`/ `$std.err`, which don't
+depend on the requested confidence level (see issue \#11); `survfit()`
+is always called with a fixed, valid placeholder value internally.
+
+A zero-row `newdata` returns a zero-row tibble with the expected columns
+rather than erroring:
+[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)
+itself rejects an entirely-missing `newdata` with a cryptic "all rows of
+newdata have missing values" error (see issue \#10).
 
 ## Examples
 

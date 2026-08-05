@@ -64,6 +64,13 @@ companion `erglm` package). `conf_level` must be a single number between
 0 and 1 (inclusive); other values error rather than silently producing a
 reversed or `NaN` interval.
 
+A zero-row `newdata` returns a zero-row tibble with the expected columns
+rather than erroring – explicit here (rather than relying on
+`predict.survreg()`'s incidental support for a zero-row `newdata`) for
+symmetry with `ertte_predict.ertte_coxph()`, where the equivalent
+[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)
+call genuinely does error on a zero-row `newdata` (see issue \#10).
+
 The `ertte_coxph` method delegates to
 `survival::survfit(object, newdata, conf.int = conf_level)`, which
 computes a per-row survival curve
@@ -79,6 +86,24 @@ extrapolation) rather than erroring. Confidence intervals come from
 on the linear predictor – the two methods' intervals are not directly
 comparable as a result, which is expected given the different model
 structures.
+
+`conf_level = 0`/`1` are documented (see `.ertte_check_conf_level()`) as
+legitimate degenerate endpoints, but
+[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)'s
+own `conf.int` machinery rejects exactly 0 or 1 (see issue \#11). Both
+are handled directly here instead: `conf_level = 0` collapses the
+interval to the point estimate (`ci_lower = ci_upper = fit_survival`);
+`conf_level = 1` widens it to the full valid probability range
+(`ci_lower = 0`, `ci_upper = 1`) – matching what the underlying
+log-transform interval converges to in the limit, and matching how
+`ertte_predict.ertte_aft()`'s CDF-based back-transform already behaves
+at these boundaries.
+
+A zero-row `newdata` returns a zero-row tibble with the expected columns
+rather than erroring:
+[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)
+itself rejects an entirely-missing `newdata` with a cryptic "all rows of
+newdata have missing values" error (see issue \#10).
 
 ## Examples
 
