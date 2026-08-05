@@ -50,6 +50,17 @@ test_that("ertte_fun() on ertte_coxph checks param length", {
   expect_error(mod_fun(param = c(1, 2, 3), time = 60), "length")
 })
 
+test_that("ertte_fun() on ertte_coxph validates time the same way ertte_predict() does", {
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  mod_fun <- ertte_fun(mod)
+  expect_error(mod_fun(time = -1), "`time`")
+  expect_error(mod_fun(time = 0), "`time`")
+  expect_error(mod_fun(time = NA), "`time`")
+  expect_error(mod_fun(time = "a"), "`time`")
+  # a genuinely positive time still works (no false-positive rejection)
+  expect_no_error(mod_fun(time = 60))
+})
+
 test_that("ertte_coxph() fits with model = TRUE (required by survfit())", {
   mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
   expect_false(is.null(mod$model))

@@ -96,6 +96,21 @@
   }
 }
 
+# `time` (as passed to `ertte_predict()` and to the closures returned by
+# `ertte_fun()`) must be a numeric vector of strictly positive values --
+# `log(time)` (AFT) / the baseline-hazard lookup (Cox) are both undefined
+# or meaningless otherwise. Shared by both `ertte_predict.ertte_aft()`/
+# `ertte_predict.ertte_coxph()` (which already validated this inline,
+# identically, before this helper existed) and both `ertte_fun.ertte_aft()`/
+# `ertte_fun.ertte_coxph()`'s returned closures (which previously validated
+# nothing, silently returning `NaN`/`1` for non-positive `time` instead of
+# erroring -- see issue #7).
+.ertte_check_time <- function(time) {
+  if (!is.numeric(time) || length(time) == 0L || anyNA(time) || any(time <= 0)) {
+    rlang::abort("`time` must be a numeric vector of strictly positive values.")
+  }
+}
+
 # Shared by `.ertte_simulate_draws()`'s per-engine methods: if `seed` is
 # `NULL`, pick one and tell the user (since it determines the actual
 # simulated values returned), otherwise pass it through unchanged.

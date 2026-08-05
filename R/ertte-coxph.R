@@ -107,9 +107,7 @@ ertte_predict.ertte_coxph <- function(object, newdata = NULL, time, conf_level =
   .ertte_check_coxph_nevent(object)
   .ertte_check_conf_level(conf_level)
   if (is.null(newdata)) newdata <- object$data
-  if (!is.numeric(time) || length(time) == 0L || anyNA(time) || any(time <= 0)) {
-    rlang::abort("`time` must be a numeric vector of strictly positive values.")
-  }
+  .ertte_check_time(time)
   n <- nrow(newdata)
   k <- length(time)
 
@@ -162,7 +160,10 @@ ertte_predict.ertte_coxph <- function(object, newdata = NULL, time, conf_level =
 #' approximation used elsewhere in this package (e.g. `scale` for AFT
 #' models is likewise held fixed). Since Cox models have no intercept,
 #' `param` has one entry per covariate with no `"(Intercept)"` column,
-#' unlike `ertte_fun.ertte_aft()`.
+#' unlike `ertte_fun.ertte_aft()`. `time` is validated the same way
+#' [ertte_predict()] validates it (a numeric vector of strictly positive
+#' values) -- a non-positive `time` previously returned a silent `1`
+#' (as if survival were guaranteed) instead of erroring.
 #'
 #' @rdname ertte_fun
 #' @export
@@ -187,6 +188,7 @@ ertte_fun.ertte_coxph <- function(object, ...) {
   force(means)
   force(bh)
   function(param = NULL, data = NULL, time) {
+    .ertte_check_time(time)
     if (is.null(param)) param <- stats::coef(object)
     if (is.null(data)) data <- object$data
     mm <- stats::model.matrix(ff, data)

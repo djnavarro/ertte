@@ -102,9 +102,7 @@ ertte_predict <- function(object, ...) {
 ertte_predict.ertte_aft <- function(object, newdata = NULL, time, conf_level = .95, ...) {
   .ertte_check_conf_level(conf_level)
   if (is.null(newdata)) newdata <- object$data
-  if (!is.numeric(time) || length(time) == 0L || anyNA(time) || any(time <= 0)) {
-    rlang::abort("`time` must be a numeric vector of strictly positive values.")
-  }
+  .ertte_check_time(time)
   info <- .ertte_dist_info(object$ertte$type)
   z_scale <- -stats::qnorm((1 - conf_level) / 2)
   scale <- object$scale
@@ -164,7 +162,10 @@ ertte_fun <- function(object, ...) {
 #' with a cryptic "non-conformable arguments" error from matrix
 #' multiplication. `scale` is always taken from the fitted `object`, not
 #' from `param` (the coefficient vector from `coef()` never includes
-#' it).
+#' it). `time` is validated the same way [ertte_predict()] validates it
+#' (a numeric vector of strictly positive values) -- a non-positive
+#' `time` previously returned a silent `NaN` (via `log()`) instead of
+#' erroring.
 #'
 #' @rdname ertte_fun
 #' @export
@@ -186,6 +187,7 @@ ertte_fun.ertte_aft <- function(object, ...) {
   scale <- object$scale
   force(ff)
   function(param = NULL, data = NULL, time) {
+    .ertte_check_time(time)
     if (is.null(param)) param <- stats::coef(object)
     if (is.null(data)) data <- object$data
     mm <- stats::model.matrix(ff, data)

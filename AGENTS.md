@@ -545,6 +545,30 @@ plotting packages in package code.
     engine's empirical/step-function baseline hazard, which realistically
     exhausts its support whenever `nsim` is reasonably large).
 
+## Stress-test findings and fixes
+
+A round of adversarial edge-case testing (bad `time`/`conf_level`/`tau`
+values, empty candidate sets, single-row data, missing/new-level
+covariates, etc.) surfaced a handful of validation gaps, filed as
+GitHub issues #3-#7. #7 (`ertte_fun()` performed no `time` validation,
+unlike `ertte_predict()`) is fixed: a new shared `.ertte_check_time()`
+helper (in `R/utils-helpers.R`) centralises the "numeric vector of
+strictly positive values" check that `ertte_predict.ertte_aft()`/
+`ertte_predict.ertte_coxph()` already had (previously duplicated
+inline, identically, in both files) and is now also called at the top
+of both `ertte_fun.ertte_aft()`'s and `ertte_fun.ertte_coxph()`'s
+returned closures. Before this fix, a non-positive `time` passed to
+the closure returned silently: `NaN` for the AFT engine (via
+`log(time)`), or `1` for the Cox engine (as if survival were
+guaranteed) -- neither erroring nor warning informatively, unlike the
+equivalent `ertte_predict()` call. Regression tests live alongside the
+existing `ertte_fun()`/`param`-length tests in
+`tests/testthat/test-ertte-aft.R`/`test-ertte-coxph.R`. Issues #3, #4,
+#5, and #6 (empty `candidates` in `ertte_select_distribution()`, a
+cryptic single-row error from `ertte_coxph()`, `ertte_coxph()` not
+validating `time > 0`, and `ertte_fun()`'s closure argument order
+being `param` before `data`, unlike the rest of the API) remain open.
+
 ## API naming: AFT vs Cox PH
 
 `ertte_aft()` (wraps `survreg()`) and `ertte_coxph()` (wraps `coxph()`)

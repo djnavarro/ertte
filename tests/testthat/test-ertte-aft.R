@@ -49,3 +49,14 @@ test_that("ertte_fun() checks param length", {
   mod_fun <- ertte_fun(mod)
   expect_error(mod_fun(param = c(1, 2, 3), time = 60), "length")
 })
+
+test_that("ertte_fun() validates time the same way ertte_predict() does", {
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  mod_fun <- ertte_fun(mod)
+  expect_error(mod_fun(time = -1), "`time`")
+  expect_error(mod_fun(time = 0), "`time`")
+  expect_error(mod_fun(time = NA), "`time`")
+  expect_error(mod_fun(time = "a"), "`time`")
+  # a genuinely positive time still works (no false-positive rejection)
+  expect_no_error(mod_fun(time = 60))
+})

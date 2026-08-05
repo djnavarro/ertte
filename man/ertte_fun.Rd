@@ -48,7 +48,10 @@ matrix implied by \code{data}, erroring informatively rather than failing
 with a cryptic "non-conformable arguments" error from matrix
 multiplication. \code{scale} is always taken from the fitted \code{object}, not
 from \code{param} (the coefficient vector from \code{coef()} never includes
-it).
+it). \code{time} is validated the same way \code{\link[=ertte_predict]{ertte_predict()}} validates it
+(a numeric vector of strictly positive values) -- a non-positive
+\code{time} previously returned a silent \code{NaN} (via \code{log()}) instead of
+erroring.
 
 The \code{ertte_coxph} method returns a function that evaluates
 \verb{S(t | x) = S0(t)^exp((x - xbar)'param)}, where \code{S0(t)} is the fitted
@@ -64,7 +67,10 @@ partial likelihood's risk sets) -- matching the level of
 approximation used elsewhere in this package (e.g. \code{scale} for AFT
 models is likewise held fixed). Since Cox models have no intercept,
 \code{param} has one entry per covariate with no \code{"(Intercept)"} column,
-unlike \code{ertte_fun.ertte_aft()}.
+unlike \code{ertte_fun.ertte_aft()}. \code{time} is validated the same way
+\code{\link[=ertte_predict]{ertte_predict()}} validates it (a numeric vector of strictly positive
+values) -- a non-positive \code{time} previously returned a silent \code{1}
+(as if survival were guaranteed) instead of erroring.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
