@@ -124,3 +124,34 @@ test_that("ertte_rmst() handles a single-row newdata for both engines", {
   expect_equal(nrow(ertte_rmst(mod_aft, nd, tau = c(30, 60, 90))), 3L)
   expect_equal(nrow(ertte_rmst(mod_cox, nd, tau = c(30, 60, 90))), 3L)
 })
+
+test_that("ertte_rmst() recomputes fit_rmst/ci_lower/ci_upper even when newdata already has columns of those names", {
+  # regression test for erplots#12: `newdata[rep_rows, ] |> mutate(fit_rmst
+  # = fit_rmst, ...)` used to resolve the bare `fit_rmst` (and, in turn,
+  # `ci_lower`/`ci_upper`) reference against a pre-existing column of the
+  # same name in `newdata` (dplyr's data-mask precedence), rather than the
+  # freshly computed local vector -- silently passing through stale values
+  # whenever a previous `ertte_rmst()` call's own output was reused as
+  # `newdata`. This is exactly what happens if a fitted RMST curve is
+  # rebuilt from data produced by an earlier call, or -- the scenario that
+  # surfaced the bug -- when `erplots::er_plot()`'s model-curve grid copies
+  # every non-exposure column (including a stale `fit_rmst`/`ci_lower`/
+  # `ci_upper` triple) from the plot's own data into the prediction grid it
+  # hands to `er_predict()`.
+  grid <- data.frame(aucss = seq(0, 4700, length.out = 10))
+
+  for (mod in list(
+    ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data),
+    ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  )) {
+    fresh <- ertte_rmst(mod, grid, tau = 90)
+    reused <- ertte_rmst(mod, fresh, tau = 90)
+
+    expect_equal(reused$fit_rmst, fresh$fit_rmst)
+    expect_equal(reused$ci_lower, fresh$ci_lower)
+    expect_equal(reused$ci_upper, fresh$ci_upper)
+    # a flat/stale `fit_rmst` (the symptom of the bug) would fail this --
+    # RMST strictly decreases with `aucss` for this fitted model
+    expect_true(all(diff(reused$fit_rmst) < 0))
+  }
+})
