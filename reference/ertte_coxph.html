@@ -99,6 +99,12 @@ effect of <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="e
 log-location-scale AFT model takes <code>log(time)</code>, which is undefined
 for non-positive values), but <code>coxph()</code> has no equivalent check –
 this closes that gap so behaviour is consistent across both engines.</p>
+<p><code>ertte_coxph()</code> also checks up front that at least 2 usable rows
+(after accounting for missing values) are available to fit:
+<code><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">survival::coxph()</a></code> fails with a cryptic, low-level error
+(<code>'x' must be an array of at least two dimensions</code>, from its own
+post-fit diagnostics) when fitting on exactly one usable row, rather
+than a message that points at the real problem.</p>
     </div>
 
     <div class="section level2">

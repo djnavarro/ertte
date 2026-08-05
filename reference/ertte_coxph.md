@@ -85,6 +85,14 @@ which is undefined for non-positive values), but `coxph()` has no
 equivalent check – this closes that gap so behaviour is consistent
 across both engines.
 
+`ertte_coxph()` also checks up front that at least 2 usable rows (after
+accounting for missing values) are available to fit:
+[`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html) fails
+with a cryptic, low-level error
+(`'x' must be an array of at least two dimensions`, from its own
+post-fit diagnostics) when fitting on exactly one usable row, rather
+than a message that points at the real problem.
+
 ## Examples
 
 ``` r
