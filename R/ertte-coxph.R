@@ -116,6 +116,22 @@ ertte_coxph <- function(formula, data, ...) {
 #' predictor -- the two methods' intervals are not directly comparable
 #' as a result, which is expected given the different model structures.
 #'
+#' `conf_level = 0`/`1` are documented (see `.ertte_check_conf_level()`)
+#' as legitimate degenerate endpoints, but `survival::survfit()`'s own
+#' `conf.int` machinery rejects exactly 0 or 1 (see issue #11). Both are
+#' handled directly here instead: `conf_level = 0` collapses the
+#' interval to the point estimate (`ci_lower = ci_upper = fit_survival`);
+#' `conf_level = 1` widens it to the full valid probability range
+#' (`ci_lower = 0`, `ci_upper = 1`) -- matching what the underlying
+#' log-transform interval converges to in the limit, and matching how
+#' `ertte_predict.ertte_aft()`'s CDF-based back-transform already
+#' behaves at these boundaries.
+#'
+#' A zero-row `newdata` returns a zero-row tibble with the expected
+#' columns rather than erroring: `survival::survfit()` itself rejects an
+#' entirely-missing `newdata` with a cryptic "all rows of newdata have
+#' missing values" error (see issue #10).
+#'
 #' @rdname ertte_predict
 #' @export
 #' @examples
@@ -127,16 +143,48 @@ ertte_predict.ertte_coxph <- function(object, newdata = NULL, time, conf_level =
   .ertte_check_conf_level(conf_level)
   if (is.null(newdata)) newdata <- object$data
   .ertte_check_time(time)
+  if (nrow(newdata) == 0L) {
+    return(
+      newdata |>
+        tibble::as_tibble() |>
+        dplyr::mutate(
+          time = numeric(0),
+          fit_survival = numeric(0),
+          ci_lower = numeric(0),
+          ci_upper = numeric(0)
+        )
+    )
+  }
   n <- nrow(newdata)
   k <- length(time)
 
-  sf <- survival::survfit(object, newdata = newdata, conf.int = conf_level, se.fit = TRUE)
+  # `survfit()`'s own `conf.int` argument rejects exactly 0/1 -- pass a
+  # harmless placeholder in that case and construct the boundary
+  # interval manually below, since `$surv` (the point estimate) doesn't
+  # depend on `conf.int` at all (confirmed empirically: only `$lower`/
+  # `$upper` do).
+  sf <- survival::survfit(
+    object, newdata = newdata,
+    conf.int = if (conf_level %in% c(0, 1)) 0.95 else conf_level,
+    se.fit = TRUE
+  )
   ss <- summary(sf, times = time, extend = TRUE)
   # `summary()`'s `$surv`/`$lower`/`$upper` are `[k x n]` matrices when
   # `newdata` has more than one row, but drop to a plain length-`k`
   # vector when it has exactly one -- normalise both to a `[k x n]`
   # matrix so the flattening below doesn't need a special case.
   as_km <- function(x) matrix(x, nrow = k, ncol = n)
+  fit_mat <- as_km(ss$surv)
+  if (conf_level == 0) {
+    lower_mat <- fit_mat
+    upper_mat <- fit_mat
+  } else if (conf_level == 1) {
+    lower_mat <- matrix(0, nrow = k, ncol = n)
+    upper_mat <- matrix(1, nrow = k, ncol = n)
+  } else {
+    lower_mat <- as_km(ss$lower)
+    upper_mat <- as_km(ss$upper)
+  }
 
   rep_rows <- rep(seq_len(n), each = k)
   time_rep <- rep(time, times = n)
@@ -145,9 +193,9 @@ ertte_predict.ertte_coxph <- function(object, newdata = NULL, time, conf_level =
     tibble::as_tibble() |>
     dplyr::mutate(
       time = unname(time_rep),
-      fit_survival = unname(as.vector(as_km(ss$surv))),
-      ci_lower = unname(as.vector(as_km(ss$lower))),
-      ci_upper = unname(as.vector(as_km(ss$upper))),
+      fit_survival = unname(as.vector(fit_mat)),
+      ci_lower = unname(as.vector(lower_mat)),
+      ci_upper = unname(as.vector(upper_mat)),
     )
   return(out)
 }

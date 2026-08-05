@@ -95,6 +95,10 @@
 #' must be a single number between 0 and 1 (inclusive); other values
 #' error rather than silently producing a reversed or `NaN` interval.
 #'
+#' A zero-row `newdata` returns a zero-row tibble with the expected
+#' columns for both engines, rather than erroring (see issue #10 for
+#' why this needed an explicit guard on the `ertte_coxph` side).
+#'
 #' @export
 ertte_rmst <- function(object, newdata = NULL, tau, conf_level = .95, ...) {
   UseMethod("ertte_rmst")
@@ -123,6 +127,18 @@ ertte_rmst.ertte_aft <- function(object, newdata = NULL, tau, conf_level = .95, 
   if (is.null(newdata)) newdata <- object$data
   if (!is.numeric(tau) || length(tau) == 0L || anyNA(tau) || any(tau <= 0)) {
     rlang::abort("`tau` must be a numeric vector of strictly positive values.")
+  }
+  if (nrow(newdata) == 0L) {
+    return(
+      newdata |>
+        tibble::as_tibble() |>
+        dplyr::mutate(
+          tau = numeric(0),
+          fit_rmst = numeric(0),
+          ci_lower = numeric(0),
+          ci_upper = numeric(0)
+        )
+    )
   }
   info <- .ertte_dist_info(object$ertte$type)
   scale <- object$scale
@@ -188,6 +204,20 @@ ertte_rmst.ertte_aft <- function(object, newdata = NULL, tau, conf_level = .95, 
 #' `ertte_predict.ertte_coxph()` uses for a single time point) has a
 #' larger effect on an area than on a point-in-time prediction.
 #'
+#' `conf_level = 0`/`1`, documented (see `.ertte_check_conf_level()`) as
+#' legitimate degenerate endpoints, are supported here directly, since
+#' the delta-method interval is built from `z_scale` (`qnorm()`-derived,
+#' `0` or `Inf` at these boundaries) rather than `survfit()`'s own
+#' `conf.int` machinery -- the latter is only used to request `$surv`/
+#' `$std.err`, which don't depend on the requested confidence level (see
+#' issue #11); `survfit()` is always called with a fixed, valid
+#' placeholder value internally.
+#'
+#' A zero-row `newdata` returns a zero-row tibble with the expected
+#' columns rather than erroring: `survival::survfit()` itself rejects an
+#' entirely-missing `newdata` with a cryptic "all rows of newdata have
+#' missing values" error (see issue #10).
+#'
 #' @rdname ertte_rmst
 #' @export
 #' @examples
@@ -201,7 +231,26 @@ ertte_rmst.ertte_coxph <- function(object, newdata = NULL, tau, conf_level = .95
   if (!is.numeric(tau) || length(tau) == 0L || anyNA(tau) || any(tau <= 0)) {
     rlang::abort("`tau` must be a numeric vector of strictly positive values.")
   }
-  sf <- survival::survfit(object, newdata = newdata, conf.int = conf_level, se.fit = TRUE)
+  if (nrow(newdata) == 0L) {
+    return(
+      newdata |>
+        tibble::as_tibble() |>
+        dplyr::mutate(
+          tau = numeric(0),
+          fit_rmst = numeric(0),
+          ci_lower = numeric(0),
+          ci_upper = numeric(0)
+        )
+    )
+  }
+  # `conf.int` here is a fixed, valid placeholder, not `conf_level`
+  # itself: only `sf$time`/`sf$surv`/`sf$std.err` are used below (never
+  # `sf$lower`/`sf$upper`), and those don't depend on `conf.int` at all
+  # -- confirmed empirically. `conf_level` is applied afterwards, via
+  # `z_scale`, in `.ertte_rmst_pfun_delta()`'s Wald construction, which
+  # handles 0/1 without going through `survfit()`'s own `conf.int`
+  # validation (which rejects exactly 0 or 1).
+  sf <- survival::survfit(object, newdata = newdata, conf.int = 0.95, se.fit = TRUE)
   max_obs_time <- max(sf$time)
   if (any(tau > max_obs_time)) {
     rlang::warn(paste0(

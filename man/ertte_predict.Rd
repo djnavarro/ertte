@@ -48,6 +48,13 @@ equivalent in the companion \code{erglm} package). \code{conf_level} must be a
 single number between 0 and 1 (inclusive); other values error rather
 than silently producing a reversed or \code{NaN} interval.
 
+A zero-row \code{newdata} returns a zero-row tibble with the expected
+columns rather than erroring -- explicit here (rather than relying on
+\code{predict.survreg()}'s incidental support for a zero-row \code{newdata})
+for symmetry with \code{ertte_predict.ertte_coxph()}, where the equivalent
+\code{survival::survfit()} call genuinely does error on a zero-row
+\code{newdata} (see issue #10).
+
 The \code{ertte_coxph} method delegates to
 \code{survival::survfit(object, newdata, conf.int = conf_level)}, which
 computes a per-row survival curve \code{S(t | x) = S0(t)^exp(lp(x) - lp(xbar))} from the fitted baseline hazard (Breslow or Efron,
@@ -61,6 +68,22 @@ better suited to a probability bounded in \verb{[0, 1]} than the plain
 Wald interval \code{ertte_predict.ertte_aft()} uses on the linear
 predictor -- the two methods' intervals are not directly comparable
 as a result, which is expected given the different model structures.
+
+\code{conf_level = 0}/\code{1} are documented (see \code{.ertte_check_conf_level()})
+as legitimate degenerate endpoints, but \code{survival::survfit()}'s own
+\code{conf.int} machinery rejects exactly 0 or 1 (see issue #11). Both are
+handled directly here instead: \code{conf_level = 0} collapses the
+interval to the point estimate (\code{ci_lower = ci_upper = fit_survival});
+\code{conf_level = 1} widens it to the full valid probability range
+(\code{ci_lower = 0}, \code{ci_upper = 1}) -- matching what the underlying
+log-transform interval converges to in the limit, and matching how
+\code{ertte_predict.ertte_aft()}'s CDF-based back-transform already
+behaves at these boundaries.
+
+A zero-row \code{newdata} returns a zero-row tibble with the expected
+columns rather than erroring: \code{survival::survfit()} itself rejects an
+entirely-missing \code{newdata} with a cryptic "all rows of newdata have
+missing values" error (see issue #10).
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)

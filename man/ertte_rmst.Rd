@@ -55,6 +55,10 @@ exceed \code{tau} for small samples or near-boundary cases. \code{conf_level}
 must be a single number between 0 and 1 (inclusive); other values
 error rather than silently producing a reversed or \code{NaN} interval.
 
+A zero-row \code{newdata} returns a zero-row tibble with the expected
+columns for both engines, rather than erroring (see issue #10 for
+why this needed an explicit guard on the \code{ertte_coxph} side).
+
 The \code{ertte_aft} method computes \code{fit_rmst} by numerically
 integrating the closed-form survival function `S(t|x) = 1 - F((log(t)
 \itemize{
@@ -86,6 +90,20 @@ the whole fitted cohort, \code{ertte_rmst()} warns: RMST integrates the
 beyond the observed range (the same extrapolation convention
 \code{ertte_predict.ertte_coxph()} uses for a single time point) has a
 larger effect on an area than on a point-in-time prediction.
+
+\code{conf_level = 0}/\code{1}, documented (see \code{.ertte_check_conf_level()}) as
+legitimate degenerate endpoints, are supported here directly, since
+the delta-method interval is built from \code{z_scale} (\code{qnorm()}-derived,
+\code{0} or \code{Inf} at these boundaries) rather than \code{survfit()}'s own
+\code{conf.int} machinery -- the latter is only used to request \verb{$surv}/
+\verb{$std.err}, which don't depend on the requested confidence level (see
+issue #11); \code{survfit()} is always called with a fixed, valid
+placeholder value internally.
+
+A zero-row \code{newdata} returns a zero-row tibble with the expected
+columns rather than erroring: \code{survival::survfit()} itself rejects an
+entirely-missing \code{newdata} with a cryptic "all rows of newdata have
+missing values" error (see issue #10).
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)

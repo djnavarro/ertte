@@ -130,3 +130,80 @@ test_that("ertte_aft() fits normally under heavy ties in event times", {
   pred <- ertte_predict(mod, dat[1:5, ], time = c(30, 60))
   expect_true(all(pred$fit_survival >= 0 & pred$fit_survival <= 1))
 })
+
+# --- zero-row newdata (issue #10) --------------------------------------
+
+test_that("ertte_predict()/ertte_rmst()/ertte_landmark() return a zero-row tibble for empty newdata, both engines", {
+  mod_aft <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
+  mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
+  nd0 <- ertte_data[0, ]
+
+  pred_aft <- ertte_predict(mod_aft, nd0, time = c(30, 60))
+  pred_cox <- ertte_predict(mod_cox, nd0, time = c(30, 60))
+  expect_equal(nrow(pred_aft), 0L)
+  expect_equal(nrow(pred_cox), 0L)
+  expect_true(all(c("time", "fit_survival", "ci_lower", "ci_upper") %in% names(pred_aft)))
+  expect_true(all(c("time", "fit_survival", "ci_lower", "ci_upper") %in% names(pred_cox)))
+
+  rmst_aft <- ertte_rmst(mod_aft, nd0, tau = c(30, 60))
+  rmst_cox <- ertte_rmst(mod_cox, nd0, tau = c(30, 60))
+  expect_equal(nrow(rmst_aft), 0L)
+  expect_equal(nrow(rmst_cox), 0L)
+  expect_true(all(c("tau", "fit_rmst", "ci_lower", "ci_upper") %in% names(rmst_aft)))
+  expect_true(all(c("tau", "fit_rmst", "ci_lower", "ci_upper") %in% names(rmst_cox)))
+
+  lmk_aft <- ertte_landmark(mod_aft, nd0, landmark_time = 30)
+  lmk_cox <- ertte_landmark(mod_cox, nd0, landmark_time = 30)
+  expect_equal(nrow(lmk_aft), 0L)
+  expect_equal(nrow(lmk_cox), 0L)
+})
+
+# --- conf_level = 0/1 boundaries, ertte_coxph (issue #11) ---------------
+
+test_that("ertte_predict.ertte_coxph() handles conf_level = 0/1 like ertte_predict.ertte_aft() does", {
+  mod_aft <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
+  mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
+  nd3 <- ertte_data[1:3, ]
+
+  pred_cox0 <- ertte_predict(mod_cox, nd3, time = 30, conf_level = 0)
+  expect_equal(pred_cox0$ci_lower, pred_cox0$fit_survival)
+  expect_equal(pred_cox0$ci_upper, pred_cox0$fit_survival)
+
+  pred_cox1 <- ertte_predict(mod_cox, nd3, time = 30, conf_level = 1)
+  expect_true(all(pred_cox1$ci_lower == 0))
+  expect_true(all(pred_cox1$ci_upper == 1))
+
+  # matches ertte_predict.ertte_aft()'s own boundary behaviour (its
+  # CDF back-transform naturally collapses/bounds the interval there)
+  pred_aft0 <- ertte_predict(mod_aft, nd3, time = 30, conf_level = 0)
+  pred_aft1 <- ertte_predict(mod_aft, nd3, time = 30, conf_level = 1)
+  expect_equal(pred_aft0$ci_lower, pred_aft0$fit_survival)
+  expect_true(all(pred_aft1$ci_lower == 0))
+  expect_true(all(pred_aft1$ci_upper == 1))
+})
+
+test_that("ertte_rmst.ertte_coxph() handles conf_level = 0/1 without erroring, matching the AFT engine's pattern", {
+  mod_aft <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
+  mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
+  nd3 <- ertte_data[1:3, ]
+
+  rmst_cox0 <- ertte_rmst(mod_cox, nd3, tau = 60, conf_level = 0)
+  expect_equal(rmst_cox0$ci_lower, rmst_cox0$fit_rmst)
+  expect_equal(rmst_cox0$ci_upper, rmst_cox0$fit_rmst)
+
+  rmst_cox1 <- ertte_rmst(mod_cox, nd3, tau = 60, conf_level = 1)
+  expect_true(all(is.infinite(rmst_cox1$ci_lower)))
+  expect_true(all(is.infinite(rmst_cox1$ci_upper)))
+
+  rmst_aft0 <- ertte_rmst(mod_aft, nd3, tau = 60, conf_level = 0)
+  rmst_aft1 <- ertte_rmst(mod_aft, nd3, tau = 60, conf_level = 1)
+  expect_equal(rmst_aft0$ci_lower, rmst_aft0$fit_rmst)
+  expect_true(all(is.infinite(rmst_aft1$ci_lower)))
+  expect_true(all(is.infinite(rmst_aft1$ci_upper)))
+
+  # ordinary confidence levels are unaffected by the conf.int-placeholder
+  # refactor in ertte_rmst.ertte_coxph()
+  rmst_cox_90 <- ertte_rmst(mod_cox, nd3, tau = 60, conf_level = 0.9)
+  expect_true(all(rmst_cox_90$ci_lower < rmst_cox_90$fit_rmst))
+  expect_true(all(rmst_cox_90$ci_upper > rmst_cox_90$fit_rmst))
+})

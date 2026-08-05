@@ -93,6 +93,13 @@ ertte_predict <- function(object, ...) {
 #' single number between 0 and 1 (inclusive); other values error rather
 #' than silently producing a reversed or `NaN` interval.
 #'
+#' A zero-row `newdata` returns a zero-row tibble with the expected
+#' columns rather than erroring -- explicit here (rather than relying on
+#' `predict.survreg()`'s incidental support for a zero-row `newdata`)
+#' for symmetry with `ertte_predict.ertte_coxph()`, where the equivalent
+#' `survival::survfit()` call genuinely does error on a zero-row
+#' `newdata` (see issue #10).
+#'
 #' @rdname ertte_predict
 #' @export
 #' @examples
@@ -103,6 +110,18 @@ ertte_predict.ertte_aft <- function(object, newdata = NULL, time, conf_level = .
   .ertte_check_conf_level(conf_level)
   if (is.null(newdata)) newdata <- object$data
   .ertte_check_time(time)
+  if (nrow(newdata) == 0L) {
+    return(
+      newdata |>
+        tibble::as_tibble() |>
+        dplyr::mutate(
+          time = numeric(0),
+          fit_survival = numeric(0),
+          ci_lower = numeric(0),
+          ci_upper = numeric(0)
+        )
+    )
+  }
   info <- .ertte_dist_info(object$ertte$type)
   z_scale <- -stats::qnorm((1 - conf_level) / 2)
   scale <- object$scale
