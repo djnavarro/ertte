@@ -5,10 +5,10 @@ template:
 articles:
 - title: Articles
   contents:
-  - overview
-  - landmark
-  - rmst
-  - scm
+  - articles/overview
+  - articles/landmark
+  - articles/rmst
+  - articles/scm
 
 reference:
 - title: Build
