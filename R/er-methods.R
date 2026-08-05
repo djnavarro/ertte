@@ -27,10 +27,16 @@
 # since erplots' scalar E-R grammar expects exactly one row per `newdata`
 # row. Both branches rename their reduction-specific fitted-value column
 # (`fit_resp`/`fit_rmst`) to the shared `fit_resp` name erplots' plotting
-# grammar expects, regardless of which reduction produced it. Landmark-VPC
-# parity for `er_simulate.ertte_model()` (below -- which still returns
-# per-row `sim_time`/`sim_event`, not a landmark-transformed draw) is
-# still deliberately deferred -- see AGENTS.md's "Planned work".
+# grammar expects, regardless of which reduction produced it.
+#
+# `er_simulate.ertte_model()` (below) mirrors this: supplying
+# `landmark_time`/`tau` through `...` now also transforms its raw
+# per-row `sim_time`/`sim_event` simulated draws into the `fit_resp`/
+# `sim_resp` columns erplots' `er_vpc_add_simulated()` needs for a
+# scalar (landmark-binary or RMST) VPC -- see `.ertte_simulate_scalar_resp()`
+# for the transformation itself, and AGENTS.md's "Planned work" for the
+# design decisions behind it (in particular, how genuinely ambiguous
+# simulated censoring is handled).
 
 er_predict.ertte_model <- function(model, newdata, conf_level = 0.95, ...) {
   dots <- list(...)
@@ -46,16 +52,8 @@ er_predict.ertte_model <- function(model, newdata, conf_level = 0.95, ...) {
   }
 
   if (has_tau) {
-    tau <- dots$tau
-    if (!is.numeric(tau) || length(tau) != 1L || is.na(tau) || tau <= 0) {
-      rlang::abort(paste0(
-        "`tau` (passed via `...` to `er_predict()`) must be a single, ",
-        "strictly positive number -- erplots' scalar E-R plotting grammar ",
-        "expects one row per `newdata` row, so `ertte_rmst()`'s vectorised ",
-        "`tau` argument isn't supported through this interface."
-      ))
-    }
-    rmst <- ertte_rmst(object = model, newdata = newdata, tau = tau, conf_level = conf_level)
+    .ertte_check_single_tau(dots$tau)
+    rmst <- ertte_rmst(object = model, newdata = newdata, tau = dots$tau, conf_level = conf_level)
     return(dplyr::rename(rmst, fit_resp = fit_rmst))
   }
 
@@ -75,10 +73,127 @@ er_simulate.ertte_model <- function(model, newdata, nsim = 100, seed = NULL, ...
   # event-rows-uncensored) simulation behaviour -- see
   # `simulate.ertte_model()`'s `censor_time` argument/Details.
   dots <- list(...)
-  .ertte_simulate_draws(
+  has_landmark <- !is.null(dots$landmark_time)
+  has_tau <- !is.null(dots$tau)
+
+  if (has_landmark && has_tau) {
+    rlang::abort(paste0(
+      "`er_simulate.ertte_model()` accepts only one of `landmark_time` or ",
+      "`tau` (via `...`) per call -- they select different scalar E-R ",
+      "reductions (landmark-binary vs restricted mean survival time)."
+    ))
+  }
+  if (has_landmark) .ertte_check_landmark_time(dots$landmark_time)
+  if (has_tau) .ertte_check_single_tau(dots$tau)
+
+  draws <- .ertte_simulate_draws(
     object = model, newdata = newdata, nsim = nsim, seed = seed,
     censor_time = dots$censor_time
   )
+
+  if (has_landmark || has_tau) {
+    draws <- .ertte_simulate_scalar_resp(
+      object = model, draws = draws,
+      landmark_time = dots$landmark_time, tau = dots$tau
+    )
+  }
+  draws
+}
+
+# Transforms `.ertte_simulate_draws()`'s raw per-(newdata row x replicate)
+# `sim_time`/`sim_event` output into the `fit_resp`/`sim_resp` columns
+# `erplots::er_vpc_add_simulated()` needs for a scalar (landmark-binary or
+# RMST) visual predictive check (see `?erplots::er_model_interface`):
+# `sim_resp` is *required* by erplots (a response-scale draw reflecting
+# both parameter uncertainty and individual-level simulation noise);
+# `fit_resp` is optional (a parameter-uncertainty-only draw, used for
+# spaghetti-style plots), but included here too for completeness and
+# parity with erglm's equivalent `er_simulate()` method.
+#
+# `sim_resp` is built directly from each replicate's already-censored
+# `sim_time`/`sim_event` (reflecting the same administrative-censoring
+# convention `.ertte_simulate_draws()` uses elsewhere -- see
+# `.ertte_apply_admin_censoring()` -- which is exactly what makes the
+# simulated data comparable to a real, similarly-censored observed
+# study). A replicate whose simulated outcome is genuinely ambiguous
+# relative to `landmark_time`/`tau` (censored strictly before it) becomes
+# `NA` -- the same complete-case convention a landmark/RMST analysis
+# already has to apply to genuinely censored *observed* data (e.g. the
+# manual `case_when()` construction in `test-er-methods.R`'s landmark
+# test), and one `er_vpc_add_simulated()`'s `mean(..., na.rm = TRUE)`
+# aggregation handles correctly by simply excluding it. For RMST, the
+# per-replicate individual quantity is `min(sim_time, tau)` when the
+# outcome relative to `tau` is known (an event, or survival to/past
+# `tau`) -- the same construction that gives `E[min(T, tau)] =
+# RMST(tau)` in the population-level formalism (see the `rmst` article).
+#
+# `fit_resp` reuses `ertte_fun(object)` (already implemented,
+# engine-agnostic) evaluated at each replicate's own sampled coefficient
+# draw -- recovered from the `coef_*` columns `.ertte_simulate_draws()`
+# already attaches per replicate, so no new coefficient sampling is
+# needed here. For `landmark_time` this is a single `ertte_fun()` call
+# per replicate (vectorised across every `newdata` row in that replicate
+# at once). For `tau` (RMST), there's no single evaluation point --
+# the whole curve from 0 to `tau` needs integrating -- so
+# `.ertte_rmst_fit_resp_curve()` evaluates `ertte_fun()` on a fixed grid
+# and applies the composite trapezoidal rule, still vectorised across
+# every `newdata` row in the replicate at once. This is a deliberately
+# coarser approximation than `ertte_rmst()`'s own point estimate (an
+# exact step-function sum for the Cox engine, adaptive quadrature for
+# AFT) -- acceptable since `fit_resp` here is an illustrative, optional
+# spaghetti-plot quantity, not something a confidence interval is built
+# from.
+.ertte_simulate_scalar_resp <- function(object, draws, landmark_time = NULL, tau = NULL) {
+  coef_names <- names(stats::coef(object))
+  coef_cols <- paste0("coef_", coef_names)
+  mod_fun <- ertte_fun(object)
+
+  draws$fit_resp <- NA_real_
+  draws$sim_resp <- NA_real_
+
+  for (ii in unique(draws$sim_id)) {
+    idx <- which(draws$sim_id == ii)
+    par_ii <- stats::setNames(as.numeric(draws[idx[1], coef_cols]), coef_names)
+    dd <- draws[idx, , drop = FALSE]
+
+    if (!is.null(landmark_time)) {
+      draws$fit_resp[idx] <- 1 - mod_fun(param = par_ii, data = dd, time = landmark_time)
+      draws$sim_resp[idx] <- dplyr::case_when(
+        dd$sim_event == 1 & dd$sim_time <= landmark_time ~ 1,
+        dd$sim_time > landmark_time ~ 0,
+        TRUE ~ NA_real_
+      )
+    } else {
+      draws$fit_resp[idx] <- .ertte_rmst_fit_resp_curve(mod_fun, par_ii, dd, tau)
+      draws$sim_resp[idx] <- dplyr::case_when(
+        dd$sim_event == 1 ~ pmin(dd$sim_time, tau),
+        dd$sim_time >= tau ~ tau,
+        TRUE ~ NA_real_
+      )
+    }
+  }
+
+  if (!is.null(landmark_time)) draws$landmark_time <- landmark_time
+  if (!is.null(tau)) draws$tau <- tau
+  draws
+}
+
+# Composite trapezoidal-rule integral of `mod_fun`'s survival curve from 0
+# to `tau`, vectorised across every row of `data` at once (one grid point
+# evaluated for the whole replicate's `newdata` rows in a single
+# `mod_fun()` call, rather than one `stats::integrate()` call per row) --
+# see `.ertte_simulate_scalar_resp()` for why this coarser approximation
+# is an acceptable trade-off here. `S(0) = 1` always, so the grid starts
+# just past 0 to avoid `log(0)` in the AFT engine's closed form.
+.ertte_rmst_fit_resp_curve <- function(mod_fun, param, data, tau, n_grid = 64) {
+  t_grid <- seq(0, tau, length.out = n_grid + 1)
+  s_grid <- vapply(t_grid, function(tt) {
+    if (tt <= 0) return(rep(1, nrow(data)))
+    mod_fun(param = param, data = data, time = tt)
+  }, numeric(nrow(data)))
+  h <- tau / n_grid
+  w <- c(1, rep(2, n_grid - 1), 1) * (h / 2)
+  as.vector(s_grid %*% w)
 }
 
 er_summary.ertte_model <- function(model, conf_level = 0.95, ...) {

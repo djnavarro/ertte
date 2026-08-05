@@ -10,15 +10,18 @@ package family, alongside [erglm](https://github.com/djnavarro/erglm)
 [GitHub issue #1](https://github.com/djnavarro/ertte/issues/1) for the
 full design/scoping discussion this package implements.
 
-This first pass covers the issue's suggested phasing step 1 only:
+This first pass covered the issue's suggested phasing step 1 only:
 **core modelling, methods, SCM, and simulation -- no plotting code**.
-Two later phases from the issue are explicitly deferred (see "Planned
-work" below):
+Two later phases from the issue were originally deferred; Phase 2 is now
+fully implemented, Phase 3 is not started (see "Planned work" below):
 
 - Phase 2: scalar E-R views of a TTE endpoint (landmark-binary / RMST)
-  reusing erplots' existing `er_plot()`/`er_vpc()` grammars.
+  reusing erplots' existing `er_plot()`/`er_vpc()` grammars -- **done**,
+  including both scalar reductions' point/CI predictions
+  (`er_predict.ertte_model()`) and VPC simulation
+  (`er_simulate.ertte_model()`).
 - Phase 3: a new `er_tte()` KM/survival-curve plotting grammar in the
-  separate `erplots` repo.
+  separate `erplots` repo -- not started.
 
 `ertte_aft()` wraps `survival::survreg()` -- parametric accelerated
 failure time (AFT) model fitting (`ertte_aft()`), survival-probability
@@ -187,9 +190,10 @@ plotting packages in package code.
   candidate set -- deliberately left to the user's judgement, consistent
   with how term handling elsewhere in ertte doesn't reason about variable
   semantics.
-- **`er_predict.ertte_model()`'s real contract -- landmark-binary and
-  RMST now both implemented; only VPC parity still deferred.** Phase 2's
-  Workstream B1 (scalar E-R views of a TTE endpoint) is now mostly done:
+- **`er_predict.ertte_model()`/`er_simulate.ertte_model()`'s real
+  contract -- landmark-binary, RMST, and their VPC parity are all now
+  implemented.** Phase 2's Workstream B1 (scalar E-R views of a TTE
+  endpoint) is now fully done:
   a new exported `ertte_landmark(object, newdata, landmark_time,
   conf_level)` (in `R/ertte-landmark.R`) reduces a TTE endpoint to a
   binary landmark response, `P(event by t*) = 1 - S(t*)`, by calling
@@ -224,14 +228,68 @@ plotting packages in package code.
   erplots' plotting grammar expects, regardless of which reduction
   produced it.
 
-  One piece from the design issue's Workstream B1 is still deliberately
-  deferred, confirmed with the maintainer when scoping this:
-  - **`er_simulate.ertte_model()` landmark-VPC parity.** The issue notes
-    a landmark-binary VPC "likewise reuses `er_vpc()` unchanged", but
-    that needs `er_simulate.ertte_model()` to also return
-    landmark-transformed draws (`fit_resp`/`sim_resp` as event-by-t*
-    indicators/probabilities), not its current per-row
-    `sim_time`/`sim_event` shape (unchanged by this pass).
+  **`er_simulate.ertte_model()` scalar-VPC parity -- now implemented,
+  for both landmark-binary and RMST.** The design issue notes a
+  landmark-binary VPC "likewise reuses `er_vpc()` unchanged", which
+  needs `er_simulate.ertte_model()` to return landmark-transformed
+  draws (`fit_resp`/`sim_resp`), not its previous per-row
+  `sim_time`/`sim_event` shape. Supplying `landmark_time` or `tau`
+  through `...` (mutually exclusive, matching `er_predict.ertte_model()`'s
+  scheme above) now does this, via a new internal
+  `.ertte_simulate_scalar_resp()` (in `R/er-methods.R`):
+  - **`sim_resp`** (erplots' hard requirement for `er_vpc_add_simulated()`,
+    per `?erplots::er_model_interface`) is built directly from each
+    replicate's *already-censored* `sim_time`/`sim_event` -- reusing the
+    same administrative-censoring convention `.ertte_simulate_draws()`
+    applies elsewhere (`.ertte_apply_admin_censoring()`), which is
+    exactly what makes the simulated data comparable to a real,
+    similarly-censored observed study, the entire point of a VPC. A
+    replicate whose simulated outcome is genuinely ambiguous relative to
+    `landmark_time`/`tau` (censored strictly before it) becomes `NA` --
+    the same complete-case convention a landmark/RMST analysis already
+    has to apply to genuinely censored *observed* data (e.g. the manual
+    `case_when()` construction `test-er-methods.R`'s landmark test uses
+    to build its observed-side data), and one `er_vpc_add_simulated()`'s
+    `mean(..., na.rm = TRUE)` aggregation handles correctly by simply
+    excluding it. For RMST, the per-replicate individual quantity is
+    `min(sim_time, tau)` when the outcome relative to `tau` is known (an
+    event, or survival to/past `tau`) -- the same construction that
+    gives `E[min(T, tau)] = RMST(tau)` in the population-level
+    formalism (see `vignettes/articles/rmst.Rmd`).
+  - **`fit_resp`** (optional, for erplots' spaghetti-style plots) reuses
+    `ertte_fun(object)` (already implemented, engine-agnostic) evaluated
+    at each replicate's own sampled coefficient draw -- recovered from
+    the `coef_*` columns `.ertte_simulate_draws()` already attaches per
+    replicate, so no new coefficient sampling was needed. For
+    `landmark_time` this is a single `ertte_fun()` call per replicate
+    (vectorised across every `newdata` row in that replicate at once).
+    For `tau` (RMST), there's no single evaluation point -- the whole
+    curve from 0 to `tau` needs integrating -- so a new
+    `.ertte_rmst_fit_resp_curve()` evaluates `ertte_fun()` on a fixed
+    64-point grid and applies the composite trapezoidal rule, still
+    vectorised across every `newdata` row in the replicate at once.
+    This is a deliberately coarser approximation than `ertte_rmst()`'s
+    own point estimate (an exact step-function sum for the Cox engine,
+    adaptive quadrature for AFT) -- an acceptable trade-off since
+    `fit_resp` here is an illustrative, optional quantity, not something
+    a confidence interval is built from.
+  - Verified both point estimates empirically: for a single covariate
+    profile with a large `nsim` (3000), `mean(sim_resp, na.rm = TRUE)`
+    and `mean(fit_resp)` both landed within roughly 1-2% of
+    `ertte_landmark()`'s/`ertte_rmst()`'s own fitted value for the same
+    profile, for both engines.
+  - Verified end-to-end against erplots' actual `er_vpc()`/
+    `er_vpc_add_observed()`/`er_vpc_add_simulated(simulate_args =
+    list(landmark_time = ...))` (and the `tau` equivalent) --
+    `er_vpc_build()` renders a `ggplot` object with no ertte-side
+    surprises, reusing the `predict_args`/`simulate_args` splicing
+    erplots#11 already added (see below) with no further erplots-side
+    changes needed.
+  - A shared `.ertte_check_single_tau()` (in `R/utils-helpers.R`)
+    validates `tau` for both `er_predict.ertte_model()` and
+    `er_simulate.ertte_model()`, replacing the inline check
+    `er_predict.ertte_model()` previously had (no behaviour change,
+    just avoiding duplicating the same validation message twice).
 
   **Caveat discovered end-to-end testing this against erplots'
   `er_plot()` -- now resolved upstream.** `er_plot_add_model(mod,

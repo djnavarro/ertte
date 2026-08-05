@@ -109,6 +109,23 @@
   }
 }
 
+# `tau`, when threaded through erplots' `er_predict()`/`er_simulate()`
+# `...` (see `R/er-methods.R`), must be a single strictly positive
+# number: their scalar E-R grammar expects exactly one row (or, for
+# simulation, one row per replicate) per `newdata` row, unlike
+# `ertte_rmst()`'s own vectorised `tau` argument, which can evaluate
+# several horizons at once.
+.ertte_check_single_tau <- function(tau) {
+  if (!is.numeric(tau) || length(tau) != 1L || is.na(tau) || tau <= 0) {
+    rlang::abort(paste0(
+      "`tau` (passed via `...`) must be a single, strictly positive ",
+      "number -- erplots' scalar E-R grammar expects one row per ",
+      "`newdata` row, so `ertte_rmst()`'s vectorised `tau` argument ",
+      "isn't supported through this interface."
+    ))
+  }
+}
+
 .ertte_pick_seed <- function(seed) {
   if (is.null(seed)) {
     seed <- .pick_seed()
