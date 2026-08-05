@@ -637,7 +637,10 @@ Naming/dispatch scheme, now fully implemented for both engines
   `er_predict.ertte_model()` (`R/er-methods.R`) forwards to. A single
   function, not a generic -- it delegates entirely to
   `ertte_predict()`, which already dispatches per engine. See "Planned
-  work" above for what's deferred (`er_simulate()` VPC parity).
+  work" above for what's deferred (`er_simulate()` VPC parity). Has its
+  own, shorter website-only article, `vignettes/articles/landmark.Rmd`
+  (see "Development workflow" below), loosely modelled on
+  `rmst.Rmd`'s structure.
 - `R/ertte-family.R` -- `ertte_select_distribution()`: fits each
   candidate AFT distribution and returns the AIC-ranked comparison plus
   the best-fitting model.
@@ -648,7 +651,10 @@ Naming/dispatch scheme, now fully implemented for both engines
   `erglm_add_term()`/`erglm_remove_term()`). Both refit via the internal
   `.ertte_refit()` S3 generic (with `ertte_aft`/`ertte_coxph` methods),
   which is how they work across both engines despite not being
-  generics themselves.
+  generics themselves. Has a website-only article,
+  `vignettes/articles/scm.Rmd` (see "Development workflow" below),
+  covering forward/backward selection, the LRT-based significance test,
+  and how `ertte_power()` terms fit into a candidate set.
 - `R/ertte-simulate.R` -- `simulate.ertte_model()`, the `stats::simulate()`
   S3 method (and its `.ertte_resample()` helper), modelled on
   `simulate.erglm_model()`'s output shape: one row per observation per
@@ -688,6 +694,26 @@ Naming/dispatch scheme, now fully implemented for both engines
   `DESCRIPTION`) a real package vignette would add. Render locally with
   `rmarkdown::render()` to check it knits before pushing -- pkgdown's build
   step doesn't run in this repo's CI, only on deploy.
+  Three further articles now exist alongside `rmst.Rmd`, all in
+  `vignettes/articles/` and registered in `_pkgdown.yml`'s `articles:`
+  list (`overview`, `landmark`, `rmst`, `scm`, in that reading order):
+  `overview.Rmd` (a `ertte_aft()`/`ertte_coxph()` primer, with a
+  refresher on the survival/hazard functions and the AFT/proportional-
+  hazards ideas each engine is built on -- the intended starting point
+  for a new user, cross-linked from the other three), `landmark.Rmd`
+  (`ertte_landmark()`, deliberately much shorter than `rmst.Rmd` since
+  a single-time-point reduction has far less to explain -- delegates
+  entirely to `ertte_predict()`, so most of its content is about the
+  CI-swap trick and the landmark VPC's censoring convention rather than
+  new numerical machinery), and `scm.Rmd` (`ertte_scm_forward()`/
+  `ertte_scm_backward()`/`ertte_add_term()`/`ertte_remove_term()`,
+  including how `ertte_power()` terms need no special handling in a
+  candidate set). All three were verified to render cleanly via
+  `rmarkdown::render()` against a locally reinstalled copy of the
+  package (`devtools::install()`) -- worth remembering that rendering
+  articles against a stale *installed* copy of ertte (rather than the
+  current source) can silently exercise old behaviour or fail on
+  recently-renamed functions, as happened once during this work.
 - Document with roxygen2 (`devtools::document()`); Markdown roxygen is
   enabled (`Roxygen: list(markdown = TRUE)`).
 - Run tests with `devtools::test()`; full checks with `devtools::check()`.

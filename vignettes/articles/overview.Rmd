@@ -1,0 +1,289 @@
+---
+title: "Survival models in ertte"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6,
+  fig.height = 4
+)
+```
+
+```{r setup}
+library(ertte)
+library(survival)
+```
+
+This article is the place to start if you're new to `ertte`. It walks
+through what a time-to-event (TTE) endpoint looks like, a short refresher on
+the two statistical ideas `ertte`'s model engines are built on (parametric
+accelerated failure time models and the Cox proportional-hazards model), and
+how to fit, inspect, and predict from both engines via `ertte_aft()` and
+`ertte_coxph()`. It assumes general familiarity with regression modelling,
+but not with survival analysis specifically.
+
+Three other articles build on this one: [restricted mean survival
+time](rmst.html) and [landmark event probabilities](landmark.html) cover
+`ertte`'s two ways of reducing a TTE endpoint to a single scalar
+exposure-response summary, and [stepwise covariate modelling](scm.html)
+covers `ertte`'s tools for building up a covariate model.
+
+## Time-to-event data
+
+A time-to-event outcome records, for each subject, how long it took for
+some event of interest to happen -- and, crucially, whether it was actually
+observed to happen at all. `ertte_data` (a simulated dataset shipped with
+the package) has the shape this kind of data usually takes:
+
+```{r}
+ertte_data[1:6, c("id", "aucss", "time", "event")]
+```
+
+`time` is the number of days until either the event occurred or the subject
+was last observed; `event` is `1` if the event was actually observed by
+`time`, and `0` if the subject was instead **censored** -- still event-free
+the last time they were seen, but with no way to know what happened to them
+afterwards (they left the study, the study ended, etc.). Both engines in
+`ertte` take a formula response built with `survival::Surv(time, event)`,
+which encodes exactly this: an observed time, plus whether it represents a
+true event or a censoring.
+
+Handling censored observations correctly -- using the information that a
+censored subject survived at least that long, without pretending to know
+what happened after -- is the entire reason TTE models exist as a distinct
+class of model, rather than just regressing `time` directly.
+
+## A quick refresher: the survival and hazard functions
+
+Two closely related functions describe a TTE outcome's distribution.
+
+The **survival function** $S(t) = P(T > t)$ is the probability of still
+being event-free at time $t$. It starts at $S(0) = 1$ and decreases
+(weakly) as $t$ increases.
+
+The **hazard function** $h(t)$ is the instantaneous event rate at time $t$,
+conditional on having survived to $t$:
+
+$$
+h(t) = \lim_{\Delta t \to 0} \frac{P(t \le T < t + \Delta t \mid T \ge t)}{\Delta t}.
+$$
+
+The two are related by $S(t) = \exp\left(-\int_0^t h(u)\, du\right)$: the
+survival function is fully determined by the hazard, and vice versa. Every
+model discussed below is really a model for one of these two functions
+(optionally as a function of covariates $x$) -- `ertte_aft()` models $S(t
+\mid x)$ directly, and `ertte_coxph()` models $h(t \mid x)$ directly, and
+each can recover the other.
+
+## Two engines, two ways of modelling $S(t \mid x)$
+
+`ertte` fits two structurally different kinds of TTE model. Both accept the
+same kind of formula and the same kind of covariates, but make different
+assumptions and answer slightly different questions.
+
+### `ertte_aft()`: parametric accelerated failure time models
+
+An accelerated failure time (AFT) model assumes covariates act
+multiplicatively on the *time scale* -- a covariate can speed up or slow
+down the passage toward the event, like a "clock" running fast or slow.
+Equivalently, on the log-time scale, it's an ordinary linear model:
+
+$$
+\log(T) = \mu(x) + \sigma W,
+$$
+
+where $\mu(x)$ is the linear predictor (intercept + covariate effects),
+$\sigma$ is a scale parameter, and $W$ is a random variable following a
+fixed "base" distribution that doesn't depend on $x$. Different choices of
+base distribution give different named AFT models, all supported by
+`ertte_aft()`'s `dist` argument:
+
+| `dist` | Base distribution of $W$ | Named model |
+|---|---|---|
+| `"exponential"` | Standard extreme-value, fixed $\sigma = 1$ | Exponential |
+| `"weibull"` (default) | Standard extreme-value | Weibull |
+| `"lognormal"` | Standard normal | Log-normal |
+| `"loglogistic"` | Standard logistic | Log-logistic |
+
+Because the whole family shares this log-location-scale structure, all four
+give a fully parametric, closed-form survival function
+
+$$
+S(t \mid x) = 1 - F\!\left(\frac{\log t - \mu(x)}{\sigma}\right),
+$$
+
+where $F$ is the base distribution's CDF. `ertte_aft()` wraps
+`survival::survreg()`, and adds two `ertte_aft`/`ertte_model` classes on
+top so it interoperates with the rest of the package (and, if installed,
+with `erplots`).
+
+```{r}
+mod_aft <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
+mod_aft
+```
+
+Coefficients are on the log-time scale, so `exp(coef(...))` is usually the
+more interpretable quantity: a **time ratio**, i.e. the multiplicative
+change in expected survival time per unit change in the covariate.
+
+```{r}
+exp(stats::coef(mod_aft))
+```
+
+Here, `aucss`'s time ratio is just under 1: higher exposure is associated
+with a (slightly) *shorter* time to event, holding nothing else fixed --
+consistent with `ertte_data`'s known Weibull AFT ground truth (see
+`?ertte_data`).
+
+Choosing among the four supported distributions by AIC is automated by
+`ertte_select_distribution()`:
+
+```{r}
+cmp <- ertte_select_distribution(Surv(time, event) ~ aucss, ertte_data)
+cmp$comparison
+```
+
+### `ertte_coxph()`: the semi-parametric Cox proportional-hazards model
+
+The Cox model instead assumes covariates act multiplicatively on the
+*hazard scale*, and -- unlike the AFT family -- makes no assumption about
+the shape of the baseline hazard over time:
+
+$$
+h(t \mid x) = h_0(t) \exp(x'\beta),
+$$
+
+where $h_0(t)$ is an unspecified **baseline hazard** (the hazard for a
+subject with $x = 0$, or more precisely $x$ at the values `coxph()` centers
+on) and $\beta$ are the log-hazard-ratio coefficients. This is a
+*semi-parametric* model: $\beta$ is estimated by maximising a partial
+likelihood that doesn't require ever specifying $h_0(t)$'s functional form,
+and $h_0(t)$ itself (if needed) is estimated afterwards, nonparametrically,
+from the same fit (via `survival::basehaz()`, Breslow's estimator).
+
+The name "proportional hazards" describes its central, testable assumption:
+the *ratio* of hazards between any two covariate profiles, $h(t \mid
+x_1)/h(t \mid x_2) = \exp((x_1 - x_2)'\beta)$, is constant over time -- it
+doesn't depend on $t$. This is a genuinely different assumption from the
+AFT family's "constant multiplicative effect on the time scale", and the
+two coincide only for the Weibull/exponential AFT model (the only member of
+the AFT family that is *also* a proportional-hazards model).
+
+```{r}
+mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
+mod_cox
+```
+
+Coefficients are on the log-hazard-ratio scale, so `exp(coef(...))` gives a
+**hazard ratio**: the multiplicative change in the instantaneous event rate
+per unit change in the covariate, at any time $t$.
+
+```{r}
+exp(stats::coef(mod_cox))
+```
+
+A hazard ratio just above 1 here says higher `aucss` is associated with a
+slightly *higher* instantaneous event rate at any given time -- the same
+underlying exposure effect as the AFT model above, described on a different
+scale (a time ratio below 1 and a hazard ratio above 1 are two consistent
+ways of saying "higher exposure, worse outcome").
+
+The proportional-hazards assumption itself can be checked with
+`survival::cox.zph()`, which tests whether a covariate's effect on the
+hazard actually stays constant over time (a significant result suggests it
+doesn't):
+
+```{r}
+cox.zph(mod_cox)
+```
+
+Here there's no evidence against the assumption for `aucss` -- unsurprising
+given `ertte_data` was simulated from a Weibull AFT ground truth, which
+(as noted above) is also a proportional-hazards model.
+
+### Choosing between them
+
+Both engines answer closely related exposure-response questions, and for
+data that's well described by a Weibull model, their conclusions should
+agree in substance (as above). Some practical differences worth knowing
+about:
+
+- `ertte_aft()` gives a fully parametric survival curve defined for all $t
+  > 0$, and a `dist`-dependent closed form for effects like time ratios --
+  useful when extrapolating beyond the observed follow-up range, or when a
+  parametric quantity like RMST needs integrating over the whole curve (see
+  the [RMST article](rmst.html)).
+- `ertte_coxph()` makes no assumption about the *shape* of the baseline
+  hazard over time, which is often a safer default when there's no strong
+  reason to believe a particular parametric family. Its cost: no
+  closed-form survival curve beyond the last observed follow-up time
+  (`ertte_predict()`/`ertte_fun()` hold survival flat past that point,
+  rather than extrapolating a curve), and no way to interpret effects as
+  time ratios.
+
+Both share the same `"ertte_model"` superclass, so most of the package's
+downstream machinery -- `ertte_predict()`, `ertte_fun()`, `simulate()`, and
+the stepwise covariate modelling functions -- work identically regardless
+of which engine a model came from; see "API naming: AFT vs Cox PH" in the
+package's development notes for the full dispatch scheme.
+
+## Predicting and simulating
+
+`ertte_predict()` returns survival probabilities (with confidence
+intervals) at one or more times, for one or more covariate profiles, for
+either engine:
+
+```{r}
+nd <- ertte_data[c(1, 50, 100), ]
+ertte_predict(mod_aft, nd, time = c(90, 180))
+ertte_predict(mod_cox, nd, time = c(90, 180))
+```
+
+The two engines' confidence intervals are constructed differently under the
+hood -- a Wald interval on the AFT linear predictor vs. `survfit()`'s own
+log-transform interval for the Cox model -- so they're not expected to
+match exactly even when the point estimates agree closely.
+
+`ertte_fun()` instead returns a plain R function evaluating $S(t \mid x)$
+at user-specified parameters/data/times, useful for counterfactual
+scenarios or plugging into simulation code:
+
+```{r}
+mod_fun <- ertte_fun(mod_aft)
+mod_fun(time = 90)
+```
+
+`simulate()` draws new event times (with realistic censoring) from either
+fitted model, sampling coefficients from their asymptotic sampling
+distribution -- the basis for `erplots`' visual predictive checks, if
+`erplots` is installed:
+
+```{r}
+simulate(mod_aft, ertte_data[1:3, ], nsim = 2, seed = 8204) |>
+  dplyr::select(id, aucss, sim_id, sim_time, sim_event)
+```
+
+## Where to go next
+
+- [Restricted mean survival time](rmst.html) and [landmark event
+  probabilities](landmark.html) both reduce a TTE endpoint to a single
+  exposure-response scalar, for use with `erplots`' scalar E-R plotting
+  grammar.
+- [Stepwise covariate modelling](scm.html) covers `ertte_scm_forward()`/
+  `ertte_scm_backward()` for building up a covariate model on top of either
+  engine.
+- `?ertte_power` covers a power-function parameterisation for continuous
+  covariates (e.g. age, weight), for either engine.
+
+## Further reading
+
+- Kalbfleisch, J.D. and Prentice, R.L. (2002). *The Statistical Analysis of
+  Failure Time Data*, 2nd edition. Wiley. A standard reference covering
+  both the AFT and Cox PH model families in depth.
+- Therneau, T.M. and Grambsch, P.M. (2000). *Modeling Survival Data:
+  Extending the Cox Model*. Springer. Covers `cox.zph()` and the
+  proportional-hazards assumption in detail.
+- `survival::survreg()`/`survival::coxph()`'s own documentation, which
+  `ertte_aft()`/`ertte_coxph()` wrap directly.
