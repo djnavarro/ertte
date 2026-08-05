@@ -116,6 +116,206 @@ test_that("ertte registers er_predict/er_simulate/er_summary with erplots, if in
   expect_true(!is.null(getS3method("er_predict", "ertte_model", envir = asNamespace("erplots"))))
 })
 
+test_that("er_predict_survival.ertte_model() matches ertte_predict() for strictly positive time_grid", {
+  mod_aft <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  nd <- ertte_data[1:5, ]
+  tg <- c(30, 60, 90)
+
+  expect_equal(
+    er_predict_survival.ertte_model(mod_aft, nd, tg),
+    ertte_predict(mod_aft, nd, time = tg)
+  )
+  expect_equal(
+    er_predict_survival.ertte_model(mod_cox, nd, tg),
+    ertte_predict(mod_cox, nd, time = tg)
+  )
+})
+
+test_that("er_predict_survival.ertte_model() treats time_grid = 0 as S(0) = 1, for both engines", {
+  # erplots::er_tte_add_model()'s default time_grid spans
+  # `object$time$limits`, whose lower end is 0 -- but `ertte_predict()`
+  # rejects non-positive `time` outright, so this needs special-case
+  # handling rather than a pure pass-through (see R/er-methods.R).
+  mod_aft <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  nd <- ertte_data[1:3, ]
+  tg <- c(0, 30, 60)
+
+  for (mod in list(mod_aft, mod_cox)) {
+    out <- er_predict_survival.ertte_model(mod, nd, tg)
+    expect_equal(nrow(out), nrow(nd) * length(tg))
+    zero_rows <- out[out$time == 0, ]
+    expect_true(all(zero_rows$fit_survival == 1))
+    expect_true(all(zero_rows$ci_lower == 1))
+    expect_true(all(zero_rows$ci_upper == 1))
+
+    # positive entries agree with a direct ertte_predict() call, and
+    # row order/values are otherwise unaffected by interleaving the
+    # zero-time rows back in
+    ref_pos <- ertte_predict(mod, nd, time = tg[tg > 0])
+    out_pos <- out[out$time > 0, ]
+    expect_equal(out_pos$fit_survival, ref_pos$fit_survival)
+    expect_equal(out_pos$ci_lower, ref_pos$ci_lower)
+    expect_equal(out_pos$ci_upper, ref_pos$ci_upper)
+  }
+})
+
+test_that("er_predict_survival.ertte_model() handles a time_grid of all zeros", {
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  nd <- ertte_data[1:2, ]
+  out <- er_predict_survival.ertte_model(mod, nd, time_grid = c(0, 0))
+  expect_equal(nrow(out), 4L)
+  expect_true(all(out$fit_survival == 1))
+})
+
+test_that("er_predict_survival.ertte_model() returns a zero-row tibble for zero-row newdata, both engines", {
+  mod_aft <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  mod_cox <- ertte_coxph(survival::Surv(time, event) ~ aucss, ertte_data)
+  nd0 <- ertte_data[0, ]
+
+  for (mod in list(mod_aft, mod_cox)) {
+    out <- er_predict_survival.ertte_model(mod, nd0, time_grid = c(0, 30))
+    expect_equal(nrow(out), 0L)
+    expect_true(all(c("time", "fit_survival", "ci_lower", "ci_upper") %in% names(out)))
+  }
+})
+
+test_that("er_predict_survival.ertte_model() rejects a negative or non-numeric time_grid", {
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  nd <- ertte_data[1:2, ]
+  expect_error(er_predict_survival.ertte_model(mod, nd, time_grid = c(-1, 30)), "non-negative")
+  expect_error(er_predict_survival.ertte_model(mod, nd, time_grid = "a"), "non-negative")
+})
+
+test_that("ertte registers er_predict_survival with erplots, if installed", {
+  skip_if_not_installed("erplots")
+  skip_if_not(exists("er_predict_survival", where = asNamespace("erplots")))
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  expect_true(!is.null(getS3method("er_predict_survival", "ertte_model", envir = asNamespace("erplots"))))
+})
+
+test_that("er_tte_add_model() renders an S(t) curve/ribbon for an ertte_aft model, via erplots' er_tte() grammar", {
+  skip_if_not_installed("erplots")
+  skip_if_not(exists("er_tte", where = asNamespace("erplots")))
+
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  p <- erplots::er_tte(ertte_data, time, event) |>
+    erplots::er_tte_add_curve() |>
+    erplots::er_tte_add_model(mod)
+  built <- erplots::er_tte_build(p)
+
+  curve <- built$layer$model$config$predictions
+  expect_true(all(c("time", "fit_survival", "ci_lower", "ci_upper") %in% names(curve)))
+  expect_true(all(curve$fit_survival >= 0 & curve$fit_survival <= 1))
+  expect_true(is.unsorted(-curve$fit_survival) == FALSE) # non-increasing in time
+})
+
+test_that("er_predict_survival.ertte_model() errors informatively for an all-censored ertte_coxph model, at any positive time_grid", {
+  # ertte_predict.ertte_coxph()'s existing .ertte_check_coxph_nevent()
+  # guard (a zero-event model has no baseline hazard to build survival
+  # predictions from) fires unchanged through this pass-through method,
+  # for both a direct call and the full erplots::er_tte_add_model()
+  # grammar -- no new gap here, but worth pinning down since this
+  # method's `time_grid = 0` special-casing (below) means the guard
+  # isn't *always* reached.
+  dat_censored <- ertte_data
+  dat_censored$event <- 0
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, dat_censored)
+
+  expect_error(
+    er_predict_survival.ertte_model(mod, dat_censored[1:2, ], time_grid = c(0, 30)),
+    "zero observed events"
+  )
+
+  skip_if_not_installed("erplots")
+  skip_if_not(exists("er_tte", where = asNamespace("erplots")))
+  # `er_tte_add_model()` evaluates the model layer eagerly (unlike some
+  # other erplots layers), so the error surfaces here rather than at
+  # `er_tte_build()`.
+  expect_error(
+    {
+      p <- erplots::er_tte(dat_censored, time, event) |>
+        erplots::er_tte_add_curve() |>
+        erplots::er_tte_add_model(mod)
+    },
+    "zero observed events"
+  )
+})
+
+test_that("er_predict_survival.ertte_model()'s time_grid = 0 special case bypasses ertte_predict()'s guards entirely", {
+  # S(0) = 1 holds by definition regardless of model validity, so a
+  # time_grid consisting only of 0 never reaches ertte_predict() (and
+  # therefore never triggers .ertte_check_coxph_nevent()) even for an
+  # otherwise-unusable all-censored ertte_coxph fit. Documented here as
+  # intentional -- not a gap to close -- since it's a trivially true
+  # fact, not a model-dependent computation.
+  dat_censored <- ertte_data
+  dat_censored$event <- 0
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss, dat_censored)
+
+  out <- er_predict_survival.ertte_model(mod, dat_censored[1:2, ], time_grid = 0)
+  expect_equal(out$fit_survival, c(1, 1))
+  expect_equal(out$ci_lower, c(1, 1))
+  expect_equal(out$ci_upper, c(1, 1))
+})
+
+test_that("er_predict_survival.ertte_model() degrades like ertte_predict() for an all-censored ertte_aft model (no error, but unstable/non-monotonic values)", {
+  # Unlike ertte_coxph(), ertte_aft() has no zero-event guard --
+  # survreg() itself just warns "did not converge" and returns a fit
+  # ertte_predict() still evaluates (see AGENTS.md's "Stress-test
+  # findings"). Confirming that carries through this pass-through
+  # method unchanged, rather than silently producing something worse.
+  dat_censored <- ertte_data
+  dat_censored$event <- 0
+  mod <- suppressWarnings(ertte_aft(survival::Surv(time, event) ~ aucss, dat_censored))
+
+  out <- suppressWarnings(
+    er_predict_survival.ertte_model(mod, dat_censored[1:2, ], time_grid = c(0, 30, 60))
+  )
+  expect_equal(nrow(out), 6L)
+  expect_false(anyNA(out$fit_survival))
+  expect_equal(out$fit_survival[out$time == 0], c(1, 1))
+})
+
+test_that("er_predict_survival.ertte_model() propagates NA for a single-level-factor ertte_aft model, but returns finite values for ertte_coxph", {
+  # Matches ertte_predict()'s own documented per-engine difference
+  # (AGENTS.md's "Stress-test findings"): predict.survreg() propagates
+  # an aliased factor level's NA coefficient straight through, while
+  # survival::survfit() silently drops the aliased column. `time = 0`
+  # rows are unaffected either way (S(0) = 1 needs no coefficient).
+  dat_single <- ertte_data[ertte_data$sex == levels(ertte_data$sex)[1], ]
+  mod_aft <- ertte_aft(survival::Surv(time, event) ~ sex + aucss, dat_single)
+  mod_cox <- ertte_coxph(survival::Surv(time, event) ~ sex + aucss, dat_single)
+  expect_true(anyNA(coef(mod_aft)))
+  expect_true(anyNA(coef(mod_cox)))
+
+  nd <- dat_single[1:2, ]
+  out_aft <- er_predict_survival.ertte_model(mod_aft, nd, time_grid = c(0, 30))
+  out_cox <- er_predict_survival.ertte_model(mod_cox, nd, time_grid = c(0, 30))
+
+  expect_equal(out_aft$fit_survival[out_aft$time == 0], c(1, 1))
+  expect_true(all(is.na(out_aft$fit_survival[out_aft$time > 0])))
+
+  expect_equal(out_cox$fit_survival[out_cox$time == 0], c(1, 1))
+  expect_false(anyNA(out_cox$fit_survival[out_cox$time > 0]))
+})
+
+test_that("er_tte_add_model() renders one curve per stratum for an ertte_coxph model", {
+  skip_if_not_installed("erplots")
+  skip_if_not(exists("er_tte", where = asNamespace("erplots")))
+
+  mod <- ertte_coxph(survival::Surv(time, event) ~ aucss + sex, ertte_data)
+  p <- erplots::er_tte(ertte_data, time, event, stratify_by = sex) |>
+    erplots::er_tte_add_curve() |>
+    erplots::er_tte_add_model(mod)
+  built <- erplots::er_tte_build(p)
+
+  curve <- built$layer$model$config$predictions
+  expect_true("sex" %in% names(curve))
+  expect_equal(sort(unique(as.character(curve$sex))), sort(levels(ertte_data$sex)))
+})
+
 test_that("landmark_time reaches er_predict.ertte_model() through erplots' er_plot_add_model(predict_args = ...)", {
   # erplots#10/#11: er_plot_add_model()'s `...` used to reach only its
   # style builder, never `er_predict()` -- so `landmark_time` (which

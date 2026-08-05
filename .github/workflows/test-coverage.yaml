@@ -24,7 +24,12 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr, any::xml2, github::djnavarro/erplots
+          # Pinned to the feat/er-tte-core-scaffolding branch rather than
+          # erplots' default branch: it's the only place er_tte()/
+          # er_predict_survival() exist so far (see issue #13/PR #14).
+          # Switch back to `github::djnavarro/erplots` once that branch
+          # merges upstream -- tracked in issue #15.
+          extra-packages: any::covr, any::xml2, github::djnavarro/erplots@feat/er-tte-core-scaffolding
           needs: coverage
 
       - name: Test coverage

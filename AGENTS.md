@@ -21,7 +21,89 @@ fully implemented, Phase 3 is not started (see "Planned work" below):
   (`er_predict.ertte_model()`) and VPC simulation
   (`er_simulate.ertte_model()`).
 - Phase 3: a new `er_tte()` KM/survival-curve plotting grammar in the
-  separate `erplots` repo -- not started.
+  separate `erplots` repo -- the grammar itself lives in `erplots`, but
+  its final layer (`er_tte_add_model()`, a parametric S(t) curve/ribbon
+  overlay) is built against a new `erplots`-owned generic,
+  `er_predict_survival()`, for which ertte now implements a method (see
+  issue #13, immediately below) -- **done**, on the ertte side.
+
+## `er_predict_survival.ertte_model()` (issue #13, erplots' `er_tte_add_model()`)
+
+`erplots`'s `feat/er-tte-core-scaffolding` branch added a fifth
+interoperability generic beyond `er_predict()`/`er_simulate()`/
+`er_summary()` (see `?erplots::er_model_interface`):
+`er_predict_survival(model, newdata, time_grid, conf_level = 0.95,
+...)`, which `erplots::er_tte_add_model()` calls to overlay a
+parametric $S(t)$ curve/ribbon on a Kaplan-Meier plot. Unlike
+`er_predict()`, `newdata` here carries only covariate profiles (one row
+per stratum level, or a single row unstratified) -- no time column --
+and `time_grid` is a separate numeric vector, crossed against `newdata`
+inside the method; the contract's return shape (`newdata` x
+`time_grid`, with `time`/`fit_survival`/`ci_lower`/`ci_upper` columns)
+was deliberately designed by `erplots` to mirror
+`ertte_predict(object, newdata, time, conf_level, ...)`'s own shape.
+
+`er_predict_survival.ertte_model()` (in `R/er-methods.R`, registered in
+`.onLoad()` alongside the existing three) is consequently close to a
+direct pass-through to `ertte_predict()`, which already returns exactly
+that column set/row order for both engines -- confirmed by directly
+comparing outputs. The one genuine wrinkle: `erplots::er_tte_add_model()`'s
+default `time_grid` (used when the caller doesn't supply one) spans
+`object$time$limits`, whose lower end is `0` (the conventional
+Kaplan-Meier origin, `S(0) = 1`) -- but `ertte_predict()` rejects a
+non-positive `time` outright (`log(time)`/the baseline-hazard lookup
+are undefined there for either engine), matching the strictly-positive
+convention used throughout the rest of the package. Rather than loosen
+`ertte_predict()`'s own contract for this one caller,
+`er_predict_survival.ertte_model()` special-cases `time_grid` entries
+of exactly `0` (`S(0) = 1` always holds by definition, needing no model
+evaluation), calling `ertte_predict()` unmodified for every strictly
+positive grid point and interleaving the two back into `time_grid`'s
+original per-profile order. A zero-row `newdata` is also handled
+directly (returning a zero-row tibble with the expected columns)
+rather than relying on `ertte_predict()`'s own zero-row handling, since
+the interleaving logic needs `nrow(newdata)` up front regardless.
+
+Verified end-to-end against `erplots::er_tte()`/`er_tte_add_curve()`/
+`er_tte_add_model()` (installed from the `feat/er-tte-core-scaffolding`
+branch, since this generic isn't on `erplots`' default branch yet):
+both engines render a smooth $S(t)$ curve/ribbon on top of the KM step
+curve correctly, including the stratified case (one curve per level of
+a categorical covariate, e.g. `sex`) and the quantile-binned-numeric-strata
+case `er_tte()` itself supports. Regression tests live in
+`tests/testthat/test-er-methods.R`, alongside the existing
+`er_predict()`/`er_simulate()`/`er_summary()` coverage; the
+`er_tte()`-grammar tests skip gracefully (matching the existing
+`predict_args`/`simulate_args` skip pattern) if the installed `erplots`
+predates `er_tte()`/`er_predict_survival()`.
+
+**`ertte_coxph()`'s existing all-censored/single-level-factor edge
+cases (see "Stress-test findings" below) checked against
+`er_predict_survival.ertte_model()` -- no new gaps found, confirmed
+with regression tests.** Since the method is a thin pass-through to
+`ertte_predict()` for every strictly positive `time_grid` entry, the
+existing per-engine guards/behaviour carry through unchanged: an
+all-censored `ertte_coxph` fit still errors informatively (via
+`.ertte_check_coxph_nevent()`), both from a direct call and through
+`erplots::er_tte_add_model()` itself (which evaluates the model layer
+eagerly, so the error surfaces at `er_tte_add_model()`, not
+`er_tte_build()`); an all-censored `ertte_aft` fit still degrades
+without erroring (matching `ertte_predict.ertte_aft()`'s own
+documented behaviour); and a single-level-factor covariate still
+propagates `NA` for the AFT engine while returning finite predictions
+for the Cox engine (`survival::survfit()`'s own aliased-column-dropping
+behaviour). One genuine asymmetry surfaced and is now documented rather
+than silently relied upon: a `time_grid` of exactly `0` bypasses
+`ertte_predict()` (and therefore every guard above) entirely, since
+`S(0) = 1` is returned directly without evaluating the model at all --
+correct, since that's a trivially true fact independent of model
+validity, but it means an all-censored `ertte_coxph` model *can*
+successfully answer `er_predict_survival(model, newdata, time_grid =
+0)` even though every other `time_grid` value errors. In practice this
+rarely matters, since `erplots::er_tte_add_model()`'s default
+`time_grid` always spans the full time range (including both `0` and
+positive values), so the guard still fires for the realistic default
+case -- confirmed by the same test.
 
 `ertte_aft()` wraps `survival::survreg()` -- parametric accelerated
 failure time (AFT) model fitting (`ertte_aft()`), survival-probability

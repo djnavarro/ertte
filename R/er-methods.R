@@ -12,6 +12,12 @@
 # below), so that neither erplots nor its dependencies need to be
 # installed for ertte's modelling functions to work standalone.
 #
+# `er_predict_survival.ertte_model()` (further down) implements a
+# separate interoperability point, issue #13/Workstream C: a full S(t)
+# curve overlay for `erplots::er_tte()`'s KM grammar
+# (`er_tte_add_model()`), registered against `erplots::er_predict_survival()`
+# rather than the `er_predict()`/`er_simulate()`/`er_summary()` trio below.
+#
 # `er_predict.ertte_model()` implements phase 2's Workstream B1 --
 # scalar E-R views of a TTE endpoint -- via both of the design issue's
 # scalar reductions: landmark-binary (`P(event by t*)`, via
@@ -202,6 +208,86 @@ er_simulate.ertte_model <- function(model, newdata, nsim = 100, seed = NULL, ...
   as.vector(s_grid %*% w)
 }
 
+# `er_predict_survival.ertte_model()` implements a fifth interoperability
+# point (issue #13, following Workstream C/`erplots`' `er_tte()` grammar):
+# a full parametric S(t) curve overlay for `erplots::er_tte_add_model()`,
+# distinct from the scalar landmark/RMST reductions `er_predict()`/
+# `er_simulate()` (above) power. Unlike those, this is close to a direct
+# pass-through: `erplots::er_predict_survival(model, newdata, time_grid,
+# conf_level, ...)`'s contract (one `newdata` row x `time_grid` value per
+# output row, with `time`/`fit_survival`/`ci_lower`/`ci_upper` columns --
+# see `erplots::er_model_interface`) was deliberately designed to mirror
+# `ertte_predict(object, newdata, time, conf_level, ...)`'s own shape, and
+# `ertte_predict()` already returns exactly that column set/row order for
+# both engines (`ertte_predict.ertte_aft()`/`ertte_predict.ertte_coxph()`),
+# so no renaming or reshaping is needed here -- just forwarding
+# `time_grid` to `ertte_predict()`'s `time` argument. `...` (e.g. a
+# stratum column riding along on `newdata`) passes straight through
+# `ertte_predict()` to the underlying `predict.survreg()`/`survival::survfit()`
+# call unused, exactly as any other non-model covariate column already
+# does for `er_predict.ertte_model()`/`er_plot_add_model()`.
+er_predict_survival.ertte_model <- function(model, newdata, time_grid, conf_level = 0.95, ...) {
+  .ertte_check_conf_level(conf_level)
+  if (!is.numeric(time_grid) || length(time_grid) == 0L || anyNA(time_grid) || any(time_grid < 0)) {
+    rlang::abort("`time_grid` must be a numeric vector of non-negative values.")
+  }
+
+  n <- nrow(newdata)
+  k <- length(time_grid)
+  is_zero <- time_grid == 0
+
+  # `erplots::er_tte_add_model()`'s default `time_grid` spans
+  # `object$time$limits`, whose lower end is 0 (the usual Kaplan-Meier
+  # origin `S(0) = 1`) -- but `ertte_predict()` rejects a non-positive
+  # `time` outright (`log(time)`/the baseline-hazard lookup are
+  # undefined there for either engine), matching the strictly-positive
+  # convention documented throughout the rest of the package. Rather
+  # than loosen `ertte_predict()` itself (which would be a real,
+  # separately-motivated change to its own contract), `t = 0` is
+  # special-cased here: `S(0) = 1` always holds by definition,
+  # regardless of engine or covariate profile, so it needs no model
+  # evaluation at all. `ertte_predict()` is still called (unmodified)
+  # for every strictly positive grid point, and the two results are
+  # interleaved back into `time_grid`'s original order.
+  if (n == 0L || all(is_zero)) {
+    out <- newdata[rep(seq_len(n), each = k), , drop = FALSE] |>
+      tibble::as_tibble() |>
+      dplyr::mutate(
+        time = rep(time_grid, times = n),
+        fit_survival = 1,
+        ci_lower = 1,
+        ci_upper = 1
+      )
+    return(out)
+  }
+  if (!any(is_zero)) {
+    return(ertte_predict(object = model, newdata = newdata, time = time_grid, conf_level = conf_level, ...))
+  }
+
+  pos_pred <- ertte_predict(
+    object = model, newdata = newdata, time = time_grid[!is_zero],
+    conf_level = conf_level, ...
+  )
+
+  out <- newdata[rep(seq_len(n), each = k), , drop = FALSE] |>
+    tibble::as_tibble() |>
+    dplyr::mutate(
+      time = rep(time_grid, times = n),
+      fit_survival = NA_real_,
+      ci_lower = NA_real_,
+      ci_upper = NA_real_
+    )
+  zero_idx <- which(out$time == 0)
+  pos_idx <- which(out$time != 0)
+  out$fit_survival[zero_idx] <- 1
+  out$ci_lower[zero_idx] <- 1
+  out$ci_upper[zero_idx] <- 1
+  out$fit_survival[pos_idx] <- pos_pred$fit_survival
+  out$ci_lower[pos_idx] <- pos_pred$ci_lower
+  out$ci_upper[pos_idx] <- pos_pred$ci_upper
+  out
+}
+
 er_summary.ertte_model <- function(model, conf_level = 0.95, ...) {
   coefs <- summary(model)$table
   if (is.null(coefs) || nrow(coefs) < 2) return(NULL)
@@ -248,6 +334,7 @@ er_summary.ertte_model <- function(model, conf_level = 0.95, ...) {
   .s3_register("erplots::er_predict", "ertte_model", er_predict.ertte_model)
   .s3_register("erplots::er_simulate", "ertte_model", er_simulate.ertte_model)
   .s3_register("erplots::er_summary", "ertte_model", er_summary.ertte_model)
+  .s3_register("erplots::er_predict_survival", "ertte_model", er_predict_survival.ertte_model)
 }
 
 # Registers `method` as an S3 method for `generic` (given as
