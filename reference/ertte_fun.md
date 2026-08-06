@@ -21,7 +21,6 @@ ertte_fun(object, ...)
   An ertte model, as returned by
   [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) or
   [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
-  (not yet implemented)
 
 - ...:
 

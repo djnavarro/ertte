@@ -120,19 +120,19 @@ candidate clears the threshold.</p>
 inspected with <code><a href="../reference/ertte_scm.html">ertte_scm_history()</a></code>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ertte_scm.html">ertte_scm_history</a></span><span class="op">(</span><span class="va">mod1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 8 × 11</span></span></span>
-<span><span class="co">#&gt;   iteration attempt step       action term_tested model_tested   model_converged</span></span>
-<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>         0       0 base model <span style="color: #BB0000;">NA</span>     <span style="color: #BB0000;">NA</span>          Surv(time, ev… TRUE           </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>         1       1 forward    add    ~sex        Surv(time, ev… TRUE           </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>         1       2 forward    add    ~weight     Surv(time, ev… TRUE           </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>         1       3 forward    add    ~dose       Surv(time, ev… TRUE           </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>         1       4 forward    add    ~age        Surv(time, ev… TRUE           </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>         2       6 forward    add    ~dose       Surv(time, ev… TRUE           </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span>         2       7 forward    add    ~weight     Surv(time, ev… TRUE           </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span>         2       8 forward    add    ~age        Surv(time, ev… TRUE           </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: term_p_value &lt;dbl&gt;, model_aic &lt;dbl&gt;, model_bic &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   model_updated &lt;int&gt;</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 8 × 12</span></span></span>
+<span><span class="co">#&gt;   iteration attempt step       criterion action term_tested model_tested        </span></span>
+<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>         0       0 base model <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>     <span style="color: #BB0000;">NA</span>          Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>         1       1 forward    p-value   add    ~sex        Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>         1       2 forward    p-value   add    ~weight     Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>         1       3 forward    p-value   add    ~dose       Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>         1       4 forward    p-value   add    ~age        Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>         2       6 forward    p-value   add    ~dose       Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span>         2       7 forward    p-value   add    ~weight     Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span>         2       8 forward    p-value   add    ~age        Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 5 more variables: model_converged &lt;lgl&gt;, term_p_value &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   model_aic &lt;dbl&gt;, model_bic &lt;dbl&gt;, model_updated &lt;int&gt;</span></span></span></code></pre></div>
 <p>Each row is one <em>attempt</em> – one candidate term tested within
 one iteration of the search. <code>term_p_value</code> is the
 likelihood-ratio test p-value comparing the model with and without that
@@ -187,6 +187,64 @@ select/reject the term,
 that candidate for the current step (with a warning).</p>
 </div>
 <div class="section level2">
+<h2 id="selection-criteria-p-value-aic-or-bic">Selection criteria: p-value, AIC, or BIC<a class="anchor" aria-label="anchor" href="#selection-criteria-p-value-aic-or-bic"></a>
+</h2>
+<p>By default, both <code><a href="../reference/ertte_scm.html">ertte_scm_forward()</a></code> and
+<code><a href="../reference/ertte_scm.html">ertte_scm_backward()</a></code> select terms using the
+likelihood-ratio p-value described above, compared against
+<code>threshold</code>. The <code>criterion</code> argument lets you
+switch to an information-criterion-based rule instead:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod_aic</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ertte_scm.html">ertte_scm_forward</a></span><span class="op">(</span></span>
+<span>  <span class="va">mod0</span>,</span>
+<span>  candidates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sex"</span>, <span class="st">"dose"</span>, <span class="st">"age"</span>, <span class="st">"weight"</span><span class="op">)</span>,</span>
+<span>  criterion <span class="op">=</span> <span class="st">"aic"</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">4821</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">mod_aic</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   (Intercept)         aucss       sexMale </span></span>
+<span><span class="co">#&gt;  4.7360379087 -0.0006680892  0.2743522150</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod_bic</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ertte_scm.html">ertte_scm_backward</a></span><span class="op">(</span></span>
+<span>  <span class="va">mod_full</span>,</span>
+<span>  candidates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sex"</span>, <span class="st">"dose"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
+<span>  criterion <span class="op">=</span> <span class="st">"bic"</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">6039</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">mod_bic</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   (Intercept)         aucss       sexMale </span></span>
+<span><span class="co">#&gt;  4.7360379087 -0.0006680892  0.2743522150</span></span></code></pre></div>
+<p>With <code>criterion = "aic"</code> or
+<code>criterion = "bic"</code>, a term is added (forward) or removed
+(backward) only if doing so strictly decreases the chosen information
+criterion relative to the current model – if several candidates would
+each improve it, the one giving the lowest resulting IC is kept.
+<code>threshold</code> has no effect in this mode and is silently
+ignored.</p>
+<p>The history still records everything, via a new
+<code>criterion</code> column that shows which rule was in force for
+each step; <code>term_p_value</code> is left <code>NA</code> for
+IC-driven steps, since the likelihood-ratio test isn’t computed at all
+when it plays no role in selection
+(<code>model_aic</code>/<code>model_bic</code> are always populated
+regardless of <code>criterion</code>, as they always were):</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ertte_scm.html">ertte_scm_history</a></span><span class="op">(</span><span class="va">mod_aic</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 8 × 12</span></span></span>
+<span><span class="co">#&gt;   iteration attempt step       criterion action term_tested model_tested        </span></span>
+<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>         0       0 base model <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>     <span style="color: #BB0000;">NA</span>          Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>         1       1 forward    aic       add    ~sex        Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>         1       2 forward    aic       add    ~weight     Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>         1       3 forward    aic       add    ~dose       Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>         1       4 forward    aic       add    ~age        Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>         2       6 forward    aic       add    ~dose       Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span>         2       7 forward    aic       add    ~weight     Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span>         2       8 forward    aic       add    ~age        Surv(time, event) ~…</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 5 more variables: model_converged &lt;lgl&gt;, term_p_value &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   model_aic &lt;dbl&gt;, model_bic &lt;dbl&gt;, model_updated &lt;int&gt;</span></span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="adding-or-removing-a-single-term-directly">Adding or removing a single term directly<a class="anchor" aria-label="anchor" href="#adding-or-removing-a-single-term-directly"></a>
 </h2>
 <p><code><a href="../reference/ertte_scm.html">ertte_scm_forward()</a></code>/<code><a href="../reference/ertte_scm.html">ertte_scm_backward()</a></code>
@@ -194,13 +252,13 @@ are both built on
 <code><a href="../reference/ertte_term.html">ertte_add_term()</a></code>/<code><a href="../reference/ertte_term.html">ertte_remove_term()</a></code>, which
 are also exported and useful directly when you want to test one specific
 term without running a full search:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mod2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ertte_term.html">ertte_add_term</a></span><span class="op">(</span><span class="va">mod0</span>, <span class="op">~</span><span class="va">sex</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">mod0</span>, <span class="va">mod2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;         Terms Resid. Df    -2*LL Test Df Deviance    Pr(&gt;Chi)</span></span>
 <span><span class="co">#&gt; 1       aucss       297 2414.530      NA       NA          NA</span></span>
 <span><span class="co">#&gt; 2 aucss + sex       296 2406.311 +sex  1 8.219176 0.004145002</span></span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mod3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ertte_term.html">ertte_remove_term</a></span><span class="op">(</span><span class="va">mod2</span>, <span class="op">~</span><span class="va">sex</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">mod0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">mod3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
@@ -233,7 +291,7 @@ no special handling: term handling throughout <code>ertte</code> works
 generically on formula term-labels, so <code>~ ertte_power(age)</code>
 (or <code>"ertte_power(age)"</code> in a <code>candidates</code> vector)
 is already a legitimate term/candidate.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mod4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ertte_term.html">ertte_add_term</a></span><span class="op">(</span><span class="va">mod0</span>, <span class="op">~</span> <span class="fu"><a href="../reference/ertte_power.html">ertte_power</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">mod4</span><span class="op">)</span><span class="op">[</span><span class="st">"ertte_power(age)"</span><span class="op">]</span></span>
 <span><span class="co">#&gt; ertte_power(age) </span></span>
@@ -261,12 +319,16 @@ model, is left to the analyst’s judgement.</p>
 </h2>
 <ul>
 <li>
-<strong>Thresholds are p-value cutoffs on a likelihood-ratio
-Chi-squared test</strong>, not AIC/BIC-based – this matches the classic
-pharmacometric SCM procedure, though <code><a href="../reference/ertte_scm.html">ertte_scm_history()</a></code>’s
-<code>model_aic</code>/<code>model_bic</code> columns are also logged at
-every step if you’d rather inspect the search through an
-information-criterion lens after the fact.</li>
+<strong>The default <code>criterion = "p-value"</code> uses
+thresholds on a likelihood-ratio Chi-squared test</strong> – this
+matches the classic pharmacometric SCM procedure. Set
+<code>criterion = "aic"</code> or <code>"bic"</code> to select on an
+information criterion instead, in which case <code>threshold</code> is
+ignored. <code><a href="../reference/ertte_scm.html">ertte_scm_history()</a></code>’s
+<code>model_aic</code>/<code>model_bic</code> columns are always logged
+at every step regardless of <code>criterion</code>, so you can inspect
+the search through an information-criterion lens after the fact even
+when it wasn’t what drove selection.</li>
 <li>
 <strong><code>seed</code> only affects the order candidates are
 tested within a step</strong>, which only matters in the essentially

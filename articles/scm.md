@@ -67,19 +67,19 @@ with
 ``` r
 
 ertte_scm_history(mod1)
-#> # A tibble: 8 × 11
-#>   iteration attempt step       action term_tested model_tested   model_converged
-#>       <int>   <int> <chr>      <chr>  <chr>       <chr>          <lgl>          
-#> 1         0       0 base model NA     NA          Surv(time, ev… TRUE           
-#> 2         1       1 forward    add    ~sex        Surv(time, ev… TRUE           
-#> 3         1       2 forward    add    ~weight     Surv(time, ev… TRUE           
-#> 4         1       3 forward    add    ~dose       Surv(time, ev… TRUE           
-#> 5         1       4 forward    add    ~age        Surv(time, ev… TRUE           
-#> 6         2       6 forward    add    ~dose       Surv(time, ev… TRUE           
-#> 7         2       7 forward    add    ~weight     Surv(time, ev… TRUE           
-#> 8         2       8 forward    add    ~age        Surv(time, ev… TRUE           
-#> # ℹ 4 more variables: term_p_value <dbl>, model_aic <dbl>, model_bic <dbl>,
-#> #   model_updated <int>
+#> # A tibble: 8 × 12
+#>   iteration attempt step       criterion action term_tested model_tested        
+#>       <int>   <int> <chr>      <chr>     <chr>  <chr>       <chr>               
+#> 1         0       0 base model NA        NA     NA          Surv(time, event) ~…
+#> 2         1       1 forward    p-value   add    ~sex        Surv(time, event) ~…
+#> 3         1       2 forward    p-value   add    ~weight     Surv(time, event) ~…
+#> 4         1       3 forward    p-value   add    ~dose       Surv(time, event) ~…
+#> 5         1       4 forward    p-value   add    ~age        Surv(time, event) ~…
+#> 6         2       6 forward    p-value   add    ~dose       Surv(time, event) ~…
+#> 7         2       7 forward    p-value   add    ~weight     Surv(time, event) ~…
+#> 8         2       8 forward    p-value   add    ~age        Surv(time, event) ~…
+#> # ℹ 5 more variables: model_converged <lgl>, term_p_value <dbl>,
+#> #   model_aic <dbl>, model_bic <dbl>, model_updated <int>
 ```
 
 Each row is one *attempt* – one candidate term tested within one
@@ -135,6 +135,72 @@ in the model, [`anova()`](https://rdrr.io/r/stats/anova.html) reports an
 silently select/reject the term,
 [`ertte_scm_forward()`](https://ertte.djnavarro.net/reference/ertte_scm.md)/[`ertte_scm_backward()`](https://ertte.djnavarro.net/reference/ertte_scm.md)
 skip that candidate for the current step (with a warning).
+
+## Selection criteria: p-value, AIC, or BIC
+
+By default, both
+[`ertte_scm_forward()`](https://ertte.djnavarro.net/reference/ertte_scm.md)
+and
+[`ertte_scm_backward()`](https://ertte.djnavarro.net/reference/ertte_scm.md)
+select terms using the likelihood-ratio p-value described above,
+compared against `threshold`. The `criterion` argument lets you switch
+to an information-criterion-based rule instead:
+
+``` r
+
+mod_aic <- ertte_scm_forward(
+  mod0,
+  candidates = c("sex", "dose", "age", "weight"),
+  criterion = "aic",
+  seed = 4821
+)
+coef(mod_aic)
+#>   (Intercept)         aucss       sexMale 
+#>  4.7360379087 -0.0006680892  0.2743522150
+```
+
+``` r
+
+mod_bic <- ertte_scm_backward(
+  mod_full,
+  candidates = c("sex", "dose", "age"),
+  criterion = "bic",
+  seed = 6039
+)
+coef(mod_bic)
+#>   (Intercept)         aucss       sexMale 
+#>  4.7360379087 -0.0006680892  0.2743522150
+```
+
+With `criterion = "aic"` or `criterion = "bic"`, a term is added
+(forward) or removed (backward) only if doing so strictly decreases the
+chosen information criterion relative to the current model – if several
+candidates would each improve it, the one giving the lowest resulting IC
+is kept. `threshold` has no effect in this mode and is silently ignored.
+
+The history still records everything, via a new `criterion` column that
+shows which rule was in force for each step; `term_p_value` is left `NA`
+for IC-driven steps, since the likelihood-ratio test isn’t computed at
+all when it plays no role in selection (`model_aic`/`model_bic` are
+always populated regardless of `criterion`, as they always were):
+
+``` r
+
+ertte_scm_history(mod_aic)
+#> # A tibble: 8 × 12
+#>   iteration attempt step       criterion action term_tested model_tested        
+#>       <int>   <int> <chr>      <chr>     <chr>  <chr>       <chr>               
+#> 1         0       0 base model NA        NA     NA          Surv(time, event) ~…
+#> 2         1       1 forward    aic       add    ~sex        Surv(time, event) ~…
+#> 3         1       2 forward    aic       add    ~weight     Surv(time, event) ~…
+#> 4         1       3 forward    aic       add    ~dose       Surv(time, event) ~…
+#> 5         1       4 forward    aic       add    ~age        Surv(time, event) ~…
+#> 6         2       6 forward    aic       add    ~dose       Surv(time, event) ~…
+#> 7         2       7 forward    aic       add    ~weight     Surv(time, event) ~…
+#> 8         2       8 forward    aic       add    ~age        Surv(time, event) ~…
+#> # ℹ 5 more variables: model_converged <lgl>, term_p_value <dbl>,
+#> #   model_aic <dbl>, model_bic <dbl>, model_updated <int>
+```
 
 ## Adding or removing a single term directly
 
@@ -220,13 +286,16 @@ to the analyst’s judgement.
 
 ## Summary of conventions
 
-- **Thresholds are p-value cutoffs on a likelihood-ratio Chi-squared
-  test**, not AIC/BIC-based – this matches the classic pharmacometric
-  SCM procedure, though
+- **The default `criterion = "p-value"` uses thresholds on a
+  likelihood-ratio Chi-squared test** – this matches the classic
+  pharmacometric SCM procedure. Set `criterion = "aic"` or `"bic"` to
+  select on an information criterion instead, in which case `threshold`
+  is ignored.
   [`ertte_scm_history()`](https://ertte.djnavarro.net/reference/ertte_scm.md)’s
-  `model_aic`/`model_bic` columns are also logged at every step if you’d
-  rather inspect the search through an information-criterion lens after
-  the fact.
+  `model_aic`/`model_bic` columns are always logged at every step
+  regardless of `criterion`, so you can inspect the search through an
+  information-criterion lens after the fact even when it wasn’t what
+  drove selection.
 - **`seed` only affects the order candidates are tested within a step**,
   which only matters in the essentially measure-zero case of an exact
   p-value tie between competing candidates. Model fitting itself is
