@@ -3,6 +3,7 @@
 ^LICENSE\.md$
 ^README\.Rmd$
 ^AGENTS\.md$
+^\.agents$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$

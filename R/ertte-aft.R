@@ -62,7 +62,7 @@ ertte_aft <- function(formula, data, dist = "weibull", ...) {
 #' Survival-probability predictions for exposure-response TTE models
 #'
 #' @param object An ertte model, as returned by [ertte_aft()] or
-#' `ertte_coxph()` (not yet implemented)
+#' `ertte_coxph()`
 #' @param newdata Data frame containing cases to be predicted. Defaults
 #' to the data the model was fitted to.
 #' @param time Numeric vector of times at which to compute survival
@@ -150,7 +150,7 @@ ertte_predict.ertte_aft <- function(object, newdata = NULL, time, conf_level = .
 #' Prediction function for an exposure-response TTE model
 #'
 #' @param object An ertte model, as returned by [ertte_aft()] or
-#' `ertte_coxph()` (not yet implemented)
+#' `ertte_coxph()`
 #' @param ... Passed to methods
 #'
 #' @returns A function with arguments `data`, `time`, and `param`, in

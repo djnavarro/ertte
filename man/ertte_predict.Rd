@@ -14,7 +14,7 @@ ertte_predict(object, ...)
 }
 \arguments{
 \item{object}{An ertte model, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
-\code{ertte_coxph()} (not yet implemented)}
+\code{ertte_coxph()}}
 
 \item{...}{Passed to methods}
 
