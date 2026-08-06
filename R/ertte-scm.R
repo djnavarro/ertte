@@ -3,7 +3,10 @@
 #'
 #' @param mod An ertte model object
 #' @param candidates Character vector with list of candidate terms
-#' @param threshold Threshold to test against
+#' @param threshold Threshold to test against. Used only when
+#' `criterion = "p-value"` (the default); ignored otherwise.
+#' @param criterion Model selection criterion. One of `"p-value"`
+#' (default), `"aic"`, or `"bic"`.
 #' @param seed Optional seed to control order of term tests
 #'
 #' @returns For `ertte_scm_forward()` and `ertte_scm_backward()`, the
@@ -12,10 +15,32 @@
 #' containing the SCM history log
 #'
 #' @details Terms are compared with a likelihood-ratio Chi-squared test
-#' (`stats::anova()` on nested `survreg` fits) -- unlike the companion
-#' `erglm` package's SCM, there's no family-dependent choice of test
-#' here, since a `survreg` model's likelihood ratio test doesn't vary by
-#' distribution.
+#' (`stats::anova()` on nested `survreg`/`coxph` fits) -- unlike the
+#' companion `erglm` package's SCM, there's no family-dependent choice of
+#' test here, since a `survreg`/`coxph` model's likelihood ratio test
+#' doesn't vary by distribution.
+#'
+#' Three model selection criteria are available via the `criterion`
+#' argument, mirroring the companion `emaxnls` package's development
+#' version:
+#'
+#' - `"p-value"` (default): a term is added if its likelihood-ratio
+#'   p-value falls below `threshold` (forward) or removed if its p-value
+#'   exceeds `threshold` (backward). When multiple candidates satisfy the
+#'   threshold within a step, the one with the most extreme p-value is
+#'   chosen.
+#' - `"aic"`: a term is added (forward) or removed (backward) if doing so
+#'   strictly decreases AIC relative to the current model. When multiple
+#'   candidates improve AIC, the one yielding the lowest AIC is chosen.
+#' - `"bic"`: same as `"aic"`, but using BIC as the criterion.
+#'
+#' When `criterion` is `"aic"` or `"bic"`, the `threshold` argument has no
+#' effect and is ignored, and `term_p_value` is left `NA` in the history
+#' for every candidate tested that step (the likelihood-ratio test isn't
+#' computed, since it plays no role in selection). `model_aic`/`model_bic`
+#' are always recorded regardless of which criterion drove selection, and
+#' the history's `criterion` column records which one was used for each
+#' forward/backward step (`NA` for the base-model/pre-existing rows).
 #'
 #' `seed` exists as a safety measure against run-to-run variation in the
 #' order candidate terms are tested within a step (`sample()`, shuffled
@@ -29,7 +54,12 @@
 #' If a candidate term is aliased (perfectly collinear) with a term
 #' already in the model, `stats::anova()` reports an `NA` p-value for
 #' it. That candidate is skipped for the step (with a warning) rather
-#' than being selected or crashing the search.
+#' than being selected or crashing the search. This check only applies
+#' under `criterion = "p-value"`, since it's the only criterion that
+#' computes a likelihood-ratio p-value at all -- an aliased candidate
+#' under `criterion = "aic"`/`"bic"` is simply judged (and, in
+#' degenerate cases, potentially selected) on AIC/BIC like any other
+#' candidate.
 #'
 #' Two further failure modes are also handled per-candidate, rather than
 #' aborting the whole search: if refitting with a candidate added/removed
@@ -58,29 +88,35 @@
 #' mod2 <- ertte_aft(Surv(time, event) ~ aucss + sex + dose, ertte_data)
 #' mod3 <- ertte_scm_backward(mod2, candidates = c("sex", "dose"))
 #' ertte_scm_history(mod3)
+#'
+#' # AIC-based forward addition/backward elimination instead of p-value
+#' mod4 <- ertte_scm_forward(mod0, candidates = c("sex", "dose"), criterion = "aic")
+#' mod5 <- ertte_scm_backward(mod4, candidates = c("sex", "dose"), criterion = "bic")
+#' ertte_scm_history(mod5)
 NULL
 
 #' @rdname ertte_scm
 #' @export
-ertte_scm_forward <- function(mod, candidates, threshold = 0.01, seed = NULL) {
+ertte_scm_forward <- function(mod, candidates, threshold = 0.01, criterion = "p-value", seed = NULL) {
   .ertte_check_candidates(candidates)
+  .ertte_check_criterion(criterion)
   if (is.null(seed)) {
     seed <- .pick_seed()
   }
   withr::with_seed(
     seed = seed,
     code = {
-      mod_out <- .ertte_scm_forward(mod = mod, candidates = candidates, threshold = threshold)
+      mod_out <- .ertte_scm_forward(mod = mod, candidates = candidates, threshold = threshold, criterion = criterion)
     }
   )
   return(mod_out)
 }
 
-.ertte_scm_forward <- function(mod, candidates, threshold) {
+.ertte_scm_forward <- function(mod, candidates, threshold, criterion = "p-value") {
   history <- ertte_scm_history(mod)
   last_iter <- max(history$iteration)
   while (TRUE) {
-    mod_new <- .ertte_once_forward(mod, candidates, threshold)
+    mod_new <- .ertte_once_forward(mod, candidates, threshold, criterion)
     history_new <- ertte_scm_history(mod_new)
     this_iter <- max(history_new$iteration)
     if (this_iter == last_iter) return(mod)
@@ -96,25 +132,26 @@ ertte_scm_forward <- function(mod, candidates, threshold = 0.01, seed = NULL) {
 
 #' @rdname ertte_scm
 #' @export
-ertte_scm_backward <- function(mod, candidates, threshold = 0.001, seed = NULL) {
+ertte_scm_backward <- function(mod, candidates, threshold = 0.001, criterion = "p-value", seed = NULL) {
   .ertte_check_candidates(candidates)
+  .ertte_check_criterion(criterion)
   if (is.null(seed)) {
     seed <- .pick_seed()
   }
   withr::with_seed(
     seed = seed,
     code = {
-      mod_out <- .ertte_scm_backward(mod = mod, candidates = candidates, threshold = threshold)
+      mod_out <- .ertte_scm_backward(mod = mod, candidates = candidates, threshold = threshold, criterion = criterion)
     }
   )
   return(mod_out)
 }
 
-.ertte_scm_backward <- function(mod, candidates, threshold) {
+.ertte_scm_backward <- function(mod, candidates, threshold, criterion = "p-value") {
   history <- ertte_scm_history(mod)
   last_iter <- max(history$iteration)
   while (TRUE) {
-    mod_new <- .ertte_once_backward(mod, candidates, threshold)
+    mod_new <- .ertte_once_backward(mod, candidates, threshold, criterion)
     history_new <- ertte_scm_history(mod_new)
     this_iter <- max(history_new$iteration)
     if (this_iter == last_iter) return(mod)
@@ -137,6 +174,7 @@ ertte_scm_history <- function(mod) {
     iteration = 0L,
     attempt = 0L,
     step = "base model",
+    criterion = NA_character_,
     action = NA_character_,
     term_tested = NA_character_,
     model_tested = deparse(stats::formula(mod)),
@@ -149,12 +187,22 @@ ertte_scm_history <- function(mod) {
   return(history_row)
 }
 
-.ertte_once_forward <- function(mod, candidates, threshold) {
+# `use_ic`/`ic_fn` implement the "aic"/"bic" branch of `criterion`,
+# mirroring the companion `emaxnls` package's development version: a
+# candidate is compared against `best_metric` (the *current* model's IC,
+# updated as better candidates are found within the step) rather than
+# against `threshold`, which only applies to `criterion = "p-value"`. The
+# likelihood-ratio p-value isn't computed at all in IC mode -- it plays
+# no role in selection there -- so `term_p_value` is left `NA` in the
+# history for every row tested under "aic"/"bic".
+.ertte_once_forward <- function(mod, candidates, threshold, criterion = "p-value") {
   candidates <- sample(candidates)
   history <- ertte_scm_history(mod)
   iter <- max(history$iteration) + 1L
   attm <- max(history$attempt)
-  lowest_p <- threshold
+  use_ic <- criterion %in% c("aic", "bic")
+  ic_fn <- if (criterion == "bic") stats::BIC else stats::AIC
+  best_metric <- if (use_ic) as.numeric(ic_fn(mod)) else threshold
   update_ind <- NA_integer_
   best_mod <- mod
   for (cc in candidates) {
@@ -170,6 +218,7 @@ ertte_scm_history <- function(mod) {
           iteration = iter,
           attempt = attm,
           step = "forward",
+          criterion = criterion,
           action = "add",
           term_tested = deparse(add),
           model_tested = NA_character_,
@@ -192,6 +241,7 @@ ertte_scm_history <- function(mod) {
           iteration = iter,
           attempt = attm,
           step = "forward",
+          criterion = criterion,
           action = "add",
           term_tested = deparse(add),
           model_tested = deparse(stats::formula(mod_new)),
@@ -210,11 +260,12 @@ ertte_scm_history <- function(mod) {
         ))
         next
       }
-      p_val <- .ertte_anova_p(mod, mod_new)
+      p_val <- if (use_ic) NA_real_ else .ertte_anova_p(mod, mod_new)
       history_row <- tibble::tibble(
         iteration = iter,
         attempt = attm,
         step = "forward",
+        criterion = criterion,
         action = "add",
         term_tested = deparse(add),
         model_tested = deparse(stats::formula(mod_new)),
@@ -225,15 +276,22 @@ ertte_scm_history <- function(mod) {
         model_updated = NA
       )
       history <- tibble::add_row(history, history_row)
-      if (is.na(p_val)) {
+      if (use_ic) {
+        candidate_ic <- as.numeric(ic_fn(mod_new))
+        if (candidate_ic < best_metric) {
+          update_ind <- attm
+          best_metric <- candidate_ic
+          best_mod <- mod_new
+        }
+      } else if (is.na(p_val)) {
         rlang::warn(paste0(
           "Skipping candidate term `", deparse(add), "` in forward step ",
           iter, ": comparison p-value is NA (often caused by a candidate ",
           "that's aliased/collinear with a term already in the model)."
         ))
-      } else if (p_val < lowest_p) {
+      } else if (p_val < best_metric) {
         update_ind <- attm
-        lowest_p <- p_val
+        best_metric <- p_val
         best_mod <- mod_new
       }
     }
@@ -250,7 +308,7 @@ ertte_scm_history <- function(mod) {
   return(best_mod)
 }
 
-.ertte_once_backward <- function(mod, candidates, threshold) {
+.ertte_once_backward <- function(mod, candidates, threshold, criterion = "p-value") {
   trm_mod <- stats::terms(mod)
   trm_lab <- attr(trm_mod, "term.labels")
   candidates <- intersect(trm_lab, candidates)
@@ -259,7 +317,9 @@ ertte_scm_history <- function(mod) {
   history <- ertte_scm_history(mod)
   iter <- max(history$iteration) + 1L
   attm <- max(history$attempt)
-  highest_p <- threshold
+  use_ic <- criterion %in% c("aic", "bic")
+  ic_fn <- if (criterion == "bic") stats::BIC else stats::AIC
+  best_metric <- if (use_ic) as.numeric(ic_fn(mod)) else threshold
   update_ind <- NA_integer_
   best_mod <- mod
   for (cc in candidates) {
@@ -275,6 +335,7 @@ ertte_scm_history <- function(mod) {
           iteration = iter,
           attempt = attm,
           step = "backward",
+          criterion = criterion,
           action = "remove",
           term_tested = deparse(del),
           model_tested = NA_character_,
@@ -297,6 +358,7 @@ ertte_scm_history <- function(mod) {
           iteration = iter,
           attempt = attm,
           step = "backward",
+          criterion = criterion,
           action = "remove",
           term_tested = deparse(del),
           model_tested = deparse(stats::formula(mod_new)),
@@ -314,11 +376,12 @@ ertte_scm_history <- function(mod) {
         ))
         next
       }
-      p_val <- .ertte_anova_p(mod, mod_new)
+      p_val <- if (use_ic) NA_real_ else .ertte_anova_p(mod, mod_new)
       history_row <- tibble::tibble(
         iteration = iter,
         attempt = attm,
         step = "backward",
+        criterion = criterion,
         action = "remove",
         term_tested = deparse(del),
         model_tested = deparse(stats::formula(mod_new)),
@@ -329,15 +392,22 @@ ertte_scm_history <- function(mod) {
         model_updated = NA
       )
       history <- tibble::add_row(history, history_row)
-      if (is.na(p_val)) {
+      if (use_ic) {
+        candidate_ic <- as.numeric(ic_fn(mod_new))
+        if (candidate_ic < best_metric) {
+          update_ind <- attm
+          best_metric <- candidate_ic
+          best_mod <- mod_new
+        }
+      } else if (is.na(p_val)) {
         rlang::warn(paste0(
           "Skipping candidate term `", deparse(del), "` in backward step ",
           iter, ": comparison p-value is NA (often caused by a candidate ",
           "that's aliased/collinear with another term in the model)."
         ))
-      } else if (p_val > highest_p) {
+      } else if (p_val > best_metric) {
         update_ind <- attm
-        highest_p <- p_val
+        best_metric <- p_val
         best_mod <- mod_new
       }
     }

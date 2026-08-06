@@ -127,6 +127,24 @@
   .ertte_check_nonempty_character(candidates)
 }
 
+# `criterion` (as passed to `ertte_scm_forward()`/`ertte_scm_backward()`)
+# selects how a candidate term is judged: `"p-value"` (the historical
+# default -- an ANOVA likelihood-ratio test compared against `threshold`)
+# or `"aic"`/`"bic"` (add/remove a term if doing so strictly improves the
+# chosen information criterion; `threshold` is then ignored). Mirrors the
+# equivalent check in the companion `emaxnls` package's development
+# version.
+.ertte_check_criterion <- function(criterion) {
+  supported <- c("p-value", "aic", "bic")
+  if (!is.character(criterion) || length(criterion) != 1L || is.na(criterion) ||
+      !criterion %in% supported) {
+    rlang::abort(paste0(
+      "`criterion` must be one of \"", paste(supported, collapse = "\", \""),
+      "\", not ", .fmt_bad_value(criterion), "."
+    ))
+  }
+}
+
 # `time` (as passed to `ertte_predict()` and to the closures returned by
 # `ertte_fun()`) must be a numeric vector of strictly positive values --
 # `log(time)` (AFT) / the baseline-hazard lookup (Cox) are both undefined

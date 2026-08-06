@@ -116,3 +116,64 @@ test_that("ertte_scm_forward() skip-on-error behaviour also works for ertte_coxp
   h1 <- ertte_scm_history(mod1)
   expect_true("~dose" %in% h1$term_tested)
 })
+
+test_that("ertte_scm_forward()/ertte_scm_backward() validate `criterion`", {
+  mod <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  expect_error(
+    ertte_scm_forward(mod, candidates = c("sex", "dose"), criterion = "likelihood"),
+    "criterion"
+  )
+  expect_error(
+    ertte_scm_backward(mod, candidates = c("sex", "dose"), criterion = "bic2"),
+    "criterion"
+  )
+})
+
+test_that("scm history has a criterion column with correct values", {
+  mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  h0 <- ertte_scm_history(mod0)
+  expect_true("criterion" %in% names(h0))
+  expect_true(is.na(h0$criterion))
+
+  mod1 <- ertte_scm_forward(mod0, candidates = c("sex", "dose"), seed = 55)
+  h1 <- ertte_scm_history(mod1)
+  expect_true(all(h1$criterion[h1$step == "forward"] == "p-value"))
+})
+
+test_that("aic criterion adds the true generating term via ertte_scm_forward()", {
+  mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  mod1 <- ertte_scm_forward(
+    mod0,
+    candidates = c("sex", "dose", "age", "weight"),
+    criterion = "aic",
+    seed = 4821
+  )
+  expect_true("sex" %in% attr(stats::terms(mod1), "term.labels"))
+  h1 <- ertte_scm_history(mod1)
+  expect_true(all(h1$criterion[h1$step == "forward"] == "aic"))
+  expect_true(all(is.na(h1$term_p_value[h1$step == "forward"])))
+})
+
+test_that("bic criterion removes non-significant terms via ertte_scm_backward()", {
+  mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss + sex + dose, ertte_data)
+  mod1 <- ertte_scm_backward(mod0, candidates = c("sex", "dose"), criterion = "bic", seed = 912)
+  labs <- attr(stats::terms(mod1), "term.labels")
+  expect_true("aucss" %in% labs)
+  expect_false("dose" %in% labs)
+  h1 <- ertte_scm_history(mod1)
+  expect_true(all(h1$criterion[h1$step == "backward"] == "bic"))
+  expect_true(all(is.na(h1$term_p_value[h1$step == "backward"])))
+})
+
+test_that("aic/bic criteria only add/remove a term when it strictly improves the IC", {
+  # a candidate whose refit's IC is worse than the current model should
+  # never be selected, regardless of any p-value threshold
+  mod0 <- ertte_aft(survival::Surv(time, event) ~ aucss, ertte_data)
+  mod1 <- ertte_scm_forward(mod0, candidates = "dose", criterion = "aic", seed = 33)
+  h1 <- ertte_scm_history(mod1)
+  candidate_row <- h1[h1$term_tested %in% "~dose", ]
+  expect_equal(
+    candidate_row$model_updated == 1L,
+    candidate_row$model_aic < stats::AIC(mod0)
+  )
+})

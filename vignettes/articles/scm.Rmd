@@ -109,6 +109,49 @@ than crash the search or silently select/reject the term,
 `ertte_scm_forward()`/`ertte_scm_backward()` skip that candidate for the
 current step (with a warning).
 
+## Selection criteria: p-value, AIC, or BIC
+
+By default, both `ertte_scm_forward()` and `ertte_scm_backward()` select
+terms using the likelihood-ratio p-value described above, compared against
+`threshold`. The `criterion` argument lets you switch to an
+information-criterion-based rule instead:
+
+```{r}
+mod_aic <- ertte_scm_forward(
+  mod0,
+  candidates = c("sex", "dose", "age", "weight"),
+  criterion = "aic",
+  seed = 4821
+)
+coef(mod_aic)
+```
+
+```{r}
+mod_bic <- ertte_scm_backward(
+  mod_full,
+  candidates = c("sex", "dose", "age"),
+  criterion = "bic",
+  seed = 6039
+)
+coef(mod_bic)
+```
+
+With `criterion = "aic"` or `criterion = "bic"`, a term is added (forward)
+or removed (backward) only if doing so strictly decreases the chosen
+information criterion relative to the current model -- if several
+candidates would each improve it, the one giving the lowest resulting IC
+is kept. `threshold` has no effect in this mode and is silently ignored.
+
+The history still records everything, via a new `criterion` column that
+shows which rule was in force for each step; `term_p_value` is left `NA`
+for IC-driven steps, since the likelihood-ratio test isn't computed at all
+when it plays no role in selection (`model_aic`/`model_bic` are always
+populated regardless of `criterion`, as they always were):
+
+```{r}
+ertte_scm_history(mod_aic)
+```
+
 ## Adding or removing a single term directly
 
 `ertte_scm_forward()`/`ertte_scm_backward()` are both built on
@@ -171,11 +214,14 @@ same candidate set, or the same model, is left to the analyst's judgement.
 
 ## Summary of conventions
 
-- **Thresholds are p-value cutoffs on a likelihood-ratio Chi-squared
-  test**, not AIC/BIC-based -- this matches the classic pharmacometric SCM
-  procedure, though `ertte_scm_history()`'s `model_aic`/`model_bic` columns
-  are also logged at every step if you'd rather inspect the search through
-  an information-criterion lens after the fact.
+- **The default `criterion = "p-value"` uses thresholds on a
+  likelihood-ratio Chi-squared test** -- this matches the classic
+  pharmacometric SCM procedure. Set `criterion = "aic"` or `"bic"` to
+  select on an information criterion instead, in which case `threshold`
+  is ignored. `ertte_scm_history()`'s `model_aic`/`model_bic` columns are
+  always logged at every step regardless of `criterion`, so you can
+  inspect the search through an information-criterion lens after the fact
+  even when it wasn't what drove selection.
 - **`seed` only affects the order candidates are tested within a step**,
   which only matters in the essentially measure-zero case of an exact
   p-value tie between competing candidates. Model fitting itself is

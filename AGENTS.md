@@ -641,6 +641,49 @@ plotting packages in package code.
   deleted the stale `man/ertte_select_distribution.Rd` automatically.
   Confirmed with a full `devtools::test()` run afterwards.
 
+## SCM selection criteria: p-value, AIC, BIC
+
+`ertte_scm_forward()`/`ertte_scm_backward()` gained a `criterion`
+argument (`"p-value"` (default), `"aic"`, or `"bic"`), mirroring the
+companion `emaxnls` package's development version
+(`emax_scm_forward()`/`emax_scm_backward()`) rather than introducing a
+new design. `threshold` is used only for `criterion = "p-value"` (the
+pre-existing likelihood-ratio-test behaviour, unchanged) and is
+silently ignored for `"aic"`/`"bic"`. In IC mode, `.ertte_once_forward()`/
+`.ertte_once_backward()` (in `R/ertte-scm.R`) compare each candidate's
+refit against `best_metric` -- initialised at the *current* model's
+AIC/BIC and updated as better candidates are found within the step --
+adding (forward) or removing (backward) a term only if doing so
+strictly decreases the chosen IC; both directions use the same `<`
+comparison (unlike p-value mode, where forward looks for the *lowest*
+p-value below `threshold` and backward for the *highest* p-value above
+it). A new shared `.ertte_check_criterion()` (in `R/utils-helpers.R`)
+validates the argument up front.
+
+Since a likelihood-ratio p-value plays no role in IC-based selection,
+`.ertte_anova_p()` is simply not called under `criterion = "aic"`/`"bic"`
+-- `term_p_value` is left `NA` in the history for every row tested that
+step, rather than being computed anyway for informational purposes
+(this matches `emaxnls`'s behaviour, not a design choice unique to
+ertte). `model_aic`/`model_bic`, by contrast, are always recorded
+regardless of which criterion drove selection -- unchanged from before
+this feature, since both were already computed for every history row.
+`ertte_scm_history()`'s history tibble gained a new `criterion` column
+(character; `NA` for the base-model row and any pre-existing history
+predating this feature) recording which criterion drove each
+forward/backward step. The three existing per-candidate failure modes
+(refit error, term-not-added, aliased/collinear NA p-value) are
+unchanged in p-value mode; in IC mode, the first two still apply (a
+refit can still error or no-op regardless of selection criterion), but
+the third doesn't arise, since no p-value is computed to be `NA` in the
+first place.
+
+Regression tests live alongside the existing SCM tests in
+`tests/testthat/test-ertte-scm.R`, covering `criterion` validation, the
+new history column, and that both AIC and BIC selection recover the
+same true-generating-term results the existing p-value tests already
+pin down for `ertte_data`.
+
 ## Stress-test findings and fixes
 
 A round of adversarial edge-case testing (bad `time`/`conf_level`/`tau`

@@ -7,9 +7,21 @@
 \alias{ertte_scm_history}
 \title{Stepwise covariate modelling for exposure-response TTE models}
 \usage{
-ertte_scm_forward(mod, candidates, threshold = 0.01, seed = NULL)
+ertte_scm_forward(
+  mod,
+  candidates,
+  threshold = 0.01,
+  criterion = "p-value",
+  seed = NULL
+)
 
-ertte_scm_backward(mod, candidates, threshold = 0.001, seed = NULL)
+ertte_scm_backward(
+  mod,
+  candidates,
+  threshold = 0.001,
+  criterion = "p-value",
+  seed = NULL
+)
 
 ertte_scm_history(mod)
 }
@@ -18,7 +30,11 @@ ertte_scm_history(mod)
 
 \item{candidates}{Character vector with list of candidate terms}
 
-\item{threshold}{Threshold to test against}
+\item{threshold}{Threshold to test against. Used only when
+\code{criterion = "p-value"} (the default); ignored otherwise.}
+
+\item{criterion}{Model selection criterion. One of \code{"p-value"}
+(default), \code{"aic"}, or \code{"bic"}.}
 
 \item{seed}{Optional seed to control order of term tests}
 }
@@ -33,10 +49,33 @@ Stepwise covariate modelling for exposure-response TTE models
 }
 \details{
 Terms are compared with a likelihood-ratio Chi-squared test
-(\code{stats::anova()} on nested \code{survreg} fits) -- unlike the companion
-\code{erglm} package's SCM, there's no family-dependent choice of test
-here, since a \code{survreg} model's likelihood ratio test doesn't vary by
-distribution.
+(\code{stats::anova()} on nested \code{survreg}/\code{coxph} fits) -- unlike the
+companion \code{erglm} package's SCM, there's no family-dependent choice of
+test here, since a \code{survreg}/\code{coxph} model's likelihood ratio test
+doesn't vary by distribution.
+
+Three model selection criteria are available via the \code{criterion}
+argument, mirroring the companion \code{emaxnls} package's development
+version:
+\itemize{
+\item \code{"p-value"} (default): a term is added if its likelihood-ratio
+p-value falls below \code{threshold} (forward) or removed if its p-value
+exceeds \code{threshold} (backward). When multiple candidates satisfy the
+threshold within a step, the one with the most extreme p-value is
+chosen.
+\item \code{"aic"}: a term is added (forward) or removed (backward) if doing so
+strictly decreases AIC relative to the current model. When multiple
+candidates improve AIC, the one yielding the lowest AIC is chosen.
+\item \code{"bic"}: same as \code{"aic"}, but using BIC as the criterion.
+}
+
+When \code{criterion} is \code{"aic"} or \code{"bic"}, the \code{threshold} argument has no
+effect and is ignored, and \code{term_p_value} is left \code{NA} in the history
+for every candidate tested that step (the likelihood-ratio test isn't
+computed, since it plays no role in selection). \code{model_aic}/\code{model_bic}
+are always recorded regardless of which criterion drove selection, and
+the history's \code{criterion} column records which one was used for each
+forward/backward step (\code{NA} for the base-model/pre-existing rows).
 
 \code{seed} exists as a safety measure against run-to-run variation in the
 order candidate terms are tested within a step (\code{sample()}, shuffled
@@ -50,7 +89,12 @@ rationale, which applies unchanged here.
 If a candidate term is aliased (perfectly collinear) with a term
 already in the model, \code{stats::anova()} reports an \code{NA} p-value for
 it. That candidate is skipped for the step (with a warning) rather
-than being selected or crashing the search.
+than being selected or crashing the search. This check only applies
+under \code{criterion = "p-value"}, since it's the only criterion that
+computes a likelihood-ratio p-value at all -- an aliased candidate
+under \code{criterion = "aic"}/\code{"bic"} is simply judged (and, in
+degenerate cases, potentially selected) on AIC/BIC like any other
+candidate.
 
 Two further failure modes are also handled per-candidate, rather than
 aborting the whole search: if refitting with a candidate added/removed
@@ -78,4 +122,9 @@ ertte_scm_history(mod1)
 mod2 <- ertte_aft(Surv(time, event) ~ aucss + sex + dose, ertte_data)
 mod3 <- ertte_scm_backward(mod2, candidates = c("sex", "dose"))
 ertte_scm_history(mod3)
+
+# AIC-based forward addition/backward elimination instead of p-value
+mod4 <- ertte_scm_forward(mod0, candidates = c("sex", "dose"), criterion = "aic")
+mod5 <- ertte_scm_backward(mod4, candidates = c("sex", "dose"), criterion = "bic")
+ertte_scm_history(mod5)
 }
