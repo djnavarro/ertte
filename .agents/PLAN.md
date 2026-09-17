@@ -9,26 +9,7 @@ rather than marked "done" in place.
 The original design/scoping issue,
 [#1](https://github.com/djnavarro/ertte/issues/1), remains open --
 every other item it scoped, and every issue filed during
-stress-testing (#3-#12), has shipped (see `HISTORY.md`). One other
-issue is currently open alongside it, tracked below
-([#15](https://github.com/djnavarro/ertte/issues/15)).
-
-## Revert CI's temporary erplots branch pin (issue #15)
-
-PR #14 (implementing `er_predict_survival.ertte_model()` for issue
-#13) pinned `.github/workflows/R-CMD-check.yaml` and
-`.github/workflows/test-coverage.yaml` to install
-`github::djnavarro/erplots@feat/er-tte-core-scaffolding` instead of
-erplots' default branch, since that branch is currently the only
-place `erplots::er_tte()`/`er_predict_survival()` exist --
-`tests/testthat/test-er-methods.R`'s `er_tte()`-grammar integration
-tests would otherwise `skip_if_not(exists(...))` silently in CI rather
-than actually running. `pkgdown.yaml` was left installing the default
-branch (unaffected, since it doesn't run tests).
-
-Revert both pinned workflow files back to
-`github::djnavarro/erplots` (no branch qualifier) once
-`feat/er-tte-core-scaffolding` merges to erplots' default branch.
+stress-testing (#3-#12), has shipped (see `HISTORY.md`).
 
 ## `ertte_rmst()`'s CI bounds aren't constrained to `[0, tau]`
 
