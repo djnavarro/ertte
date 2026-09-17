@@ -246,15 +246,11 @@ doesn't run in this repo's CI, only on deploy.
 - CI: `.github/workflows/R-CMD-check.yaml` (standard r-lib matrix),
   `.github/workflows/pkgdown.yaml` (builds/deploys the pkgdown site),
   and `.github/workflows/test-coverage.yaml` (covr -> Codecov). All
-  three install `erplots` as an extra dependency from GitHub, since
-  it's a `Suggests`-only GitHub-hosted package exercised by
-  `tests/testthat/test-er-methods.R`. `R-CMD-check.yaml`/
-  `test-coverage.yaml` are currently pinned to erplots'
-  `feat/er-tte-core-scaffolding` branch rather than its default
-  branch (the only place `er_tte()`/`er_predict_survival()` exist so
-  far); `pkgdown.yaml` installs the default branch. See
-  `.agents/PLAN.md` for reverting this once that branch merges
-  upstream.
+  three install `erplots` as an extra dependency from GitHub (no
+  branch pin, since erplots' `er_tte()`/`er_predict_survival()` are on
+  its default branch now -- see `.agents/HISTORY.md` for the now-
+  reverted temporary pin, issue #15), since it's a `Suggests`-only
+  GitHub-hosted package exercised by `tests/testthat/test-er-methods.R`.
 - pkgdown renders every `*.md` file at the package root into its own
   `docs/*.html` page -- hard-coded in `pkgdown:::package_mds()`, not
   configurable via `_pkgdown.yml`. `tools/pkgdown-postbuild.R` strips

@@ -501,3 +501,19 @@ via `.Rbuildignore` (`^\.agents$`), matching how `AGENTS.md` itself is
 already excluded; pkgdown only scans the package root (and `.github/`)
 for stray `*.md` pages, so no change to `tools/pkgdown-postbuild.R` was
 needed for the new subdirectory.
+
+## Reverting CI's temporary erplots branch pin (issue #15)
+
+PR #14 (implementing `er_predict_survival.ertte_model()` for issue
+#13) had pinned `.github/workflows/R-CMD-check.yaml` and
+`.github/workflows/test-coverage.yaml` to install
+`github::djnavarro/erplots@feat/er-tte-core-scaffolding` instead of
+erplots' default branch, since that branch was the only place
+`erplots::er_tte()`/`er_predict_survival()` existed --
+`tests/testthat/test-er-methods.R`'s `er_tte()`-grammar integration
+tests would otherwise `skip_if_not(exists(...))` silently in CI rather
+than actually running. Once erplots 0.1.2 shipped to CRAN and
+`feat/er-tte-core-scaffolding` merged into erplots' default branch
+(2026-09), both workflow files were reverted back to the plain
+`github::djnavarro/erplots` (no branch qualifier) -- `pkgdown.yaml` had
+never needed the pin, since it doesn't run tests.
