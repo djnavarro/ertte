@@ -261,6 +261,20 @@ doesn't run in this repo's CI, only on deploy.
   `djnavarro/waeponwifestre` template and a custom domain
   (`ertte.djnavarro.net`), matching erglm/emaxnls.
 
+### Roxygen documentation
+
+- See the [write-roxygen-docs](.agents/skills/write-roxygen-docs/SKILL.md)
+  skill for detailed guidance on writing and reviewing roxygen2 comments
+  (what goes in `@details` vs `@description`, calibrating detail, keeping
+  documentation user-facing, etc.).
+
+### NEWS.md
+
+- ertte doesn't have a `NEWS.md` yet (see the skill below for when/how to
+  start one). See the
+  [write-news-entries](.agents/skills/write-news-entries/SKILL.md) skill for
+  guidance on adding, updating, or reviewing entries once it exists.
+
 ## Keeping this documentation current
 
 This file (`AGENTS.md`) should stay a lean, current-state reference --
