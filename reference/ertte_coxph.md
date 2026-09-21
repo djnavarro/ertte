@@ -68,8 +68,9 @@ both built on the fitted baseline hazard.
 [`simulate()`](https://rdrr.io/r/stats/simulate.html) works too, via the
 shared
 [`simulate.ertte_model()`](https://ertte.djnavarro.net/reference/simulate.ertte_model.md)
-method – no separate `simulate.ertte_coxph()` is needed, since it
-dispatches internally (via `.ertte_simulate_draws()`) on engine.
+method – no separate `simulate.ertte_coxph()` is needed, since the
+simulation mechanics differ automatically based on the fitted object's
+class.
 
 Unlike
 [`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html)

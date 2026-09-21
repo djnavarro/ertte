@@ -88,8 +88,8 @@ work across either engine; functions with engine-specific logic (e.g.
 <code><a href="ertte_predict.html">ertte_predict.ertte_coxph()</a></code>/<code><a href="ertte_fun.html">ertte_fun.ertte_coxph()</a></code>), both built
 on the fitted baseline hazard. <code><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate()</a></code> works too, via the
 shared <code><a href="simulate.ertte_model.html">simulate.ertte_model()</a></code> method – no separate
-<code>simulate.ertte_coxph()</code> is needed, since it dispatches internally
-(via <code>.ertte_simulate_draws()</code>) on engine.</p>
+<code>simulate.ertte_coxph()</code> is needed, since the simulation mechanics
+differ automatically based on the fitted object's class.</p>
 <p>Unlike <code><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">survival::coxph()</a></code> itself, <code>ertte_coxph()</code> validates that the
 response's time variable is strictly positive for every non-missing
 row before fitting, erroring informatively rather than silently

@@ -78,8 +78,7 @@ All four supported distributions are log-location-scale AFT models:
 (intercept + covariates) and `W` follows a distribution that depends
 only on `dist` (extreme-value for `"exponential"`/`"weibull"`, standard
 normal for `"lognormal"`, standard logistic for `"loglogistic"`) – see
-[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
-and `.ertte_dist_info()`.
+[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md).
 
 ## Examples
 

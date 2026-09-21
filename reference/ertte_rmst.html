@@ -113,7 +113,7 @@ why this needed an explicit guard on the <code>ertte_coxph</code> side).</p>
 <p>The <code>ertte_aft</code> method computes <code>fit_rmst</code> by numerically
 integrating the closed-form survival function `S(t|x) = 1 - F((log(t)</p><ul><li><p>mu) / scale)<code>from 0 to</code>tau<code>via</code>stats::integrate()<code>, where </code>mu<code>(and its standard error) comes from</code>predict(object, newdata, type =
 "linear", se.fit = TRUE)<code>, matching [ertte_predict.ertte_aft()]. The standard error is an analytic delta method that differentiates under the integral sign: </code>d/dmu RMST(tau|x) = integral of dbase(z) / scale
-from 0 to tau<code>, where </code>dbase<code>is the base distribution's density (see</code>.ertte_dist_info()<code>) -- propagating only </code>Var(mu)<code>, not </code>Var(scale)<code>, the same simplification </code>ertte_predict.ertte_aft()` already makes for
+from 0 to tau<code>, where </code>dbase<code>is the base distribution's density -- propagating only</code>Var(mu)<code>, not </code>Var(scale)<code>, the same simplification </code>ertte_predict.ertte_aft()` already makes for
 its own confidence intervals.</p></li>
 </ul><p>Both integrals are actually evaluated on the <code>u = log(t)</code> scale
 (substituting <code>t = exp(u)</code>, <code>dt = exp(u) du</code>) rather than directly
@@ -157,17 +157,15 @@ variance, but with the variance-increment term replaced by increments
 of the profile-specific <code>std.err(t)^2</code> returned by <code>survfit()</code> –
 <code>survmean()</code>'s own Greenwood term is based on population-level risk
 sets shared across every covariate profile, which understates
-uncertainty for a profile far from the mean covariate values (see
-<code>.ertte_rmst_pfun_delta()</code>'s source comments for the derivation and
-the bootstrap cross-check that motivated this).</p>
+uncertainty for a profile far from the mean covariate values.</p>
 <p>If any value of <code>tau</code> exceeds the last observed follow-up time across
 the whole fitted cohort, <code>ertte_rmst()</code> warns: RMST integrates the
 <em>entire</em> curve up to <code>tau</code>, so silently assuming survival stays flat
 beyond the observed range (the same extrapolation convention
 <code><a href="ertte_predict.html">ertte_predict.ertte_coxph()</a></code> uses for a single time point) has a
 larger effect on an area than on a point-in-time prediction.</p>
-<p><code>conf_level = 0</code>/<code>1</code>, documented (see <code>.ertte_check_conf_level()</code>) as
-legitimate degenerate endpoints, are supported here directly, since
+<p><code>conf_level = 0</code>/<code>1</code> are legitimate degenerate endpoints and are
+supported here directly, since
 the delta-method interval is built from <code>z_scale</code> (<code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm()</a></code>-derived,
 <code>0</code> or <code>Inf</code> at these boundaries) rather than <code>survfit()</code>'s own
 <code>conf.int</code> machinery – the latter is only used to request <code>$surv</code>/

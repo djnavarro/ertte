@@ -1,11 +1,10 @@
 # Simulate from an exposure-response TTE model
 
 [`simulate()`](https://rdrr.io/r/stats/simulate.html) method for
-`ertte_model` objects. Works for both `ertte_aft` and `ertte_coxph` fits
-via a single shared method – there's no separate
-`simulate.ertte_coxph()` – since the engine-specific simulation
-mechanics are dispatched internally by `.ertte_simulate_draws()` (see
-Details).
+`ertte_model` objects. A single shared method covers both `ertte_aft`
+and `ertte_coxph` fits – there's no separate `simulate.ertte_coxph()` –
+with the engine-specific simulation mechanics applied automatically
+based on the fitted object's class (see Details).
 
 ## Usage
 
@@ -71,9 +70,8 @@ time), and `sim_event` (1 = event, 0 = censored).
 
 Coefficients are sampled from the asymptotic sampling distribution
 implied by `vcov(object)`. Event times are then drawn by inverse-CDF
-sampling, via the internal `.ertte_simulate_draws()` S3 generic, whose
-per-engine methods differ in exactly how: for `ertte_aft` fits, directly
-from the fitted log-location-scale AFT distribution (see
+sampling, differing by engine: for `ertte_aft` fits, directly from the
+fitted log-location-scale AFT distribution (see
 [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
 Details); for `ertte_coxph` fits, by inverting the fitted baseline
 cumulative hazard
@@ -104,8 +102,7 @@ event day into the simulation and bias a simulated-vs-observed
 comparison (e.g. a visual predictive check) toward looking more similar
 than the fitted model actually implies. This remains an approximation
 for event rows (no censoring is applied at all, absent better
-information), but avoids that specific bias – see
-`.ertte_apply_admin_censoring()`.
+information), but avoids that specific bias.
 
 ## Examples
 

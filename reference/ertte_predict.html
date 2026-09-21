@@ -119,8 +119,8 @@ better suited to a probability bounded in <code>[0, 1]</code> than the plain
 Wald interval <code>ertte_predict.ertte_aft()</code> uses on the linear
 predictor – the two methods' intervals are not directly comparable
 as a result, which is expected given the different model structures.</p>
-<p><code>conf_level = 0</code>/<code>1</code> are documented (see <code>.ertte_check_conf_level()</code>)
-as legitimate degenerate endpoints, but <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code>'s own
+<p><code>conf_level = 0</code>/<code>1</code> are legitimate degenerate endpoints, but
+<code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code>'s own
 <code>conf.int</code> machinery rejects exactly 0 or 1 (see issue #11). Both are
 handled directly here instead: <code>conf_level = 0</code> collapses the
 interval to the point estimate (<code>ci_lower = ci_upper = fit_survival</code>);

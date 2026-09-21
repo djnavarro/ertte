@@ -54,10 +54,10 @@ handling here works generically on formula term-labels, so
 [`ertte_power()`](https://ertte.djnavarro.net/reference/ertte_power.md)
 terms need no special-casing.
 
-`mod` is refit via an internal `.ertte_refit()` helper that dispatches
-on `mod`'s engine (`ertte_aft`/`ertte_coxph`) and calls the matching
-constructor – so these functions (and the SCM family built on them) work
-for both `ertte_aft` and `ertte_coxph` models.
+`mod` is refit using the matching engine constructor
+([`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)/[`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)),
+based on its class – so these functions (and the SCM family built on
+them) work for both `ertte_aft` and `ertte_coxph` models.
 
 ## Examples
 

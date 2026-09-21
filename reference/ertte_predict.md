@@ -86,8 +86,7 @@ on the linear predictor – the two methods' intervals are not directly
 comparable as a result, which is expected given the different model
 structures.
 
-`conf_level = 0`/`1` are documented (see `.ertte_check_conf_level()`) as
-legitimate degenerate endpoints, but
+`conf_level = 0`/`1` are legitimate degenerate endpoints, but
 [`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)'s
 own `conf.int` machinery rejects exactly 0 or 1 (see issue \#11). Both
 are handled directly here instead: `conf_level = 0` collapses the

@@ -84,7 +84,7 @@ the closed-form survival function \`S(t\|x) = 1 - F((log(t)
   newdata, type = "linear", se.fit =
   TRUE)`, matching [ertte_predict.ertte_aft()]. The standard error is an analytic delta method that differentiates under the integral sign: `d/dmu
   RMST(tau\|x) = integral of dbase(z) / scale from 0 to
-  tau`, where `dbase`is the base distribution's density (see`.ertte_dist_info()`) -- propagating only `Var(mu)`, not `Var(scale)`, the same simplification `ertte_predict.ertte_aft()\`
+  tau`, where `dbase`is the base distribution's density -- propagating only`Var(mu)`, not `Var(scale)`, the same simplification `ertte_predict.ertte_aft()\`
   already makes for its own confidence intervals.
 
 Both integrals are actually evaluated on the `u = log(t)` scale
@@ -134,9 +134,8 @@ classic Greenwood-based RMST variance, but with the variance-increment
 term replaced by increments of the profile-specific `std.err(t)^2`
 returned by `survfit()` – `survmean()`'s own Greenwood term is based on
 population-level risk sets shared across every covariate profile, which
-understates uncertainty for a profile far from the mean covariate values
-(see `.ertte_rmst_pfun_delta()`'s source comments for the derivation and
-the bootstrap cross-check that motivated this).
+understates uncertainty for a profile far from the mean covariate
+values.
 
 If any value of `tau` exceeds the last observed follow-up time across
 the whole fitted cohort, `ertte_rmst()` warns: RMST integrates the
@@ -146,14 +145,14 @@ beyond the observed range (the same extrapolation convention
 uses for a single time point) has a larger effect on an area than on a
 point-in-time prediction.
 
-`conf_level = 0`/`1`, documented (see `.ertte_check_conf_level()`) as
-legitimate degenerate endpoints, are supported here directly, since the
-delta-method interval is built from `z_scale`
-([`qnorm()`](https://rdrr.io/r/stats/Normal.html)-derived, `0` or `Inf`
-at these boundaries) rather than `survfit()`'s own `conf.int` machinery
-– the latter is only used to request `$surv`/ `$std.err`, which don't
-depend on the requested confidence level (see issue \#11); `survfit()`
-is always called with a fixed, valid placeholder value internally.
+`conf_level = 0`/`1` are legitimate degenerate endpoints and are
+supported here directly, since the delta-method interval is built from
+`z_scale` ([`qnorm()`](https://rdrr.io/r/stats/Normal.html)-derived, `0`
+or `Inf` at these boundaries) rather than `survfit()`'s own `conf.int`
+machinery – the latter is only used to request `$surv`/ `$std.err`,
+which don't depend on the requested confidence level (see issue \#11);
+`survfit()` is always called with a fixed, valid placeholder value
+internally.
 
 A zero-row `newdata` returns a zero-row tibble with the expected columns
 rather than erroring:
