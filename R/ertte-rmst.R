@@ -63,13 +63,17 @@
 
 #' Restricted mean survival time predictions for exposure-response TTE models
 #'
+#' Computes restricted mean survival time (RMST), the area under a fitted
+#' ertte model's survival curve up to one or more fixed horizons `tau`,
+#' with confidence intervals.
+#'
 #' @param object An ertte model, as returned by [ertte_aft()] or
 #' [ertte_coxph()].
 #' @param newdata Data frame containing cases to be predicted. Defaults
 #' to the data the model was fitted to.
 #' @param tau Numeric vector of restriction horizons at which to compute
 #' `RMST(tau) = integral of S(t) from 0 to tau`.
-#' @param conf_level Confidence level for the intervals.
+#' @param conf_level Confidence level for the intervals. Defaults to `.95`.
 #' @param ... Passed to methods.
 #' @returns A tibble with one row per combination of `newdata` row and
 #' `tau`, plus `fit_rmst`, `ci_lower`, and `ci_upper`.
@@ -104,9 +108,10 @@ ertte_rmst <- function(object, newdata = NULL, tau, conf_level = .95, ...) {
   UseMethod("ertte_rmst")
 }
 
-#' @details The `ertte_aft` method computes `fit_rmst` by numerically
+#' @section AFT method:
+#' The `ertte_aft` method computes `fit_rmst` by numerically
 #' integrating the closed-form survival function `S(t|x) = 1 - F((log(t)
-#' - mu) / scale)` from 0 to `tau` via `stats::integrate()`, where `mu`
+#' - mu) / scale)` from 0 to `tau` via [stats::integrate()], where `mu`
 #' (and its standard error) comes from `predict(object, newdata, type =
 #' "linear", se.fit = TRUE)`, matching [ertte_predict.ertte_aft()]. The
 #' standard error is an analytic delta method that differentiates under
@@ -116,6 +121,7 @@ ertte_rmst <- function(object, newdata = NULL, tau, conf_level = .95, ...) {
 #' the same simplification `ertte_predict.ertte_aft()` already makes for
 #' its own confidence intervals.
 #'
+#' @section Integrating on the log-time scale:
 #' Both integrals are actually evaluated on the `u = log(t)` scale
 #' (substituting `t = exp(u)`, `dt = exp(u) du`) rather than directly
 #' over `t in [0, tau]`: for a `tau` many orders of magnitude larger
@@ -133,6 +139,7 @@ ertte_rmst <- function(object, newdata = NULL, tau, conf_level = .95, ...) {
 #' numerically to agree with the untransformed integral to quadrature
 #' tolerance).
 #'
+#' @section Reliability for extreme `tau`:
 #' Even with this fix, `stats::integrate()` isn't unconditionally
 #' reliable for arbitrarily extreme `tau`: `fit_rmst` stays accurate to
 #' quadrature tolerance for `tau` many orders of magnitude beyond the

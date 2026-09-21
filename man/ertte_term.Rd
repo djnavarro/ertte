@@ -19,7 +19,7 @@ ertte_remove_term(mod, term, quiet = FALSE)
 
 \item{quiet}{If \code{TRUE}, suppress the warning issued when the term
 can't be added/removed (because it's already in the model / isn't in
-the model, respectively)}
+the model, respectively). Defaults to \code{FALSE}.}
 }
 \value{
 An ertte model object. If the term can't be added/removed

@@ -12,20 +12,27 @@ response, e.g. \code{Surv(time, event) ~ exposure}.}
 
 \item{data}{Data set}
 
-\item{...}{Other arguments passed to \code{survival::coxph()}.}
+\item{...}{Other arguments passed to \code{\link[survival:coxph]{survival::coxph()}}.}
 }
 \value{
 A coxph object with extra \code{ertte_coxph}/\code{ertte_model} classes
 }
 \description{
-Fit an exposure-response time-to-event Cox PH model based on \code{coxph()}
+Fits a semi-parametric Cox proportional-hazards regression of
+time-to-event on covariates via \code{\link[survival:coxph]{survival::coxph()}}, returning it as
+an ertte model object usable with the rest of the package's
+prediction/simulation/SCM tooling.
 }
-\details{
+\section{Class and inherited methods}{
+
 The returned object has class \code{c("ertte_coxph", "ertte_model", "coxph")}: it \emph{is} a \code{coxph} object, with a little extra metadata
 attached. This means all of the usual \code{coxph} methods work unchanged,
 without needing an ertte-specific equivalent -- e.g. \code{summary()},
 \code{coef()}, \code{vcov()}, \code{confint()}, \code{predict()}, \code{AIC()}, \code{BIC()},
 \code{logLik()}, and \code{anova()} for comparing nested models.
+}
+
+\section{Relationship to the AFT engine}{
 
 \code{ertte_coxph()} is the semi-parametric sibling of \code{\link[=ertte_aft]{ertte_aft()}}.
 Unlike \code{ertte_aft()}, there's no \code{dist} argument: Cox PH doesn't
@@ -39,11 +46,14 @@ work across either engine; functions with engine-specific logic (e.g.
 \code{ertte_predict()} and \code{ertte_fun()} have \code{ertte_coxph} methods (see
 \code{\link[=ertte_predict.ertte_coxph]{ertte_predict.ertte_coxph()}}/\code{\link[=ertte_fun.ertte_coxph]{ertte_fun.ertte_coxph()}}), both built
 on the fitted baseline hazard. \code{simulate()} works too, via the
-shared \code{simulate.ertte_model()} method -- no separate
+shared \code{\link[=simulate.ertte_model]{simulate.ertte_model()}} method -- no separate
 \code{simulate.ertte_coxph()} is needed, since the simulation mechanics
 differ automatically based on the fitted object's class.
+}
 
-Unlike \code{survival::coxph()} itself, \code{ertte_coxph()} validates that the
+\section{Input validation}{
+
+Unlike \code{\link[survival:coxph]{survival::coxph()}} itself, \code{ertte_coxph()} validates that the
 response's time variable is strictly positive for every non-missing
 row before fitting, erroring informatively rather than silently
 fitting on (and later predicting/simulating from) a negative or zero
@@ -60,6 +70,7 @@ this closes that gap so behaviour is consistent across both engines.
 post-fit diagnostics) when fitting on exactly one usable row, rather
 than a message that points at the real problem.
 }
+
 \examples{
 mod <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 mod

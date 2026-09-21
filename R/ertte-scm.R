@@ -1,25 +1,37 @@
 
 #' Stepwise covariate modelling for exposure-response TTE models
 #'
+#' Iteratively adds (`ertte_scm_forward()`) or removes
+#' (`ertte_scm_backward()`) covariate terms from an ertte model one at a
+#' time, selecting each step's term by a likelihood-ratio p-value, AIC, or
+#' BIC, and logging the search in a history object retrievable via
+#' `ertte_scm_history()`.
+#'
 #' @param mod An ertte model object
 #' @param candidates Character vector with list of candidate terms
 #' @param threshold Threshold to test against. Used only when
-#' `criterion = "p-value"` (the default); ignored otherwise.
+#' `criterion = "p-value"` (the default); ignored otherwise. Defaults to
+#' `0.01` for `ertte_scm_forward()` and `0.001` for `ertte_scm_backward()`.
 #' @param criterion Model selection criterion. One of `"p-value"`
 #' (default), `"aic"`, or `"bic"`.
-#' @param seed Optional seed to control order of term tests
+#' @param seed Optional seed to control the order candidate terms are
+#' tested within a step. If `NULL` (the default), one is chosen
+#' automatically (see "Candidate test order and `seed`" below for when
+#' this actually matters).
 #'
 #' @returns For `ertte_scm_forward()` and `ertte_scm_backward()`, the
 #' updated ertte model is returned, with the SCM history log updated
 #' internally. For `ertte_scm_history()`, a data frame is returned
 #' containing the SCM history log
 #'
-#' @details Terms are compared with a likelihood-ratio Chi-squared test
+#' @section Selection test:
+#' Terms are compared with a likelihood-ratio Chi-squared test
 #' (`stats::anova()` on nested `survreg`/`coxph` fits) -- unlike the
 #' companion `erglm` package's SCM, there's no family-dependent choice of
 #' test here, since a `survreg`/`coxph` model's likelihood ratio test
 #' doesn't vary by distribution.
 #'
+#' @section Selection criteria:
 #' Three model selection criteria are available via the `criterion`
 #' argument, mirroring the companion `emaxnls` package's development
 #' version:
@@ -42,6 +54,7 @@
 #' the history's `criterion` column records which one was used for each
 #' forward/backward step (`NA` for the base-model/pre-existing rows).
 #'
+#' @section Candidate test order and `seed`:
 #' `seed` exists as a safety measure against run-to-run variation in the
 #' order candidate terms are tested within a step (`sample()`, shuffled
 #' before testing one at a time). Model fitting itself
@@ -51,6 +64,7 @@
 #' the companion `erglm` package's equivalent documentation for the full
 #' rationale, which applies unchanged here.
 #'
+#' @section Handling problem candidates:
 #' If a candidate term is aliased (perfectly collinear) with a term
 #' already in the model, `stats::anova()` reports an `NA` p-value for
 #' it. That candidate is skipped for the step (with a warning) rather
@@ -469,7 +483,7 @@ ertte_scm_history <- function(mod) {
 #' `~ sex`
 #' @param quiet If `TRUE`, suppress the warning issued when the term
 #' can't be added/removed (because it's already in the model / isn't in
-#' the model, respectively)
+#' the model, respectively). Defaults to `FALSE`.
 #'
 #' @details These functions are not typically called directly; they
 #' underpin [ertte_scm_forward()] and [ertte_scm_backward()]. Named and

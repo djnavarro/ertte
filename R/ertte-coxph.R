@@ -28,19 +28,26 @@
 
 #' Fit an exposure-response time-to-event Cox PH model based on `coxph()`
 #'
+#' Fits a semi-parametric Cox proportional-hazards regression of
+#' time-to-event on covariates via [survival::coxph()], returning it as
+#' an ertte model object usable with the rest of the package's
+#' prediction/simulation/SCM tooling.
+#'
 #' @param formula Model formula, with a `survival::Surv()` object as the
 #' response, e.g. `Surv(time, event) ~ exposure`.
 #' @param data Data set
-#' @param ... Other arguments passed to `survival::coxph()`.
+#' @param ... Other arguments passed to [survival::coxph()].
 #' @returns A coxph object with extra `ertte_coxph`/`ertte_model` classes
 #'
-#' @details The returned object has class `c("ertte_coxph", "ertte_model",
+#' @section Class and inherited methods:
+#' The returned object has class `c("ertte_coxph", "ertte_model",
 #' "coxph")`: it *is* a `coxph` object, with a little extra metadata
 #' attached. This means all of the usual `coxph` methods work unchanged,
 #' without needing an ertte-specific equivalent -- e.g. `summary()`,
 #' `coef()`, `vcov()`, `confint()`, `predict()`, `AIC()`, `BIC()`,
 #' `logLik()`, and `anova()` for comparing nested models.
 #'
+#' @section Relationship to the AFT engine:
 #' `ertte_coxph()` is the semi-parametric sibling of [ertte_aft()].
 #' Unlike `ertte_aft()`, there's no `dist` argument: Cox PH doesn't
 #' assume a parametric baseline hazard, so there's no distribution to
@@ -53,11 +60,12 @@
 #' `ertte_predict()` and `ertte_fun()` have `ertte_coxph` methods (see
 #' [ertte_predict.ertte_coxph()]/[ertte_fun.ertte_coxph()]), both built
 #' on the fitted baseline hazard. `simulate()` works too, via the
-#' shared `simulate.ertte_model()` method -- no separate
+#' shared [simulate.ertte_model()] method -- no separate
 #' `simulate.ertte_coxph()` is needed, since the simulation mechanics
 #' differ automatically based on the fitted object's class.
 #'
-#' Unlike `survival::coxph()` itself, `ertte_coxph()` validates that the
+#' @section Input validation:
+#' Unlike [survival::coxph()] itself, `ertte_coxph()` validates that the
 #' response's time variable is strictly positive for every non-missing
 #' row before fitting, erroring informatively rather than silently
 #' fitting on (and later predicting/simulating from) a negative or zero
@@ -117,7 +125,7 @@ ertte_coxph <- function(formula, data, ...) {
 #' as a result, which is expected given the different model structures.
 #'
 #' `conf_level = 0`/`1` are legitimate degenerate endpoints, but
-#' `survival::survfit()`'s own
+#' [survival::survfit()]'s own
 #' `conf.int` machinery rejects exactly 0 or 1 (see issue #11). Both are
 #' handled directly here instead: `conf_level = 0` collapses the
 #' interval to the point estimate (`ci_lower = ci_upper = fit_survival`);

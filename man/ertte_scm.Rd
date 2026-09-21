@@ -31,12 +31,16 @@ ertte_scm_history(mod)
 \item{candidates}{Character vector with list of candidate terms}
 
 \item{threshold}{Threshold to test against. Used only when
-\code{criterion = "p-value"} (the default); ignored otherwise.}
+\code{criterion = "p-value"} (the default); ignored otherwise. Defaults to
+\code{0.01} for \code{ertte_scm_forward()} and \code{0.001} for \code{ertte_scm_backward()}.}
 
 \item{criterion}{Model selection criterion. One of \code{"p-value"}
 (default), \code{"aic"}, or \code{"bic"}.}
 
-\item{seed}{Optional seed to control order of term tests}
+\item{seed}{Optional seed to control the order candidate terms are
+tested within a step. If \code{NULL} (the default), one is chosen
+automatically (see "Candidate test order and \code{seed}" below for when
+this actually matters).}
 }
 \value{
 For \code{ertte_scm_forward()} and \code{ertte_scm_backward()}, the
@@ -45,14 +49,22 @@ internally. For \code{ertte_scm_history()}, a data frame is returned
 containing the SCM history log
 }
 \description{
-Stepwise covariate modelling for exposure-response TTE models
+Iteratively adds (\code{ertte_scm_forward()}) or removes
+(\code{ertte_scm_backward()}) covariate terms from an ertte model one at a
+time, selecting each step's term by a likelihood-ratio p-value, AIC, or
+BIC, and logging the search in a history object retrievable via
+\code{ertte_scm_history()}.
 }
-\details{
+\section{Selection test}{
+
 Terms are compared with a likelihood-ratio Chi-squared test
 (\code{stats::anova()} on nested \code{survreg}/\code{coxph} fits) -- unlike the
 companion \code{erglm} package's SCM, there's no family-dependent choice of
 test here, since a \code{survreg}/\code{coxph} model's likelihood ratio test
 doesn't vary by distribution.
+}
+
+\section{Selection criteria}{
 
 Three model selection criteria are available via the \code{criterion}
 argument, mirroring the companion \code{emaxnls} package's development
@@ -76,6 +88,9 @@ computed, since it plays no role in selection). \code{model_aic}/\code{model_bic
 are always recorded regardless of which criterion drove selection, and
 the history's \code{criterion} column records which one was used for each
 forward/backward step (\code{NA} for the base-model/pre-existing rows).
+}
+
+\section{Candidate test order and \code{seed}}{
 
 \code{seed} exists as a safety measure against run-to-run variation in the
 order candidate terms are tested within a step (\code{sample()}, shuffled
@@ -85,6 +100,9 @@ before testing one at a time). Model fitting itself
 exact p-value tie between competing candidates within a step -- see
 the companion \code{erglm} package's equivalent documentation for the full
 rationale, which applies unchanged here.
+}
+
+\section{Handling problem candidates}{
 
 If a candidate term is aliased (perfectly collinear) with a term
 already in the model, \code{stats::anova()} reports an \code{NA} p-value for
@@ -114,6 +132,7 @@ as aliasing/collinearity.
 as a formula and name exactly one covariate term (e.g. \code{"sex"}, not
 \code{"sex + dose"} or \code{"not a formula"}).
 }
+
 \examples{
 mod0 <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod1 <- ertte_scm_forward(mod0, candidates = c("sex", "dose"))

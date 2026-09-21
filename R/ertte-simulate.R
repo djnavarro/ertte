@@ -9,7 +9,7 @@
 #'
 #' @param object An ertte model object, as returned by [ertte_aft()] or
 #' [ertte_coxph()]
-#' @param nsim Number of simulation replicates
+#' @param nsim Number of simulation replicates. Defaults to `100`.
 #' @param seed Optional seed. If `NULL` (the default), one is chosen
 #' automatically and reported via a message (since it determines the
 #' actual simulated values returned).
@@ -36,7 +36,7 @@
 #' inverse-CDF sampling, differing by engine: for
 #' `ertte_aft` fits, directly from the fitted log-location-scale AFT
 #' distribution (see [ertte_aft()] Details); for `ertte_coxph` fits, by
-#' inverting the fitted baseline cumulative hazard (`survival::basehaz()`,
+#' inverting the fitted baseline cumulative hazard ([survival::basehaz()],
 #' held fixed regardless of the sampled coefficient draw -- the same
 #' simplification [ertte_fun.ertte_coxph()] makes for a user-supplied
 #' `param`).

@@ -1,13 +1,16 @@
 
 #' Landmark event-probability predictions for exposure-response TTE models
 #'
+#' Reduces a fitted ertte model's survival curve to a binary landmark
+#' event probability, `P(event by t*)`, at a single fixed time `t*`.
+#'
 #' @param object An ertte model, as returned by [ertte_aft()] or
 #' [ertte_coxph()].
 #' @param newdata Data frame containing cases to be predicted. Defaults
 #' to the data the model was fitted to.
 #' @param landmark_time A single, strictly positive number: the fixed
 #' time `t*` at which to compute `P(event by t*)`.
-#' @param conf_level Confidence level for the intervals.
+#' @param conf_level Confidence level for the intervals. Defaults to `.95`.
 #' @param ... Passed to [ertte_predict()].
 #' @returns A tibble with one row per row of `newdata`, plus
 #' `landmark_time`, `fit_resp` (the estimated `P(event by t*)`),

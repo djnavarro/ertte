@@ -564,3 +564,56 @@ source comments wasn't a valid alternative either, since this file is
 itself agent-facing and excluded from the built package. Verified
 clean with a full `devtools::check()` (0 errors/warnings/notes)
 afterward.
+
+## Broader roxygen2 sweep against the `write-roxygen-docs` checklist
+
+Once the internal-helper-naming rule was clean, every public roxygen
+block in `R/` was re-audited against the rest of the
+`write-roxygen-docs` checklist (not just that one rule). Three
+categories of gap turned up, all fixed in one pass:
+
+- **Missing `@description`.** `ertte_aft()`, the `ertte_predict()`/
+  `ertte_fun()` generics, `ertte_coxph()`, `ertte_landmark()`, the
+  `ertte_rmst()` generic, and the `ertte_scm` topic all went straight
+  from title to `@param`, so roxygen2 was silently reusing the title as
+  the description. Each got an explicit description paragraph, written
+  in different words than the title.
+- **Broken/inconsistent in-package cross-references.** A few spots
+  linked one sibling function with `[]` but named the other with plain
+  backticks in the same sentence (e.g. `ertte_predict()`'s/
+  `ertte_fun()`'s `@param object` linking `[ertte_aft()]` but not
+  `ertte_coxph()`) -- all made consistent.
+- **Missing `@param` defaults.** `conf_level` (on `ertte_predict()`/
+  `ertte_landmark()`/`ertte_rmst()`), `nsim` (on
+  `simulate.ertte_model()`), `threshold`/`seed` (on the `ertte_scm`
+  topic -- `threshold`'s default actually differs between
+  `ertte_scm_forward()`/`ertte_scm_backward()`, so both are now stated),
+  and `quiet` (on the `ertte_term` topic) all described the argument's
+  effect without ever stating what the default actually is.
+
+The three densest `@details` blocks -- `ertte_coxph()` (class/methods,
+AFT-sibling relationship, input validation, three separate threads in
+one block), `ertte_rmst.ertte_aft()` (integration method, the
+log-time-scale reparameterisation, extreme-`tau` reliability), and the
+`ertte_scm` topic (selection test, the three `criterion` values, `seed`
+rationale, problem-candidate handling) -- were split into `@section`
+blocks, one per sub-topic, per the skill's "more than three or four
+sub-topics" guidance. No package previously used `@section` at all, so
+this was a first for ertte, not a continuation of an existing pattern.
+
+A cross-package linking policy was also decided and applied: a bare
+(no-argument) mention of a `survival::`/`stats::` function whose
+mechanics the doc is actually explaining (`survreg()`, `coxph()`,
+`survfit()`, `basehaz()`, `stats::integrate()`) gets bracket-linked on
+its first mention per doc block. Two things were deliberately left
+alone: inline code showing an actual call with its arguments (e.g.
+`` `survival::survfit(object, newdata, conf.int = conf_level)` ``,
+reproduced as usage syntax rather than referenced as a topic) stays
+plain code, matching how `@examples` code isn't linked either; and
+incidental listings of ordinary S3 methods a fitted object still
+supports (`summary()`, `coef()`, `vcov()`, `confint()`, `AIC()`,
+`BIC()`, `logLik()`, `anova()`, `update()`) stay backtick-only, since
+those are illustrating "the usual methods still work", not pointing a
+reader at a specific function's documented behaviour. Verified with a
+full `devtools::check()` (0 errors/warnings/notes) and `devtools::test()`
+(no new failures) afterward.

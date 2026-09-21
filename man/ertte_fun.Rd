@@ -14,7 +14,7 @@ ertte_fun(object, ...)
 }
 \arguments{
 \item{object}{An ertte model, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
-\code{ertte_coxph()}}
+\code{\link[=ertte_coxph]{ertte_coxph()}}}
 
 \item{...}{Passed to methods}
 }
@@ -33,7 +33,9 @@ defaults to \code{coef(object)} (the fitted coefficients) if not supplied.
 }
 }
 \description{
-Prediction function for an exposure-response TTE model
+Returns a closure that evaluates a fitted ertte model's survival
+function at user-specified data, times, and (optionally) counterfactual
+parameters, without needing to refit the model.
 }
 \details{
 \code{ertte_fun()} is a generic, with methods for each supported

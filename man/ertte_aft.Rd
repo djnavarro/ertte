@@ -12,18 +12,21 @@ response, e.g. \code{Surv(time, event) ~ exposure}.}
 
 \item{data}{Data set}
 
-\item{dist}{The AFT distribution to fit, as for \code{survival::survreg()}.
+\item{dist}{The AFT distribution to fit, as for \code{\link[survival:survreg]{survival::survreg()}}.
 Defaults to \code{"weibull"}. Tested and officially supported for
 \code{"exponential"}, \code{"weibull"}, \code{"lognormal"}, and \code{"loglogistic"} --
 see \code{\link[=ertte_aft_select_distribution]{ertte_aft_select_distribution()}} for choosing among them by AIC.}
 
-\item{...}{Other arguments passed to \code{survival::survreg()}.}
+\item{...}{Other arguments passed to \code{\link[survival:survreg]{survival::survreg()}}.}
 }
 \value{
 A survreg object with extra \code{ertte_aft}/\code{ertte_model} classes
 }
 \description{
-Fit an exposure-response time-to-event AFT model based on \code{survreg()}
+Fits a parametric accelerated failure time (AFT) regression of
+time-to-event on covariates via \code{\link[survival:survreg]{survival::survreg()}}, returning it as
+an ertte model object usable with the rest of the package's
+prediction/simulation/SCM tooling.
 }
 \details{
 The returned object has class \code{c("ertte_aft", "ertte_model", "survreg")}: it \emph{is} a \code{survreg} object, with a little extra metadata
@@ -36,8 +39,8 @@ unchanged, without needing an ertte-specific equivalent -- e.g.
 intervals in a tidy data frame; the two are complementary, not
 competing.
 
-\code{ertte_aft()} is the AFT-specific sibling of \code{ertte_coxph()}, which
-wraps \code{survival::coxph()} for a semi-parametric alternative. Both
+\code{ertte_aft()} is the AFT-specific sibling of \code{\link[=ertte_coxph]{ertte_coxph()}}, which
+wraps \code{\link[survival:coxph]{survival::coxph()}} for a semi-parametric alternative. Both
 share the \code{"ertte_model"} superclass, so functions that only need
 generic operations (\code{update()}, \code{anova()}, the SCM family) work
 unchanged across either engine; functions with AFT-specific logic

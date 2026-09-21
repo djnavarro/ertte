@@ -14,7 +14,7 @@ ertte_predict(object, ...)
 }
 \arguments{
 \item{object}{An ertte model, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
-\code{ertte_coxph()}}
+\code{\link[=ertte_coxph]{ertte_coxph()}}}
 
 \item{...}{Passed to methods}
 
@@ -24,14 +24,16 @@ to the data the model was fitted to.}
 \item{time}{Numeric vector of times at which to compute survival
 probabilities}
 
-\item{conf_level}{Confidence level for the intervals}
+\item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.}
 }
 \value{
 A tibble with one row per combination of \code{newdata} row and
 \code{time}
 }
 \description{
-Survival-probability predictions for exposure-response TTE models
+Computes fitted survival probabilities \code{S(t)} and confidence intervals
+from a fitted ertte model, for one or more rows of \code{newdata} at one or
+more \code{time} values.
 }
 \details{
 \code{ertte_predict()} is a generic, with methods for each
@@ -70,7 +72,7 @@ predictor -- the two methods' intervals are not directly comparable
 as a result, which is expected given the different model structures.
 
 \code{conf_level = 0}/\code{1} are legitimate degenerate endpoints, but
-\code{survival::survfit()}'s own
+\code{\link[survival:survfit]{survival::survfit()}}'s own
 \code{conf.int} machinery rejects exactly 0 or 1 (see issue #11). Both are
 handled directly here instead: \code{conf_level = 0} collapses the
 interval to the point estimate (\code{ci_lower = ci_upper = fit_survival});

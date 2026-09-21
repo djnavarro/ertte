@@ -22,7 +22,7 @@ to the data the model was fitted to.}
 \item{tau}{Numeric vector of restriction horizons at which to compute
 \verb{RMST(tau) = integral of S(t) from 0 to tau}.}
 
-\item{conf_level}{Confidence level for the intervals.}
+\item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.}
 
 \item{...}{Passed to methods.}
 }
@@ -31,7 +31,9 @@ A tibble with one row per combination of \code{newdata} row and
 \code{tau}, plus \code{fit_rmst}, \code{ci_lower}, and \code{ci_upper}.
 }
 \description{
-Restricted mean survival time predictions for exposure-response TTE models
+Computes restricted mean survival time (RMST), the area under a fitted
+ertte model's survival curve up to one or more fixed horizons \code{tau},
+with confidence intervals.
 }
 \details{
 \code{ertte_rmst()} reduces a TTE endpoint to a scalar
@@ -58,47 +60,6 @@ error rather than silently producing a reversed or \code{NaN} interval.
 A zero-row \code{newdata} returns a zero-row tibble with the expected
 columns for both engines, rather than erroring (see issue #10 for
 why this needed an explicit guard on the \code{ertte_coxph} side).
-
-The \code{ertte_aft} method computes \code{fit_rmst} by numerically
-integrating the closed-form survival function `S(t|x) = 1 - F((log(t)
-\itemize{
-\item mu) / scale)\verb{from 0 to}tau\code{via}stats::integrate()\verb{, where }mu\verb{(and its standard error) comes from}predict(object, newdata, type =
-"linear", se.fit = TRUE)\verb{, matching [ertte_predict.ertte_aft()]. The standard error is an analytic delta method that differentiates under the integral sign: }d/dmu RMST(tau|x) = integral of dbase(z) / scale
-from 0 to tau\verb{, where }dbase\verb{is the base distribution's density -- propagating only}Var(mu)\verb{, not }Var(scale)\verb{, the same simplification }ertte_predict.ertte_aft()` already makes for
-its own confidence intervals.
-}
-
-Both integrals are actually evaluated on the \code{u = log(t)} scale
-(substituting \code{t = exp(u)}, \verb{dt = exp(u) du}) rather than directly
-over \verb{t in [0, tau]}: for a \code{tau} many orders of magnitude larger
-than the fitted model's natural timescale, \code{stats::integrate()}'s
-adaptive quadrature can silently fail on the raw time scale --
-returning \code{0} with no error or warning, since the interval \verb{[0, tau]} is enormous relative to the (comparatively tiny) region where
-\code{S(t|x)} actually differs from 0 (see issue #12). On the log scale,
-the upper integration bound is \code{log(tau)}, which grows only
-logarithmically with \code{tau}; the substituted integrand
-(\code{S(t|x) * t} / \code{(dbase(z) / scale) * t}, as a function of \code{u})
-decays fast enough for every supported distribution that adaptive
-quadrature stays numerically reliable even for absurdly large \code{tau}.
-This changes nothing for ordinary \code{tau} values (confirmed
-numerically to agree with the untransformed integral to quadrature
-tolerance).
-
-Even with this fix, \code{stats::integrate()} isn't unconditionally
-reliable for arbitrarily extreme \code{tau}: \code{fit_rmst} stays accurate to
-quadrature tolerance for \code{tau} many orders of magnitude beyond the
-fitting data's own follow-up range, but the delta-method gradient
-behind \code{se_rmst} was found (empirically, not from a general proof)
-to occasionally become unreliable somewhat sooner -- the density-like
-integrand it evaluates is a much narrower "bump" than the
-broad-plateau survival curve \code{fit_rmst} integrates, and is
-correspondingly harder for adaptive quadrature to reliably locate
-once the integration domain is stretched far enough. \code{ertte_rmst()}
-warns (rather than silently risking an unreliable interval) if any
-\code{tau} exceeds 10,000 times the last observed follow-up time in the
-fitting data -- a threshold with a wide empirical safety margin below
-where any instability was actually observed, not a hard numerical
-guarantee.
 
 The \code{ertte_coxph} method delegates to
 \code{survival::survfit(object, newdata, conf.int = conf_level, se.fit = TRUE)}, the same call \code{\link[=ertte_predict.ertte_coxph]{ertte_predict.ertte_coxph()}} uses. Because the
@@ -135,6 +96,56 @@ columns rather than erroring: \code{survival::survfit()} itself rejects an
 entirely-missing \code{newdata} with a cryptic "all rows of newdata have
 missing values" error (see issue #10).
 }
+\section{AFT method}{
+
+The \code{ertte_aft} method computes \code{fit_rmst} by numerically
+integrating the closed-form survival function `S(t|x) = 1 - F((log(t)
+\itemize{
+\item mu) / scale)\verb{from 0 to}tau\verb{via [stats::integrate()], where}mu\verb{(and its standard error) comes from}predict(object, newdata, type =
+"linear", se.fit = TRUE)\verb{, matching [ertte_predict.ertte_aft()]. The standard error is an analytic delta method that differentiates under the integral sign: }d/dmu RMST(tau|x) = integral of dbase(z) / scale
+from 0 to tau\verb{, where }dbase\verb{is the base distribution's density -- propagating only}Var(mu)\verb{, not }Var(scale)\verb{, the same simplification }ertte_predict.ertte_aft()` already makes for
+its own confidence intervals.
+}
+}
+
+\section{Integrating on the log-time scale}{
+
+Both integrals are actually evaluated on the \code{u = log(t)} scale
+(substituting \code{t = exp(u)}, \verb{dt = exp(u) du}) rather than directly
+over \verb{t in [0, tau]}: for a \code{tau} many orders of magnitude larger
+than the fitted model's natural timescale, \code{stats::integrate()}'s
+adaptive quadrature can silently fail on the raw time scale --
+returning \code{0} with no error or warning, since the interval \verb{[0, tau]} is enormous relative to the (comparatively tiny) region where
+\code{S(t|x)} actually differs from 0 (see issue #12). On the log scale,
+the upper integration bound is \code{log(tau)}, which grows only
+logarithmically with \code{tau}; the substituted integrand
+(\code{S(t|x) * t} / \code{(dbase(z) / scale) * t}, as a function of \code{u})
+decays fast enough for every supported distribution that adaptive
+quadrature stays numerically reliable even for absurdly large \code{tau}.
+This changes nothing for ordinary \code{tau} values (confirmed
+numerically to agree with the untransformed integral to quadrature
+tolerance).
+}
+
+\section{Reliability for extreme \code{tau}}{
+
+Even with this fix, \code{stats::integrate()} isn't unconditionally
+reliable for arbitrarily extreme \code{tau}: \code{fit_rmst} stays accurate to
+quadrature tolerance for \code{tau} many orders of magnitude beyond the
+fitting data's own follow-up range, but the delta-method gradient
+behind \code{se_rmst} was found (empirically, not from a general proof)
+to occasionally become unreliable somewhat sooner -- the density-like
+integrand it evaluates is a much narrower "bump" than the
+broad-plateau survival curve \code{fit_rmst} integrates, and is
+correspondingly harder for adaptive quadrature to reliably locate
+once the integration domain is stretched far enough. \code{ertte_rmst()}
+warns (rather than silently risking an unreliable interval) if any
+\code{tau} exceeds 10,000 times the last observed follow-up time in the
+fitting data -- a threshold with a wide empirical safety margin below
+where any instability was actually observed, not a hard numerical
+guarantee.
+}
+
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 ertte_rmst(mod, ertte_data[1:5, ], tau = c(60, 90))

@@ -16,7 +16,7 @@ to the data the model was fitted to.}
 \item{landmark_time}{A single, strictly positive number: the fixed
 time \verb{t*} at which to compute \verb{P(event by t*)}.}
 
-\item{conf_level}{Confidence level for the intervals.}
+\item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.}
 
 \item{...}{Passed to \code{\link[=ertte_predict]{ertte_predict()}}.}
 }
@@ -26,7 +26,8 @@ A tibble with one row per row of \code{newdata}, plus
 \code{ci_lower}, and \code{ci_upper}.
 }
 \description{
-Landmark event-probability predictions for exposure-response TTE models
+Reduces a fitted ertte model's survival curve to a binary landmark
+event probability, \verb{P(event by t*)}, at a single fixed time \verb{t*}.
 }
 \details{
 Reduces a TTE endpoint to a binary landmark response --

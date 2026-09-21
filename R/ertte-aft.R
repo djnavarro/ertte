@@ -2,14 +2,19 @@
 
 #' Fit an exposure-response time-to-event AFT model based on `survreg()`
 #'
+#' Fits a parametric accelerated failure time (AFT) regression of
+#' time-to-event on covariates via [survival::survreg()], returning it as
+#' an ertte model object usable with the rest of the package's
+#' prediction/simulation/SCM tooling.
+#'
 #' @param formula Model formula, with a `survival::Surv()` object as the
 #' response, e.g. `Surv(time, event) ~ exposure`.
 #' @param data Data set
-#' @param dist The AFT distribution to fit, as for `survival::survreg()`.
+#' @param dist The AFT distribution to fit, as for [survival::survreg()].
 #' Defaults to `"weibull"`. Tested and officially supported for
 #' `"exponential"`, `"weibull"`, `"lognormal"`, and `"loglogistic"` --
 #' see [ertte_aft_select_distribution()] for choosing among them by AIC.
-#' @param ... Other arguments passed to `survival::survreg()`.
+#' @param ... Other arguments passed to [survival::survreg()].
 #' @returns A survreg object with extra `ertte_aft`/`ertte_model` classes
 #'
 #' @details The returned object has class `c("ertte_aft", "ertte_model",
@@ -23,8 +28,8 @@
 #' intervals in a tidy data frame; the two are complementary, not
 #' competing.
 #'
-#' `ertte_aft()` is the AFT-specific sibling of `ertte_coxph()`, which
-#' wraps `survival::coxph()` for a semi-parametric alternative. Both
+#' `ertte_aft()` is the AFT-specific sibling of [ertte_coxph()], which
+#' wraps [survival::coxph()] for a semi-parametric alternative. Both
 #' share the `"ertte_model"` superclass, so functions that only need
 #' generic operations (`update()`, `anova()`, the SCM family) work
 #' unchanged across either engine; functions with AFT-specific logic
@@ -61,13 +66,17 @@ ertte_aft <- function(formula, data, dist = "weibull", ...) {
 
 #' Survival-probability predictions for exposure-response TTE models
 #'
+#' Computes fitted survival probabilities `S(t)` and confidence intervals
+#' from a fitted ertte model, for one or more rows of `newdata` at one or
+#' more `time` values.
+#'
 #' @param object An ertte model, as returned by [ertte_aft()] or
-#' `ertte_coxph()`
+#' [ertte_coxph()]
 #' @param newdata Data frame containing cases to be predicted. Defaults
 #' to the data the model was fitted to.
 #' @param time Numeric vector of times at which to compute survival
 #' probabilities
-#' @param conf_level Confidence level for the intervals
+#' @param conf_level Confidence level for the intervals. Defaults to `.95`.
 #' @param ... Passed to methods
 #' @returns A tibble with one row per combination of `newdata` row and
 #' `time`
@@ -149,8 +158,12 @@ ertte_predict.ertte_aft <- function(object, newdata = NULL, time, conf_level = .
 
 #' Prediction function for an exposure-response TTE model
 #'
+#' Returns a closure that evaluates a fitted ertte model's survival
+#' function at user-specified data, times, and (optionally) counterfactual
+#' parameters, without needing to refit the model.
+#'
 #' @param object An ertte model, as returned by [ertte_aft()] or
-#' `ertte_coxph()`
+#' [ertte_coxph()]
 #' @param ... Passed to methods
 #'
 #' @returns A function with arguments `data`, `time`, and `param`, in
