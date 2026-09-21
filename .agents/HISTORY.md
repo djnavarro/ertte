@@ -517,3 +517,50 @@ than actually running. Once erplots 0.1.2 shipped to CRAN and
 (2026-09), both workflow files were reverted back to the plain
 `github::djnavarro/erplots` (no branch qualifier) -- `pkgdown.yaml` had
 never needed the pin, since it doesn't run tests.
+
+## Adapting the emaxnls skills and sweeping internal helpers out of roxygen docs
+
+Two agent skills (`write-roxygen-docs`, `write-news-entries`) were
+copied over from the sibling `emaxnls` package and retargeted at
+ertte's own structures (the `ertte_aft()`/`ertte_coxph()` engine pair,
+shared-name generic/method pairs like `ertte_predict.ertte_aft()`/
+`.ertte_coxph()`, `dist`/`criterion` as enumerated `@param` values,
+etc.), then linked from `AGENTS.md`'s Development workflow section.
+`write-news-entries` kept emaxnls's CRAN-release framing (matching the
+eventual plan implied by "pre-CRAN" in this file's own naming) even
+though ertte has no `NEWS.md` yet and has never had a tagged release,
+so its same-development-cycle carve-out doesn't currently have
+anything to bite on.
+
+`write-roxygen-docs` was ported with a stricter stance than existing
+practice: emaxnls's version bans naming internal dot-prefixed helpers
+(e.g. `.nls_call()`) in `@details`/prose, but ertte's actual docs had
+been routinely doing exactly that -- `simulate.ertte_model()` named
+`.ertte_simulate_draws()` in its own `@description`, and `ertte_rmst()`
+pointed a reader at `.ertte_rmst_pfun_delta()`'s source comments for
+its SE derivation. Rather than carve out an exception for the existing
+convention, the stricter emaxnls rule was adopted and the existing
+violations treated as cleanup debt.
+
+That cleanup was then done in one pass across `R/ertte-aft.R`,
+`R/ertte-coxph.R`, `R/ertte-rmst.R`, `R/ertte-scm.R`, and
+`R/ertte-simulate.R`: every `.ertte_dist_info()`, `.ertte_refit()`,
+`.ertte_check_conf_level()`, `.ertte_simulate_draws()`, and
+`.ertte_apply_admin_censoring()` mention was either deleted outright
+(where the surrounding prose already stated the behaviour without
+needing the pointer) or rewritten to describe the observable
+consequence instead of the internal call path (e.g.
+`ertte_scm_forward()`/`ertte_scm_backward()`'s docs now say `mod` is
+refit "using the matching engine constructor... based on its class"
+rather than naming the `.ertte_refit()` dispatch helper). The one
+exception needing a real decision, rather than a mechanical deletion,
+was `ertte_rmst.ertte_coxph()`'s pointer to `.ertte_rmst_pfun_delta()`'s
+source comments for the delta-method derivation and the 300-replicate
+bootstrap cross-check that motivated it (see "Deriving the Cox
+`se_rmst`" above) -- that derivation is contributor-facing validation
+detail already recorded in full in this file, so the sentence was cut
+rather than summarized inline; pointing at `HISTORY.md` instead of the
+source comments wasn't a valid alternative either, since this file is
+itself agent-facing and excluded from the built package. Verified
+clean with a full `devtools::check()` (0 errors/warnings/notes)
+afterward.

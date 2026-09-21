@@ -484,10 +484,10 @@ ertte_scm_history <- function(mod) {
 #' handling here works generically on formula term-labels, so
 #' `ertte_power()` terms need no special-casing.
 #'
-#' `mod` is refit via an internal `.ertte_refit()` helper that dispatches
-#' on `mod`'s engine (`ertte_aft`/`ertte_coxph`) and calls the matching
-#' constructor -- so these functions (and the SCM family built on them)
-#' work for both `ertte_aft` and `ertte_coxph` models.
+#' `mod` is refit using the matching engine constructor
+#' (`ertte_aft()`/`ertte_coxph()`), based on its class -- so these
+#' functions (and the SCM family built on them) work for both
+#' `ertte_aft` and `ertte_coxph` models.
 #'
 #' @returns An ertte model object. If the term can't be added/removed
 #' (see `quiet`), the original `mod` is returned unchanged.

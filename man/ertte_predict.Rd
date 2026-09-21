@@ -69,8 +69,8 @@ Wald interval \code{ertte_predict.ertte_aft()} uses on the linear
 predictor -- the two methods' intervals are not directly comparable
 as a result, which is expected given the different model structures.
 
-\code{conf_level = 0}/\code{1} are documented (see \code{.ertte_check_conf_level()})
-as legitimate degenerate endpoints, but \code{survival::survfit()}'s own
+\code{conf_level = 0}/\code{1} are legitimate degenerate endpoints, but
+\code{survival::survfit()}'s own
 \code{conf.int} machinery rejects exactly 0 or 1 (see issue #11). Both are
 handled directly here instead: \code{conf_level = 0} collapses the
 interval to the point estimate (\code{ci_lower = ci_upper = fit_survival});

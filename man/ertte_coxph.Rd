@@ -40,8 +40,8 @@ work across either engine; functions with engine-specific logic (e.g.
 \code{\link[=ertte_predict.ertte_coxph]{ertte_predict.ertte_coxph()}}/\code{\link[=ertte_fun.ertte_coxph]{ertte_fun.ertte_coxph()}}), both built
 on the fitted baseline hazard. \code{simulate()} works too, via the
 shared \code{simulate.ertte_model()} method -- no separate
-\code{simulate.ertte_coxph()} is needed, since it dispatches internally
-(via \code{.ertte_simulate_draws()}) on engine.
+\code{simulate.ertte_coxph()} is needed, since the simulation mechanics
+differ automatically based on the fitted object's class.
 
 Unlike \code{survival::coxph()} itself, \code{ertte_coxph()} validates that the
 response's time variable is strictly positive for every non-missing

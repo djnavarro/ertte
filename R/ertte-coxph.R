@@ -54,8 +54,8 @@
 #' [ertte_predict.ertte_coxph()]/[ertte_fun.ertte_coxph()]), both built
 #' on the fitted baseline hazard. `simulate()` works too, via the
 #' shared `simulate.ertte_model()` method -- no separate
-#' `simulate.ertte_coxph()` is needed, since it dispatches internally
-#' (via `.ertte_simulate_draws()`) on engine.
+#' `simulate.ertte_coxph()` is needed, since the simulation mechanics
+#' differ automatically based on the fitted object's class.
 #'
 #' Unlike `survival::coxph()` itself, `ertte_coxph()` validates that the
 #' response's time variable is strictly positive for every non-missing
@@ -116,8 +116,8 @@ ertte_coxph <- function(formula, data, ...) {
 #' predictor -- the two methods' intervals are not directly comparable
 #' as a result, which is expected given the different model structures.
 #'
-#' `conf_level = 0`/`1` are documented (see `.ertte_check_conf_level()`)
-#' as legitimate degenerate endpoints, but `survival::survfit()`'s own
+#' `conf_level = 0`/`1` are legitimate degenerate endpoints, but
+#' `survival::survfit()`'s own
 #' `conf.int` machinery rejects exactly 0 or 1 (see issue #11). Both are
 #' handled directly here instead: `conf_level = 0` collapses the
 #' interval to the point estimate (`ci_lower = ci_upper = fit_survival`);

@@ -45,17 +45,16 @@ simulated event/censoring time), and \code{sim_event} (1 = event, 0 =
 censored).
 }
 \description{
-\code{simulate()} method for \code{ertte_model} objects. Works for both
-\code{ertte_aft} and \code{ertte_coxph} fits via a single shared method --
-there's no separate \code{simulate.ertte_coxph()} -- since the
-engine-specific simulation mechanics are dispatched internally by
-\code{.ertte_simulate_draws()} (see Details).
+\code{simulate()} method for \code{ertte_model} objects. A single shared method
+covers both \code{ertte_aft} and \code{ertte_coxph} fits -- there's no separate
+\code{simulate.ertte_coxph()} -- with the engine-specific simulation
+mechanics applied automatically based on the fitted object's class
+(see Details).
 }
 \details{
 Coefficients are sampled from the asymptotic sampling
 distribution implied by \code{vcov(object)}. Event times are then drawn by
-inverse-CDF sampling, via the internal \code{.ertte_simulate_draws()} S3
-generic, whose per-engine methods differ in exactly how: for
+inverse-CDF sampling, differing by engine: for
 \code{ertte_aft} fits, directly from the fitted log-location-scale AFT
 distribution (see \code{\link[=ertte_aft]{ertte_aft()}} Details); for \code{ertte_coxph} fits, by
 inverting the fitted baseline cumulative hazard (\code{survival::basehaz()},
@@ -84,7 +83,7 @@ simulation and bias a simulated-vs-observed comparison (e.g. a visual
 predictive check) toward looking more similar than the fitted model
 actually implies. This remains an approximation for event rows (no
 censoring is applied at all, absent better information), but avoids
-that specific bias -- see \code{.ertte_apply_admin_censoring()}.
+that specific bias.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)

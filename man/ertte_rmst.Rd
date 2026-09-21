@@ -64,7 +64,7 @@ integrating the closed-form survival function `S(t|x) = 1 - F((log(t)
 \itemize{
 \item mu) / scale)\verb{from 0 to}tau\code{via}stats::integrate()\verb{, where }mu\verb{(and its standard error) comes from}predict(object, newdata, type =
 "linear", se.fit = TRUE)\verb{, matching [ertte_predict.ertte_aft()]. The standard error is an analytic delta method that differentiates under the integral sign: }d/dmu RMST(tau|x) = integral of dbase(z) / scale
-from 0 to tau\verb{, where }dbase\verb{is the base distribution's density (see}.ertte_dist_info()\verb{) -- propagating only }Var(mu)\verb{, not }Var(scale)\verb{, the same simplification }ertte_predict.ertte_aft()` already makes for
+from 0 to tau\verb{, where }dbase\verb{is the base distribution's density -- propagating only}Var(mu)\verb{, not }Var(scale)\verb{, the same simplification }ertte_predict.ertte_aft()` already makes for
 its own confidence intervals.
 }
 
@@ -112,9 +112,7 @@ variance, but with the variance-increment term replaced by increments
 of the profile-specific \code{std.err(t)^2} returned by \code{survfit()} --
 \code{survmean()}'s own Greenwood term is based on population-level risk
 sets shared across every covariate profile, which understates
-uncertainty for a profile far from the mean covariate values (see
-\code{.ertte_rmst_pfun_delta()}'s source comments for the derivation and
-the bootstrap cross-check that motivated this).
+uncertainty for a profile far from the mean covariate values.
 
 If any value of \code{tau} exceeds the last observed follow-up time across
 the whole fitted cohort, \code{ertte_rmst()} warns: RMST integrates the
@@ -123,8 +121,8 @@ beyond the observed range (the same extrapolation convention
 \code{ertte_predict.ertte_coxph()} uses for a single time point) has a
 larger effect on an area than on a point-in-time prediction.
 
-\code{conf_level = 0}/\code{1}, documented (see \code{.ertte_check_conf_level()}) as
-legitimate degenerate endpoints, are supported here directly, since
+\code{conf_level = 0}/\code{1} are legitimate degenerate endpoints and are
+supported here directly, since
 the delta-method interval is built from \code{z_scale} (\code{qnorm()}-derived,
 \code{0} or \code{Inf} at these boundaries) rather than \code{survfit()}'s own
 \code{conf.int} machinery -- the latter is only used to request \verb{$surv}/

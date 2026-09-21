@@ -49,7 +49,7 @@ All four supported distributions are log-location-scale AFT models:
 (intercept + covariates) and \code{W} follows a distribution that depends
 only on \code{dist} (extreme-value for \code{"exponential"}/\code{"weibull"},
 standard normal for \code{"lognormal"}, standard logistic for
-\code{"loglogistic"}) -- see \code{\link[=ertte_predict]{ertte_predict()}} and \code{.ertte_dist_info()}.
+\code{"loglogistic"}) -- see \code{\link[=ertte_predict]{ertte_predict()}}.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)

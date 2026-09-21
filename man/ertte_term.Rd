@@ -42,10 +42,10 @@ e.g. \code{~ ertte_power(age)} or \code{candidates = "ertte_power(age)"}. Term
 handling here works generically on formula term-labels, so
 \code{ertte_power()} terms need no special-casing.
 
-\code{mod} is refit via an internal \code{.ertte_refit()} helper that dispatches
-on \code{mod}'s engine (\code{ertte_aft}/\code{ertte_coxph}) and calls the matching
-constructor -- so these functions (and the SCM family built on them)
-work for both \code{ertte_aft} and \code{ertte_coxph} models.
+\code{mod} is refit using the matching engine constructor
+(\code{ertte_aft()}/\code{ertte_coxph()}), based on its class -- so these
+functions (and the SCM family built on them) work for both
+\code{ertte_aft} and \code{ertte_coxph} models.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)

@@ -36,7 +36,7 @@
 #' (intercept + covariates) and `W` follows a distribution that depends
 #' only on `dist` (extreme-value for `"exponential"`/`"weibull"`,
 #' standard normal for `"lognormal"`, standard logistic for
-#' `"loglogistic"`) -- see [ertte_predict()] and `.ertte_dist_info()`.
+#' `"loglogistic"`) -- see [ertte_predict()].
 #'
 #' @export
 #' @examples
