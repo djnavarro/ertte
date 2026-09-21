@@ -1,6 +1,8 @@
 # Survival-probability predictions for exposure-response TTE models
 
-Survival-probability predictions for exposure-response TTE models
+Computes fitted survival probabilities `S(t)` and confidence intervals
+from a fitted ertte model, for one or more rows of `newdata` at one or
+more `time` values.
 
 ## Usage
 
@@ -37,7 +39,7 @@ ertte_predict(object, newdata = NULL, time, conf_level = 0.95, ...)
 
 - conf_level:
 
-  Confidence level for the intervals
+  Confidence level for the intervals. Defaults to `.95`.
 
 ## Value
 

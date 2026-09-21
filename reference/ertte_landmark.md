@@ -1,6 +1,7 @@
 # Landmark event-probability predictions for exposure-response TTE models
 
-Landmark event-probability predictions for exposure-response TTE models
+Reduces a fitted ertte model's survival curve to a binary landmark event
+probability, `P(event by t*)`, at a single fixed time `t*`.
 
 ## Usage
 
@@ -28,7 +29,7 @@ ertte_landmark(object, newdata = NULL, landmark_time, conf_level = 0.95, ...)
 
 - conf_level:
 
-  Confidence level for the intervals.
+  Confidence level for the intervals. Defaults to `.95`.
 
 - ...:
 

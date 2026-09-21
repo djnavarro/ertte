@@ -1,6 +1,8 @@
 # Prediction function for an exposure-response TTE model
 
-Prediction function for an exposure-response TTE model
+Returns a closure that evaluates a fitted ertte model's survival
+function at user-specified data, times, and (optionally) counterfactual
+parameters, without needing to refit the model.
 
 ## Usage
 

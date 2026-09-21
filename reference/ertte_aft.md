@@ -1,6 +1,10 @@
 # Fit an exposure-response time-to-event AFT model based on `survreg()`
 
-Fit an exposure-response time-to-event AFT model based on `survreg()`
+Fits a parametric accelerated failure time (AFT) regression of
+time-to-event on covariates via
+[`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html),
+returning it as an ertte model object usable with the rest of the
+package's prediction/simulation/SCM tooling.
 
 ## Usage
 

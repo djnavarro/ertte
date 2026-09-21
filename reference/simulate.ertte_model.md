@@ -30,7 +30,7 @@ simulate(
 
 - nsim:
 
-  Number of simulation replicates
+  Number of simulation replicates. Defaults to `100`.
 
 - seed:
 

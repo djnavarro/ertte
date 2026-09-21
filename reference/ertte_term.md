@@ -27,7 +27,7 @@ ertte_remove_term(mod, term, quiet = FALSE)
 
   If `TRUE`, suppress the warning issued when the term can't be
   added/removed (because it's already in the model / isn't in the model,
-  respectively)
+  respectively). Defaults to `FALSE`.
 
 ## Value
 

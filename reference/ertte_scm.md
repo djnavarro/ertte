@@ -1,6 +1,10 @@
 # Stepwise covariate modelling for exposure-response TTE models
 
-Stepwise covariate modelling for exposure-response TTE models
+Iteratively adds (`ertte_scm_forward()`) or removes
+(`ertte_scm_backward()`) covariate terms from an ertte model one at a
+time, selecting each step's term by a likelihood-ratio p-value, AIC, or
+BIC, and logging the search in a history object retrievable via
+`ertte_scm_history()`.
 
 ## Usage
 
@@ -37,7 +41,8 @@ ertte_scm_history(mod)
 - threshold:
 
   Threshold to test against. Used only when `criterion = "p-value"` (the
-  default); ignored otherwise.
+  default); ignored otherwise. Defaults to `0.01` for
+  `ertte_scm_forward()` and `0.001` for `ertte_scm_backward()`.
 
 - criterion:
 
@@ -46,7 +51,10 @@ ertte_scm_history(mod)
 
 - seed:
 
-  Optional seed to control order of term tests
+  Optional seed to control the order candidate terms are tested within a
+  step. If `NULL` (the default), one is chosen automatically (see
+  "Candidate test order and `seed`" below for when this actually
+  matters).
 
 ## Value
 
@@ -55,7 +63,7 @@ model is returned, with the SCM history log updated internally. For
 `ertte_scm_history()`, a data frame is returned containing the SCM
 history log
 
-## Details
+## Selection test
 
 Terms are compared with a likelihood-ratio Chi-squared test
 ([`stats::anova()`](https://rdrr.io/r/stats/anova.html) on nested
@@ -63,6 +71,8 @@ Terms are compared with a likelihood-ratio Chi-squared test
 there's no family-dependent choice of test here, since a
 `survreg`/`coxph` model's likelihood ratio test doesn't vary by
 distribution.
+
+## Selection criteria
 
 Three model selection criteria are available via the `criterion`
 argument, mirroring the companion `emaxnls` package's development
@@ -87,6 +97,8 @@ are always recorded regardless of which criterion drove selection, and
 the history's `criterion` column records which one was used for each
 forward/backward step (`NA` for the base-model/pre-existing rows).
 
+## Candidate test order and `seed`
+
 `seed` exists as a safety measure against run-to-run variation in the
 order candidate terms are tested within a step
 ([`sample()`](https://rdrr.io/r/base/sample.html), shuffled before
@@ -97,6 +109,8 @@ is deterministic given a starting formula, so `seed` only matters in the
 competing candidates within a step – see the companion `erglm` package's
 equivalent documentation for the full rationale, which applies unchanged
 here.
+
+## Handling problem candidates
 
 If a candidate term is aliased (perfectly collinear) with a term already
 in the model, [`stats::anova()`](https://rdrr.io/r/stats/anova.html)

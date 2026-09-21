@@ -1,6 +1,10 @@
 # Fit an exposure-response time-to-event Cox PH model based on `coxph()`
 
-Fit an exposure-response time-to-event Cox PH model based on `coxph()`
+Fits a semi-parametric Cox proportional-hazards regression of
+time-to-event on covariates via
+[`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html),
+returning it as an ertte model object usable with the rest of the
+package's prediction/simulation/SCM tooling.
 
 ## Usage
 
@@ -29,7 +33,7 @@ ertte_coxph(formula, data, ...)
 
 A coxph object with extra `ertte_coxph`/`ertte_model` classes
 
-## Details
+## Class and inherited methods
 
 The returned object has class
 `c("ertte_coxph", "ertte_model", "coxph")`: it *is* a `coxph` object,
@@ -45,6 +49,8 @@ equivalent – e.g. [`summary()`](https://rdrr.io/r/base/summary.html),
 [`logLik()`](https://rdrr.io/r/stats/logLik.html), and
 [`anova()`](https://rdrr.io/r/stats/anova.html) for comparing nested
 models.
+
+## Relationship to the AFT engine
 
 `ertte_coxph()` is the semi-parametric sibling of
 [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md).
@@ -71,6 +77,8 @@ shared
 method – no separate `simulate.ertte_coxph()` is needed, since the
 simulation mechanics differ automatically based on the fitted object's
 class.
+
+## Input validation
 
 Unlike
 [`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html)
