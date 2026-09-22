@@ -28,9 +28,8 @@
 #' methods for survival regression models work unchanged, without neeing an 
 #' ertte-specific equivalent. This includes `summary()`, `coef()`, `vcov()`, 
 #' `confint()`, `predict()`, `AIC()`, `BIC()`, `logLik()`, and `anova()`. 
-#' Additionally, `ertte_predict()` is a separate, ertte-specific 
-#' alternative to `predict()` that returns survival probabilities with 
-#' confidence intervals in a tidy data frame.
+#' Additional methods supplied via the ertte-specific classes include 
+#' `ertte_predict()`, `ertte_fun()`, and `simulate()`.
 #'
 #' @export
 #' @examples

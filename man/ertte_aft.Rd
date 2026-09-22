@@ -37,9 +37,8 @@ Because the return value is a \code{survreg} object, all the usual
 methods for survival regression models work unchanged, without neeing an
 ertte-specific equivalent. This includes \code{summary()}, \code{coef()}, \code{vcov()},
 \code{confint()}, \code{predict()}, \code{AIC()}, \code{BIC()}, \code{logLik()}, and \code{anova()}.
-Additionally, \code{ertte_predict()} is a separate, ertte-specific
-alternative to \code{predict()} that returns survival probabilities with
-confidence intervals in a tidy data frame.
+Additional methods supplied via the ertte-specific classes include
+\code{ertte_predict()}, \code{ertte_fun()}, and \code{simulate()}.
 }
 \examples{
 # fit a Weibull AFT model

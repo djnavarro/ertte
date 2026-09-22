@@ -26,61 +26,28 @@
   }
 }
 
-#' Fit an exposure-response time-to-event Cox PH model based on `coxph()`
+#' Cox proportional hazard modeling
 #'
 #' Fits a semi-parametric Cox proportional-hazards regression of
-#' time-to-event on covariates via [survival::coxph()], returning it as
-#' an ertte model object usable with the rest of the package's
-#' prediction/simulation/SCM tooling.
+#' time-to-event on covariates via [survival::coxph()].
 #'
-#' @param formula Model formula, with a `survival::Surv()` object as the
-#' response, e.g. `Surv(time, event) ~ exposure`.
-#' @param data Data set
+#' @param formula Model formula specifying the regression model, 
+#' e.g. `Surv(time, event) ~ exposure`.
+#' @param data Data set containing the variables of interest.
 #' @param ... Other arguments passed to [survival::coxph()].
-#' @returns A coxph object with extra `ertte_coxph`/`ertte_model` classes
+#' 
+#' @return 
+#' A coxph object with with additional `ertte_coxph` and `ertte_model` 
+#' classes used to supply additional methods.
 #'
-#' @section Class and inherited methods:
-#' The returned object has class `c("ertte_coxph", "ertte_model",
-#' "coxph")`: it *is* a `coxph` object, with a little extra metadata
-#' attached. This means all of the usual `coxph` methods work unchanged,
-#' without needing an ertte-specific equivalent -- e.g. `summary()`,
-#' `coef()`, `vcov()`, `confint()`, `predict()`, `AIC()`, `BIC()`,
-#' `logLik()`, and `anova()` for comparing nested models.
-#'
-#' @section Relationship to the AFT engine:
-#' `ertte_coxph()` is the semi-parametric sibling of [ertte_aft()].
-#' Unlike `ertte_aft()`, there's no `dist` argument: Cox PH doesn't
-#' assume a parametric baseline hazard, so there's no distribution to
-#' select. Both share the `"ertte_model"` superclass, so functions that
-#' only need generic operations (`update()`, `anova()`, the SCM family)
-#' work across either engine; functions with engine-specific logic (e.g.
-#' `ertte_predict()`, `ertte_fun()`) dispatch via the
-#' `"ertte_aft"`/`"ertte_coxph"` subclass.
-#'
-#' `ertte_predict()` and `ertte_fun()` have `ertte_coxph` methods (see
-#' [ertte_predict.ertte_coxph()]/[ertte_fun.ertte_coxph()]), both built
-#' on the fitted baseline hazard. `simulate()` works too, via the
-#' shared [simulate.ertte_model()] method -- no separate
-#' `simulate.ertte_coxph()` is needed, since the simulation mechanics
-#' differ automatically based on the fitted object's class.
-#'
-#' @section Input validation:
-#' Unlike [survival::coxph()] itself, `ertte_coxph()` validates that the
-#' response's time variable is strictly positive for every non-missing
-#' row before fitting, erroring informatively rather than silently
-#' fitting on (and later predicting/simulating from) a negative or zero
-#' time value. `ertte_aft()` gets this validation "for free" as a side
-#' effect of `survival::survreg()`'s own internal check (a
-#' log-location-scale AFT model takes `log(time)`, which is undefined
-#' for non-positive values), but `coxph()` has no equivalent check --
-#' this closes that gap so behaviour is consistent across both engines.
-#'
-#' `ertte_coxph()` also checks up front that at least 2 usable rows
-#' (after accounting for missing values) are available to fit:
-#' `survival::coxph()` fails with a cryptic, low-level error
-#' (`'x' must be an array of at least two dimensions`, from its own
-#' post-fit diagnostics) when fitting on exactly one usable row, rather
-#' than a message that points at the real problem.
+#' @details
+#' 
+#' Because the return value is a `coxph` object, all the usual 
+#' methods for survival regression models work unchanged, without neeing an 
+#' ertte-specific equivalent. This includes `summary()`, `coef()`, `vcov()`, 
+#' `confint()`, `predict()`, `AIC()`, `BIC()`, `logLik()`, and `anova()`.
+#' Additional methods supplied via the ertte-specific classes include 
+#' `ertte_predict()`, `ertte_fun()`, and `simulate()`.
 #'
 #' @export
 #' @examples
