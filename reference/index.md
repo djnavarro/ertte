@@ -5,8 +5,7 @@
 Fit exposure-response time-to-event models based on survreg()/coxph()
 
 - [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) :
-
-  Fit an exposure-response time-to-event AFT model based on `survreg()`
+  AFT regression modeling
 
 - [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
   :

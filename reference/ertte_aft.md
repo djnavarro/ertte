@@ -1,10 +1,8 @@
-# Fit an exposure-response time-to-event AFT model based on `survreg()`
+# AFT regression modeling
 
-Fits a parametric accelerated failure time (AFT) regression of
-time-to-event on covariates via
-[`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html),
-returning it as an ertte model object usable with the rest of the
-package's prediction/simulation/SCM tooling.
+Fits a parametric accelerated failure time (AFT) regression model for
+time-to-event data via
+[`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html).
 
 ## Usage
 
@@ -16,22 +14,16 @@ ertte_aft(formula, data, dist = "weibull", ...)
 
 - formula:
 
-  Model formula, with a
-  [`survival::Surv()`](https://rdrr.io/pkg/survival/man/Surv.html)
-  object as the response, e.g. `Surv(time, event) ~ exposure`.
+  Model formula specifying the regression model, e.g.
+  `Surv(time, event) ~ exposure`.
 
 - data:
 
-  Data set
+  Data set containing the variables of interest.
 
 - dist:
 
-  The AFT distribution to fit, as for
-  [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html).
-  Defaults to `"weibull"`. Tested and officially supported for
-  `"exponential"`, `"weibull"`, `"lognormal"`, and `"loglogistic"` – see
-  [`ertte_aft_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_aft_select_distribution.md)
-  for choosing among them by AIC.
+  The AFT distribution type to use, defaulting to `"weibull"`.
 
 - ...:
 
@@ -40,15 +32,22 @@ ertte_aft(formula, data, dist = "weibull", ...)
 
 ## Value
 
-A survreg object with extra `ertte_aft`/`ertte_model` classes
+A `survreg` object with additional `ertte_aft` and `ertte_model` classes
+used to supply additional methods.
 
 ## Details
 
-The returned object has class
-`c("ertte_aft", "ertte_model", "survreg")`: it *is* a `survreg` object,
-with a little extra metadata attached. This means all of the usual
-`survreg` methods work unchanged, without needing an ertte-specific
-equivalent – e.g. [`summary()`](https://rdrr.io/r/base/summary.html),
+Like the `survreg()` function upon which it is based, `ertte_aft()`
+supports four log-location-scale AFT models of the form
+`log(t) = mu + scale * w`, where `mu` is the linear predictor and the
+distribution of `w` is dependent on the choice of `dist`: extreme-value
+distributions for `"exponential"` and `"weibull"` models, a standard
+normal for `"lognormal"`, and a standard logistic for `"loglogistic"`.
+
+Because the return value is a `survreg` object, all the usual methods
+for survival regression models work unchanged, without neeing an
+ertte-specific equivalent. This includes
+[`summary()`](https://rdrr.io/r/base/summary.html),
 [`coef()`](https://rdrr.io/r/stats/coef.html),
 [`vcov()`](https://rdrr.io/r/stats/vcov.html),
 [`confint()`](https://rdrr.io/r/stats/confint.html),
@@ -56,37 +55,16 @@ equivalent – e.g. [`summary()`](https://rdrr.io/r/base/summary.html),
 [`AIC()`](https://rdrr.io/r/stats/AIC.html),
 [`BIC()`](https://rdrr.io/r/stats/AIC.html),
 [`logLik()`](https://rdrr.io/r/stats/logLik.html), and
-[`anova()`](https://rdrr.io/r/stats/anova.html) for comparing nested
-models.
+[`anova()`](https://rdrr.io/r/stats/anova.html). Additionally,
 [`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
 is a separate, ertte-specific alternative to
 [`predict()`](https://rdrr.io/r/stats/predict.html) that returns
-survival probabilities with confidence intervals in a tidy data frame;
-the two are complementary, not competing.
-
-`ertte_aft()` is the AFT-specific sibling of
-[`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md),
-which wraps
-[`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html) for a
-semi-parametric alternative. Both share the `"ertte_model"` superclass,
-so functions that only need generic operations
-([`update()`](https://rdrr.io/r/stats/update.html),
-[`anova()`](https://rdrr.io/r/stats/anova.html), the SCM family) work
-unchanged across either engine; functions with AFT-specific logic (e.g.
-[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md),
-[`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md))
-dispatch via the `"ertte_aft"`/`"ertte_coxph"` subclass.
-
-All four supported distributions are log-location-scale AFT models:
-`log(T) = mu + scale * W`, where `mu` is the linear predictor
-(intercept + covariates) and `W` follows a distribution that depends
-only on `dist` (extreme-value for `"exponential"`/`"weibull"`, standard
-normal for `"lognormal"`, standard logistic for `"loglogistic"`) – see
-[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md).
+survival probabilities with confidence intervals in a tidy data frame.
 
 ## Examples
 
 ``` r
+# fit a Weibull AFT model
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod
 #> Call:
