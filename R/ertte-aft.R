@@ -1,50 +1,40 @@
 
 
-#' Fit an exposure-response time-to-event AFT model based on `survreg()`
+#' AFT regression modeling
 #'
-#' Fits a parametric accelerated failure time (AFT) regression of
-#' time-to-event on covariates via [survival::survreg()], returning it as
-#' an ertte model object usable with the rest of the package's
-#' prediction/simulation/SCM tooling.
+#' Fits a parametric accelerated failure time (AFT) regression model for
+#' time-to-event data via [survival::survreg()].
 #'
-#' @param formula Model formula, with a `survival::Surv()` object as the
-#' response, e.g. `Surv(time, event) ~ exposure`.
-#' @param data Data set
-#' @param dist The AFT distribution to fit, as for [survival::survreg()].
-#' Defaults to `"weibull"`. Tested and officially supported for
-#' `"exponential"`, `"weibull"`, `"lognormal"`, and `"loglogistic"` --
-#' see [ertte_aft_select_distribution()] for choosing among them by AIC.
+#' @param formula Model formula specifying the regression model, 
+#' e.g. `Surv(time, event) ~ exposure`.
+#' @param data Data set containing the variables of interest.
+#' @param dist The AFT distribution type to use, defaulting to `"weibull"`. 
 #' @param ... Other arguments passed to [survival::survreg()].
-#' @returns A survreg object with extra `ertte_aft`/`ertte_model` classes
+#' 
+#' @return 
+#' A `survreg` object with additional `ertte_aft` and `ertte_model` 
+#' classes used to supply additional methods.
 #'
-#' @details The returned object has class `c("ertte_aft", "ertte_model",
-#' "survreg")`: it *is* a `survreg` object, with a little extra metadata
-#' attached. This means all of the usual `survreg` methods work
-#' unchanged, without needing an ertte-specific equivalent -- e.g.
-#' `summary()`, `coef()`, `vcov()`, `confint()`, `predict()`, `AIC()`,
-#' `BIC()`, `logLik()`, and `anova()` for comparing nested models.
-#' `ertte_predict()` is a separate, ertte-specific alternative to
-#' `predict()` that returns survival probabilities with confidence
-#' intervals in a tidy data frame; the two are complementary, not
-#' competing.
-#'
-#' `ertte_aft()` is the AFT-specific sibling of [ertte_coxph()], which
-#' wraps [survival::coxph()] for a semi-parametric alternative. Both
-#' share the `"ertte_model"` superclass, so functions that only need
-#' generic operations (`update()`, `anova()`, the SCM family) work
-#' unchanged across either engine; functions with AFT-specific logic
-#' (e.g. `ertte_predict()`, `ertte_fun()`) dispatch via the
-#' `"ertte_aft"`/`"ertte_coxph"` subclass.
-#'
-#' All four supported distributions are log-location-scale AFT models:
-#' `log(T) = mu + scale * W`, where `mu` is the linear predictor
-#' (intercept + covariates) and `W` follows a distribution that depends
-#' only on `dist` (extreme-value for `"exponential"`/`"weibull"`,
-#' standard normal for `"lognormal"`, standard logistic for
-#' `"loglogistic"`) -- see [ertte_predict()].
+#' @details 
+#' Like the `survreg()` function upon which it is based, `ertte_aft()` 
+#' supports four log-location-scale AFT models of the form 
+#' `log(t) = mu + scale * w`, where `mu` is the linear predictor
+#' and the distribution of `w` is dependent on the choice of `dist`: 
+#' extreme-value distributions for `"exponential"` and 
+#' `"weibull"` models, a standard normal for `"lognormal"`, and a 
+#' standard logistic for `"loglogistic"`.
+#' 
+#' Because the return value is a `survreg` object, all the usual 
+#' methods for survival regression models work unchanged, without neeing an 
+#' ertte-specific equivalent. This includes `summary()`, `coef()`, `vcov()`, 
+#' `confint()`, `predict()`, `AIC()`, `BIC()`, `logLik()`, and `anova()`. 
+#' Additionally, `ertte_predict()` is a separate, ertte-specific 
+#' alternative to `predict()` that returns survival probabilities with 
+#' confidence intervals in a tidy data frame.
 #'
 #' @export
 #' @examples
+#' # fit a Weibull AFT model
 #' mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 #' mod
 #'

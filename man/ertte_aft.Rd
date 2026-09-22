@@ -2,59 +2,47 @@
 % Please edit documentation in R/ertte-aft.R
 \name{ertte_aft}
 \alias{ertte_aft}
-\title{Fit an exposure-response time-to-event AFT model based on \code{survreg()}}
+\title{AFT regression modeling}
 \usage{
 ertte_aft(formula, data, dist = "weibull", ...)
 }
 \arguments{
-\item{formula}{Model formula, with a \code{survival::Surv()} object as the
-response, e.g. \code{Surv(time, event) ~ exposure}.}
+\item{formula}{Model formula specifying the regression model,
+e.g. \code{Surv(time, event) ~ exposure}.}
 
-\item{data}{Data set}
+\item{data}{Data set containing the variables of interest.}
 
-\item{dist}{The AFT distribution to fit, as for \code{\link[survival:survreg]{survival::survreg()}}.
-Defaults to \code{"weibull"}. Tested and officially supported for
-\code{"exponential"}, \code{"weibull"}, \code{"lognormal"}, and \code{"loglogistic"} --
-see \code{\link[=ertte_aft_select_distribution]{ertte_aft_select_distribution()}} for choosing among them by AIC.}
+\item{dist}{The AFT distribution type to use, defaulting to \code{"weibull"}.}
 
 \item{...}{Other arguments passed to \code{\link[survival:survreg]{survival::survreg()}}.}
 }
 \value{
-A survreg object with extra \code{ertte_aft}/\code{ertte_model} classes
+A \code{survreg} object with additional \code{ertte_aft} and \code{ertte_model}
+classes used to supply additional methods.
 }
 \description{
-Fits a parametric accelerated failure time (AFT) regression of
-time-to-event on covariates via \code{\link[survival:survreg]{survival::survreg()}}, returning it as
-an ertte model object usable with the rest of the package's
-prediction/simulation/SCM tooling.
+Fits a parametric accelerated failure time (AFT) regression model for
+time-to-event data via \code{\link[survival:survreg]{survival::survreg()}}.
 }
 \details{
-The returned object has class \code{c("ertte_aft", "ertte_model", "survreg")}: it \emph{is} a \code{survreg} object, with a little extra metadata
-attached. This means all of the usual \code{survreg} methods work
-unchanged, without needing an ertte-specific equivalent -- e.g.
-\code{summary()}, \code{coef()}, \code{vcov()}, \code{confint()}, \code{predict()}, \code{AIC()},
-\code{BIC()}, \code{logLik()}, and \code{anova()} for comparing nested models.
-\code{ertte_predict()} is a separate, ertte-specific alternative to
-\code{predict()} that returns survival probabilities with confidence
-intervals in a tidy data frame; the two are complementary, not
-competing.
+Like the \code{survreg()} function upon which it is based, \code{ertte_aft()}
+supports four log-location-scale AFT models of the form
+\code{log(t) = mu + scale * w}, where \code{mu} is the linear predictor
+and the distribution of \code{w} is dependent on the choice of \code{dist}:
+extreme-value distributions for \code{"exponential"} and
+\code{"weibull"} models, a standard normal for \code{"lognormal"}, and a
+standard logistic for \code{"loglogistic"}.
 
-\code{ertte_aft()} is the AFT-specific sibling of \code{\link[=ertte_coxph]{ertte_coxph()}}, which
-wraps \code{\link[survival:coxph]{survival::coxph()}} for a semi-parametric alternative. Both
-share the \code{"ertte_model"} superclass, so functions that only need
-generic operations (\code{update()}, \code{anova()}, the SCM family) work
-unchanged across either engine; functions with AFT-specific logic
-(e.g. \code{ertte_predict()}, \code{ertte_fun()}) dispatch via the
-\code{"ertte_aft"}/\code{"ertte_coxph"} subclass.
-
-All four supported distributions are log-location-scale AFT models:
-\code{log(T) = mu + scale * W}, where \code{mu} is the linear predictor
-(intercept + covariates) and \code{W} follows a distribution that depends
-only on \code{dist} (extreme-value for \code{"exponential"}/\code{"weibull"},
-standard normal for \code{"lognormal"}, standard logistic for
-\code{"loglogistic"}) -- see \code{\link[=ertte_predict]{ertte_predict()}}.
+Because the return value is a \code{survreg} object, all the usual
+methods for survival regression models work unchanged, without neeing an
+ertte-specific equivalent. This includes \code{summary()}, \code{coef()}, \code{vcov()},
+\code{confint()}, \code{predict()}, \code{AIC()}, \code{BIC()}, \code{logLik()}, and \code{anova()}.
+Additionally, \code{ertte_predict()} is a separate, ertte-specific
+alternative to \code{predict()} that returns survival probabilities with
+confidence intervals in a tidy data frame.
 }
 \examples{
+# fit a Weibull AFT model
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod
 
