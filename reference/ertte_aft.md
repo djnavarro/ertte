@@ -55,11 +55,11 @@ ertte-specific equivalent. This includes
 [`AIC()`](https://rdrr.io/r/stats/AIC.html),
 [`BIC()`](https://rdrr.io/r/stats/AIC.html),
 [`logLik()`](https://rdrr.io/r/stats/logLik.html), and
-[`anova()`](https://rdrr.io/r/stats/anova.html). Additionally,
-[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
-is a separate, ertte-specific alternative to
-[`predict()`](https://rdrr.io/r/stats/predict.html) that returns
-survival probabilities with confidence intervals in a tidy data frame.
+[`anova()`](https://rdrr.io/r/stats/anova.html). Additional methods
+supplied via the ertte-specific classes include
+[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md),
+[`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md), and
+[`simulate()`](https://rdrr.io/r/stats/simulate.html).
 
 ## Examples
 
