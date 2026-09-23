@@ -29,11 +29,11 @@
 #' Cox proportional hazard modeling
 #'
 #' Fits a semi-parametric Cox proportional-hazards regression of
-#' time-to-event on covariates via [survival::coxph()].
+#' time-to-event data.
 #'
 #' @param formula Model formula specifying the regression model, 
 #' e.g. `Surv(time, event) ~ exposure`.
-#' @param data Data set containing the variables of interest.
+#' @param data Data frame containing the variables of interest.
 #' @param ... Other arguments passed to [survival::coxph()].
 #' 
 #' @return 
@@ -41,6 +41,15 @@
 #' classes used to supply additional methods.
 #'
 #' @details
+#' The `ertte_coxph()` function is a thin wrapper around [survival::coxph()],
+#' used to build semi-parametric proportional hazard models for time-to-event 
+#' data. One slight difference is that the call to `coxph()` always sets 
+#' `model = TRUE`, because downstream methods supplied by the ertte package
+#' require the model frame to be accessible from within the return object. 
+#' Along similar lines, `ertte_coxph()` caches the input data frame within
+#' the returned model object, ensuring that it remains accessible to downstream
+#' tools that have access to the model object but not necessarily the original
+#' data frame. 
 #' 
 #' Because the return value is a `coxph` object, all the usual 
 #' methods for survival regression models work unchanged, without neeing an 
@@ -55,281 +64,10 @@
 #' mod
 #'
 ertte_coxph <- function(formula, data, ...) {
-  # `model = TRUE` (retaining the model frame on the fitted object) is
-  # required, not just a nice-to-have: `survival::survfit()` (which
-  # `ertte_predict.ertte_coxph()` relies on) otherwise tries to
-  # reconstruct the model frame by re-evaluating `object$call$data` --
-  # which fails here for the same reason `stats::update()` fails on
-  # ertte_aft()`/`ertte_coxph()` fits (see `.ertte_refit()` in
-  # `R/ertte-scm.R`): the captured call refers to this function's own
-  # local `formula`/`data` bindings, not anything visible in
-  # `survfit()`'s caller's frame. Storing the model frame directly
-  # sidesteps that.
   .ertte_check_response_time(formula, data)
   .ertte_check_coxph_data_size(formula, data)
   mod <- survival::coxph(formula = formula, data = data, model = TRUE, ...)
-  # as with `ertte_aft()`/`survreg()`, `coxph()` doesn't retain the
-  # fitting data on the returned object -- store it explicitly so
-  # downstream ertte functions (which default `newdata`/refit from
-  # `mod$data`) have something to fall back on.
   mod$data <- data
   .as_ertte_coxph(mod)
 }
 
-#' @details The `ertte_coxph` method delegates to
-#' `survival::survfit(object, newdata, conf.int = conf_level)`, which
-#' computes a per-row survival curve `S(t | x) = S0(t)^exp(lp(x) -
-#' lp(xbar))` from the fitted baseline hazard (Breslow or Efron,
-#' matching `object$method`) and the linear predictor, then evaluates it
-#' at `time` via `summary(..., extend = TRUE)` -- `extend = TRUE` allows
-#' `time` to exceed the last observed follow-up time, holding survival
-#' constant beyond it (the usual step-function extrapolation) rather
-#' than erroring. Confidence intervals come from `survfit()`'s own
-#' `conf.type = "log"` transform (Wald on `log(-log(S))`), which is
-#' better suited to a probability bounded in `[0, 1]` than the plain
-#' Wald interval `ertte_predict.ertte_aft()` uses on the linear
-#' predictor -- the two methods' intervals are not directly comparable
-#' as a result, which is expected given the different model structures.
-#'
-#' `conf_level = 0`/`1` are legitimate degenerate endpoints, but
-#' [survival::survfit()]'s own
-#' `conf.int` machinery rejects exactly 0 or 1 (see issue #11). Both are
-#' handled directly here instead: `conf_level = 0` collapses the
-#' interval to the point estimate (`ci_lower = ci_upper = fit_survival`);
-#' `conf_level = 1` widens it to the full valid probability range
-#' (`ci_lower = 0`, `ci_upper = 1`) -- matching what the underlying
-#' log-transform interval converges to in the limit, and matching how
-#' `ertte_predict.ertte_aft()`'s CDF-based back-transform already
-#' behaves at these boundaries.
-#'
-#' A zero-row `newdata` returns a zero-row tibble with the expected
-#' columns rather than erroring: `survival::survfit()` itself rejects an
-#' entirely-missing `newdata` with a cryptic "all rows of newdata have
-#' missing values" error (see issue #10).
-#'
-#' @rdname ertte_predict
-#' @export
-#' @examples
-#' mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
-#' ertte_predict(mod_cox, ertte_data[1:5, ], time = c(30, 60, 90))
-#'
-ertte_predict.ertte_coxph <- function(object, newdata = NULL, time, conf_level = .95, ...) {
-  .ertte_check_coxph_nevent(object)
-  .ertte_check_conf_level(conf_level)
-  if (is.null(newdata)) newdata <- object$data
-  .ertte_check_time(time)
-  if (nrow(newdata) == 0L) {
-    return(
-      newdata |>
-        tibble::as_tibble() |>
-        dplyr::mutate(
-          time = numeric(0),
-          fit_survival = numeric(0),
-          ci_lower = numeric(0),
-          ci_upper = numeric(0)
-        )
-    )
-  }
-  n <- nrow(newdata)
-  k <- length(time)
-
-  # `survfit()`'s own `conf.int` argument rejects exactly 0/1 -- pass a
-  # harmless placeholder in that case and construct the boundary
-  # interval manually below, since `$surv` (the point estimate) doesn't
-  # depend on `conf.int` at all (confirmed empirically: only `$lower`/
-  # `$upper` do).
-  sf <- survival::survfit(
-    object, newdata = newdata,
-    conf.int = if (conf_level %in% c(0, 1)) 0.95 else conf_level,
-    se.fit = TRUE
-  )
-  ss <- summary(sf, times = time, extend = TRUE)
-  # `summary()`'s `$surv`/`$lower`/`$upper` are `[k x n]` matrices when
-  # `newdata` has more than one row, but drop to a plain length-`k`
-  # vector when it has exactly one -- normalise both to a `[k x n]`
-  # matrix so the flattening below doesn't need a special case.
-  as_km <- function(x) matrix(x, nrow = k, ncol = n)
-  fit_mat <- as_km(ss$surv)
-  if (conf_level == 0) {
-    lower_mat <- fit_mat
-    upper_mat <- fit_mat
-  } else if (conf_level == 1) {
-    lower_mat <- matrix(0, nrow = k, ncol = n)
-    upper_mat <- matrix(1, nrow = k, ncol = n)
-  } else {
-    lower_mat <- as_km(ss$lower)
-    upper_mat <- as_km(ss$upper)
-  }
-
-  rep_rows <- rep(seq_len(n), each = k)
-  time_rep <- rep(time, times = n)
-
-  out <- newdata[rep_rows, , drop = FALSE] |>
-    tibble::as_tibble() |>
-    dplyr::mutate(
-      time = unname(time_rep),
-      fit_survival = unname(as.vector(fit_mat)),
-      ci_lower = unname(as.vector(lower_mat)),
-      ci_upper = unname(as.vector(upper_mat)),
-    )
-  return(out)
-}
-
-# Evaluates a fitted (right-continuous, step-function) baseline
-# cumulative hazard `bh` (as returned by `survival::basehaz()`, a data
-# frame with `time`/`hazard` columns sorted ascending by `time`) at
-# arbitrary times, held constant beyond the last observed time --
-# matching `ertte_predict.ertte_coxph()`'s `extend = TRUE` behaviour so
-# `ertte_fun.ertte_coxph()`'s counterfactual evaluation is consistent
-# with the model's own predictions.
-.ertte_coxph_basehaz_at <- function(bh, time) {
-  idx <- findInterval(time, bh$time)
-  ifelse(idx == 0, 0, bh$hazard[idx])
-}
-
-#' @details The `ertte_coxph` method returns a function that evaluates
-#' `S(t | x) = S0(t)^exp((x - xbar)'param)`, where `S0(t)` is the fitted
-#' baseline survival curve (via `survival::basehaz(object, centered =
-#' TRUE)`, held constant beyond the last observed time, matching
-#' `ertte_predict.ertte_coxph()`) and `xbar` is `object$means` (the
-#' covariate means `coxph()` centers the partial likelihood on when
-#' fitting -- centering matters here because `basehaz()`'s baseline is
-#' defined relative to it, not to `x = 0`). As with
-#' `ertte_fun.ertte_aft()`, `param` only varies the linear predictor:
-#' the baseline hazard is always taken from the fitted `object`, never
-#' recomputed for a hypothetical `param` (that would need refitting the
-#' partial likelihood's risk sets) -- matching the level of
-#' approximation used elsewhere in this package (e.g. `scale` for AFT
-#' models is likewise held fixed). Since Cox models have no intercept,
-#' `param` has one entry per covariate with no `"(Intercept)"` column,
-#' unlike `ertte_fun.ertte_aft()`. `time` is validated the same way
-#' [ertte_predict()] validates it (a numeric vector of strictly positive
-#' values) -- a non-positive `time` previously returned a silent `1`
-#' (as if survival were guaranteed) instead of erroring.
-#'
-#' @rdname ertte_fun
-#' @export
-#' @examples
-#' mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
-#' mod_cox_fun <- ertte_fun(mod_cox)
-#'
-#' # no arguments: reproduces the fitted model's own survival predictions
-#' s1 <- mod_cox_fun(time = 60)
-#'
-#' # user modifies the parameters
-#' par2 <- coef(mod_cox)
-#' par2["aucss"] <- par2["aucss"] * 1.5
-#' s2 <- mod_cox_fun(param = par2, time = 60)
-#'
-ertte_fun.ertte_coxph <- function(object, ...) {
-  .ertte_check_coxph_nevent(object)
-  ff <- stats::delete.response(stats::terms(object))
-  means <- object$means
-  bh <- survival::basehaz(object, centered = TRUE)
-  force(ff)
-  force(means)
-  force(bh)
-  function(data = NULL, time, param = NULL) {
-    .ertte_check_time(time)
-    if (is.null(param)) param <- stats::coef(object)
-    if (is.null(data)) data <- object$data
-    mm <- stats::model.matrix(ff, data)
-    # `coxph()` models have no intercept (it cancels out of the partial
-    # likelihood and is absorbed into the baseline hazard), but
-    # `model.matrix()` on `ff` adds one anyway since the underlying
-    # `terms()` object doesn't record that -- drop it so `ncol(mm)`
-    # matches `length(coef(object))`.
-    mm <- mm[, colnames(mm) != "(Intercept)", drop = FALSE]
-    if (!is.numeric(param) || length(param) != ncol(mm)) {
-      rlang::abort(paste0(
-        "`param` must be a numeric vector of length ", ncol(mm),
-        " (one entry per column of the model matrix: ",
-        paste(colnames(mm), collapse = ", "), "), not length ",
-        length(param), "."
-      ))
-    }
-    lp <- as.vector(mm %*% param) - as.vector(means %*% param)
-    haz <- .ertte_coxph_basehaz_at(bh, time)
-    exp(-haz * exp(lp))
-  }
-}
-
-# Inverts a fitted (right-continuous, step-function) baseline
-# cumulative hazard `bh` at arbitrary hazard values: the smallest
-# observed `bh$time` whose cumulative hazard is at least `target_h`, or
-# `Inf` if `target_h` exceeds every observed hazard value (i.e. the
-# simulated event would occur after the last observed follow-up --
-# left `Inf` so it gets capped/censored at the row's observed exit time
-# downstream, the same administrative-censoring convention
-# `.ertte_simulate_draws.ertte_aft()` uses). Used by
-# `.ertte_simulate_draws.ertte_coxph()` for inverse-CDF sampling of
-# event times: `S(t | x) = exp(-H0(t) * exp(lp)) = u` rearranges to
-# `H0(t) = -log(u) / exp(lp)`, so inverting `H0` at that target value
-# gives the simulated event time.
-.ertte_coxph_invert_basehaz <- function(bh, target_h) {
-  idx <- findInterval(target_h, bh$hazard) + 1L
-  ifelse(idx > length(bh$hazard), Inf, bh$time[idx])
-}
-
-# `.ertte_simulate_draws()` method for `ertte_coxph` models -- see the
-# generic's documentation in `R/ertte-aft.R`. Coefficients are sampled
-# from the same asymptotic normal approximation as the AFT method, but
-# event times are drawn by inverting the fitted baseline cumulative
-# hazard (via `.ertte_coxph_invert_basehaz()`) rather than sampling
-# directly from a parametric distribution -- the baseline hazard/means
-# are always taken from the fitted `object`, never recomputed for a
-# sampled coefficient draw (recomputing it would need refitting the
-# partial likelihood's risk sets at each draw), the same simplification
-# `ertte_fun.ertte_coxph()` makes for a user-supplied `param`.
-.ertte_simulate_draws.ertte_coxph <- function(object, newdata, nsim = 100, seed = NULL, censor_time = NULL) {
-  .ertte_check_coxph_nevent(object)
-  .ertte_check_nsim(nsim)
-  seed <- .ertte_pick_seed(seed)
-  vars <- .ertte_check_newdata_response(object, newdata)
-  censor_time <- .ertte_check_censor_time(censor_time, nrow(newdata))
-  ff <- stats::delete.response(stats::terms(object))
-  means <- object$means
-  bh <- survival::basehaz(object, centered = TRUE)
-  obs_time <- newdata[[vars$time]]
-  event_obs <- newdata[[vars$event]]
-  withr::with_seed(
-    seed = seed,
-    code = {
-      coef_names <- names(stats::coef(object))
-      par <- mvtnorm::rmvnorm(
-        n = nsim,
-        mean = stats::coef(object),
-        sigma = stats::vcov(object)[coef_names, coef_names, drop = FALSE]
-      )
-      sim <- list()
-      for (ii in seq_len(nsim)) {
-        dd_sim <- newdata |> dplyr::mutate(row_id = dplyr::row_number(), sim_id = ii)
-        mm <- stats::model.matrix(ff, dd_sim)
-        mm <- mm[, colnames(mm) != "(Intercept)", drop = FALSE]
-        lp <- as.vector(mm %*% par[ii, ]) - as.vector(means %*% par[ii, ])
-        u <- stats::runif(nrow(dd_sim))
-        target_h <- -log(u) / exp(lp)
-        sim_time_raw <- .ertte_coxph_invert_basehaz(bh, target_h)
-        # `sim_time_raw == Inf` means the simulated draw would need to
-        # survive past the fitted baseline hazard's support (the last
-        # observed follow-up time across the whole cohort) to "fail" --
-        # there's no information past that point either way, so treat it
-        # as censored there (never as an event), matching the flat
-        # extrapolation `ertte_predict.ertte_coxph()` already uses beyond
-        # the observed range. Substituting `max(bh$time)` for `Inf`
-        # before applying `censor_time`/`obs_time` lets a smaller cap
-        # still take precedence where applicable.
-        is_extrapolated <- is.infinite(sim_time_raw)
-        sim_time_capped <- ifelse(is_extrapolated, max(bh$time), sim_time_raw)
-        censored <- .ertte_apply_admin_censoring(sim_time_capped, obs_time, event_obs, censor_time)
-        censored$sim_event[is_extrapolated] <- 0
-        dd_sim$sim_time <- censored$sim_time
-        dd_sim$sim_event <- censored$sim_event
-        coef_draw <- stats::setNames(as.list(par[ii, ]), paste0("coef_", coef_names))
-        dd_sim <- dd_sim |> dplyr::bind_cols(tibble::as_tibble(coef_draw))
-        sim[[ii]] <- dd_sim
-      }
-    }
-  )
-  dplyr::bind_rows(sim)
-}

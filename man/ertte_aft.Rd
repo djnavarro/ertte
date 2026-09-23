@@ -10,9 +10,9 @@ ertte_aft(formula, data, dist = "weibull", ...)
 \item{formula}{Model formula specifying the regression model,
 e.g. \code{Surv(time, event) ~ exposure}.}
 
-\item{data}{Data set containing the variables of interest.}
+\item{data}{Data frame containing the variables of interest.}
 
-\item{dist}{The AFT distribution type to use, defaulting to \code{"weibull"}.}
+\item{dist}{The AFT distribution type to use (default is \code{"weibull"}).}
 
 \item{...}{Other arguments passed to \code{\link[survival:survreg]{survival::survreg()}}.}
 }
@@ -22,26 +22,38 @@ classes used to supply additional methods.
 }
 \description{
 Fits a parametric accelerated failure time (AFT) regression model for
-time-to-event data via \code{\link[survival:survreg]{survival::survreg()}}.
+time-to-event data.
 }
 \details{
-Like the \code{survreg()} function upon which it is based, \code{ertte_aft()}
-supports four log-location-scale AFT models of the form
-\code{log(t) = mu + scale * w}, where \code{mu} is the linear predictor
-and the distribution of \code{w} is dependent on the choice of \code{dist}:
-extreme-value distributions for \code{"exponential"} and
-\code{"weibull"} models, a standard normal for \code{"lognormal"}, and a
-standard logistic for \code{"loglogistic"}.
+The \code{ertte_aft()} function is a thin wrapper around \code{\link[survival:survreg]{survival::survreg()}},
+used to build parametric AFT models for time-to-event data. Unlike the original,
+it caches the input data frame within the returned model object, ensuring that
+the data set remains accessible to downstream tools that have access to the
+model object but not necessarily the original data frame.
 
-Because the return value is a \code{survreg} object, all the usual
-methods for survival regression models work unchanged, without neeing an
+Like the \code{survreg()} function upon which it is based, \code{ertte_aft()}
+supports location-scale distributional families defined on some transformation
+of the time variable. In principle \code{ertte_aft()} could support the full range
+of distributions available to \code{survreg()}, but it is important to note that
+the extended functionality provided by the ertte package, and hooks into other
+exposure-response tools supplied by other packages such as erplots, have not
+been thoroughly tested beyond four core cases. Tested values for the \code{dist}
+argument are \code{weibull}, \code{exponential}, \code{lognormal}, and \code{loglogistic}. It is
+for this reason that the output object from \code{ertte_aft()} contains additional
+classes: the ertte-specific tools are not necessarily valid for all \code{survreg}
+objects, only those for which it has been explicitly defined.
+
+Nevertheless, because the return value is genuinely a \code{survreg} object, albeit
+with some additional information and metata stored internally, all the usual
+methods for survival regression models work unchanged, without needing any
 ertte-specific equivalent. This includes \code{summary()}, \code{coef()}, \code{vcov()},
 \code{confint()}, \code{predict()}, \code{AIC()}, \code{BIC()}, \code{logLik()}, and \code{anova()}.
 Additional methods supplied via the ertte-specific classes include
 \code{ertte_predict()}, \code{ertte_fun()}, and \code{simulate()}.
 }
 \examples{
-# fit a Weibull AFT model
+# fit a Weibull AFT model; because the ertte package reexports Surv(), 
+# there is no need to load the survival package to build this model 
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod
 

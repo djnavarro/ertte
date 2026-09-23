@@ -10,7 +10,7 @@ ertte_coxph(formula, data, ...)
 \item{formula}{Model formula specifying the regression model,
 e.g. \code{Surv(time, event) ~ exposure}.}
 
-\item{data}{Data set containing the variables of interest.}
+\item{data}{Data frame containing the variables of interest.}
 
 \item{...}{Other arguments passed to \code{\link[survival:coxph]{survival::coxph()}}.}
 }
@@ -20,9 +20,19 @@ classes used to supply additional methods.
 }
 \description{
 Fits a semi-parametric Cox proportional-hazards regression of
-time-to-event on covariates via \code{\link[survival:coxph]{survival::coxph()}}.
+time-to-event data.
 }
 \details{
+The \code{ertte_coxph()} function is a thin wrapper around \code{\link[survival:coxph]{survival::coxph()}},
+used to build semi-parametric proportional hazard models for time-to-event
+data. One slight difference is that the call to \code{coxph()} always sets
+\code{model = TRUE}, because downstream methods supplied by the ertte package
+require the model frame to be accessible from within the return object.
+Along similar lines, \code{ertte_coxph()} caches the input data frame within
+the returned model object, ensuring that it remains accessible to downstream
+tools that have access to the model object but not necessarily the original
+data frame.
+
 Because the return value is a \code{coxph} object, all the usual
 methods for survival regression models work unchanged, without neeing an
 ertte-specific equivalent. This includes \code{summary()}, \code{coef()}, \code{vcov()},
