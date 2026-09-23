@@ -2,7 +2,7 @@
 % Please edit documentation in R/ertte-aft.R
 \name{ertte_aft}
 \alias{ertte_aft}
-\title{AFT regression modeling}
+\title{AFT regression modelling}
 \usage{
 ertte_aft(formula, data, dist = "weibull", ...)
 }

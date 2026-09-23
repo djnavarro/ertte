@@ -2,7 +2,7 @@
 % Please edit documentation in R/ertte-coxph.R
 \name{ertte_coxph}
 \alias{ertte_coxph}
-\title{Cox proportional hazard modeling}
+\title{Cox proportional hazard modelling}
 \usage{
 ertte_coxph(formula, data, ...)
 }

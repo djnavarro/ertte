@@ -1,11 +1,11 @@
 Package: ertte
 Title: Exposure-Response Tools for Time-to-Event Models
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person("Danielle", "Navarro", , "djnavarro@protonmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0001-7648-6578"))
 Description:
     Provides estimation tools for exposure-response models of
-    time-to-event endpoints based on survival::survreg(): parametric
+    time-to-event endpoints based on the 'survival' package: parametric
     accelerated failure time model fitting and prediction with
     AIC-based distribution selection, stepwise covariate modelling,
     and simulation-based visual predictive checks. Tested and

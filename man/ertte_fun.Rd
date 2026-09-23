@@ -62,7 +62,7 @@ in the fitted model, \eqn{\beta} is the vector of coefficients, and
 that \eqn{S_0(t)} is raised to the power of.
 
 The baseline survival function \eqn{S_0(t)} refers to the fitted
-baseline survival curve, calulated by calling \code{survival::basehaz()}
+baseline survival curve, calculated by calling \code{survival::basehaz()}
 with \code{centered = TRUE} and held constant beyond the last observed
 time, consistent with the approach adopted by \code{ertte_predict()} for
 Cox proportional hazard models.

@@ -26,7 +26,7 @@
   }
 }
 
-#' Cox proportional hazard modeling
+#' Cox proportional hazard modelling
 #'
 #' Fits a semi-parametric Cox proportional-hazards regression of
 #' time-to-event data.

@@ -156,7 +156,7 @@ h(t \mid x) = h_0(t) \exp(x'\beta),
 $$
 
 where $h_0(t)$ is an unspecified **baseline hazard** (the hazard for a
-subject with $x = 0$, or more precisely $x$ at the values `coxph()` centers
+subject with $x = 0$, or more precisely $x$ at the values `coxph()` centres
 on) and $\beta$ are the log-hazard-ratio coefficients. This is a
 *semi-parametric* model: $\beta$ is estimated by maximising a partial
 likelihood that doesn't require ever specifying $h_0(t)$'s functional form,

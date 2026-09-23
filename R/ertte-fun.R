@@ -44,7 +44,7 @@
 #' that \eqn{S_0(t)} is raised to the power of.
 #' 
 #' The baseline survival function \eqn{S_0(t)} refers to the fitted  
-#' baseline survival curve, calulated by calling `survival::basehaz()`
+#' baseline survival curve, calculated by calling `survival::basehaz()`
 #' with `centered = TRUE` and held constant beyond the last observed 
 #' time, consistent with the approach adopted by `ertte_predict()` for
 #' Cox proportional hazard models. 

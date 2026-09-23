@@ -1,4 +1,5 @@
 ^ertte\.Rproj$
+^cran-comments\.md$
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^README\.Rmd$

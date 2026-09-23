@@ -1,6 +1,6 @@
 
 
-#' AFT regression modeling
+#' AFT regression modelling
 #'
 #' Fits a parametric accelerated failure time (AFT) regression model for
 #' time-to-event data.
