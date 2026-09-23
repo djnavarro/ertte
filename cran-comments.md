@@ -34,6 +34,15 @@ file exercising them is skipped via
   (<https://win-builder.r-project.org/9U18L0UUn2ND/00check.log>,
   <https://win-builder.r-project.org/57zjIk601rjZ/00check.log>)
 
+Since both rhub and CRAN's own macOS builder (`mac.r-project.org`) are
+currently unavailable for this package (see above), we're relying
+instead on ertte's regular CI, which runs `R CMD check` via
+`r-lib/actions/check-r-package@v2` on `macos-latest` (R release) on
+every push. The most recent run against this exact code
+(<https://github.com/djnavarro/ertte/actions/runs/35845204240>) passed
+cleanly on macOS, alongside Windows and three Linux R versions
+(devel/release/oldrel-1).
+
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note (`New submission`, expected for a
