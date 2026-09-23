@@ -11,15 +11,12 @@ ertte_add_term(mod, term, quiet = FALSE)
 ertte_remove_term(mod, term, quiet = FALSE)
 }
 \arguments{
-\item{mod}{An ertte model object, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
-\code{\link[=ertte_coxph]{ertte_coxph()}}}
+\item{mod}{An ertte model object.}
 
 \item{term}{A one-sided formula naming the term to add/remove, e.g.
-\code{~ sex}}
+\code{~ sex}.}
 
-\item{quiet}{If \code{TRUE}, suppress the warning issued when the term
-can't be added/removed (because it's already in the model / isn't in
-the model, respectively). Defaults to \code{FALSE}.}
+\item{quiet}{Should warnings be suppressed? Defaults to \code{FALSE}.}
 }
 \value{
 An ertte model object. If the term can't be added/removed
@@ -31,24 +28,19 @@ returning a new fitted model object.
 }
 \details{
 These functions are not typically called directly; they
-underpin \code{\link[=ertte_scm_forward]{ertte_scm_forward()}} and \code{\link[=ertte_scm_backward]{ertte_scm_backward()}}. Named and
-shaped to match the companion \code{erglm} package's
-\code{erglm_add_term()}/\code{erglm_remove_term()}: \code{term}/\code{candidates} are plain
-formula terms, added/removed additively -- categorical covariates enter
-as factor levels, continuous covariates enter linearly by default or,
-for a power-function parameterisation (\code{theta} such that \code{T ~ (x / ref)^theta} on the AFT time scale, or \code{h(t|x) ~ h0(t) * (x / ref)^theta}
-on the Cox hazard scale), by wrapping the covariate in \code{\link[=ertte_power]{ertte_power()}},
-e.g. \code{~ ertte_power(age)} or \code{candidates = "ertte_power(age)"}. Term
-handling here works generically on formula term-labels, so
-\code{ertte_power()} terms need no special-casing.
-
-\code{mod} is refit using the matching engine constructor
-(\code{ertte_aft()}/\code{ertte_coxph()}), based on its class -- so these
-functions (and the SCM family built on them) work for both
-\code{ertte_aft} and \code{ertte_coxph} models.
+underpin \code{\link[=ertte_scm_forward]{ertte_scm_forward()}} and \code{\link[=ertte_scm_backward]{ertte_scm_backward()}}, used to
+add or remove a single term from a time-to-event regression model.
+Regardless of whether the model is a parametric AFT model or a Cox
+proportional hazard model, the \code{term} to be added or removed is
+defined by a single one-sided formula. Categorical covariates enter
+the model as factor levels, whereas continuous covariates enter as
+linear terms by default. However, for a power-function parameterisation
+(\code{theta} such that \code{T ~ (x /ref)^theta} on the AFT time scale, or
+\code{h(t|x) ~ h0(t) * (x / ref)^theta} on the Cox hazard scale), the
+covariate can be wrapped in \code{\link[=ertte_power]{ertte_power()}}, e.g. \code{~ ertte_power(age)}.
 }
 \examples{
-mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
-mod2 <- ertte_add_term(mod, ~ sex)
+mod1 <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
+mod2 <- ertte_add_term(mod1, ~ sex)
 mod3 <- ertte_remove_term(mod2, ~ sex)
 }

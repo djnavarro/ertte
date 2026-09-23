@@ -434,39 +434,30 @@ ertte_scm_history <- function(mod) {
 #' Add or remove a single covariate term from an existing ertte model,
 #' returning a new fitted model object.
 #'
-#' @param mod An ertte model object, as returned by [ertte_aft()] or
-#' [ertte_coxph()]
+#' @param mod An ertte model object.
 #' @param term A one-sided formula naming the term to add/remove, e.g.
-#' `~ sex`
-#' @param quiet If `TRUE`, suppress the warning issued when the term
-#' can't be added/removed (because it's already in the model / isn't in
-#' the model, respectively). Defaults to `FALSE`.
+#' `~ sex`.
+#' @param quiet Should warnings be suppressed? Defaults to `FALSE`.
 #'
 #' @details These functions are not typically called directly; they
-#' underpin [ertte_scm_forward()] and [ertte_scm_backward()]. Named and
-#' shaped to match the companion `erglm` package's
-#' `erglm_add_term()`/`erglm_remove_term()`: `term`/`candidates` are plain
-#' formula terms, added/removed additively -- categorical covariates enter
-#' as factor levels, continuous covariates enter linearly by default or,
-#' for a power-function parameterisation (`theta` such that `T ~ (x /
-#' ref)^theta` on the AFT time scale, or `h(t|x) ~ h0(t) * (x / ref)^theta`
-#' on the Cox hazard scale), by wrapping the covariate in [ertte_power()],
-#' e.g. `~ ertte_power(age)` or `candidates = "ertte_power(age)"`. Term
-#' handling here works generically on formula term-labels, so
-#' `ertte_power()` terms need no special-casing.
-#'
-#' `mod` is refit using the matching engine constructor
-#' (`ertte_aft()`/`ertte_coxph()`), based on its class -- so these
-#' functions (and the SCM family built on them) work for both
-#' `ertte_aft` and `ertte_coxph` models.
+#' underpin [ertte_scm_forward()] and [ertte_scm_backward()], used to
+#' add or remove a single term from a time-to-event regression model.  
+#' Regardless of whether the model is a parametric AFT model or a Cox
+#' proportional hazard model, the `term` to be added or removed is 
+#' defined by a single one-sided formula. Categorical covariates enter
+#' the model as factor levels, whereas continuous covariates enter as 
+#' linear terms by default. However, for a power-function parameterisation 
+#' (`theta` such that `T ~ (x /ref)^theta` on the AFT time scale, or 
+#' `h(t|x) ~ h0(t) * (x / ref)^theta` on the Cox hazard scale), the 
+#' covariate can be wrapped in [ertte_power()], e.g. `~ ertte_power(age)`.
 #'
 #' @returns An ertte model object. If the term can't be added/removed
 #' (see `quiet`), the original `mod` is returned unchanged.
 #'
 #' @name ertte_term
 #' @examples
-#' mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
-#' mod2 <- ertte_add_term(mod, ~ sex)
+#' mod1 <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
+#' mod2 <- ertte_add_term(mod1, ~ sex)
 #' mod3 <- ertte_remove_term(mod2, ~ sex)
 NULL
 
