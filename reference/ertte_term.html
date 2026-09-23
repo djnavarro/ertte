@@ -64,19 +64,16 @@ returning a new fitted model object.</p>
 
 
 <dl><dt id="arg-mod">mod<a class="anchor" aria-label="anchor" href="#arg-mod"></a></dt>
-<dd><p>An ertte model object, as returned by <code><a href="ertte_aft.html">ertte_aft()</a></code> or
-<code><a href="ertte_coxph.html">ertte_coxph()</a></code></p></dd>
+<dd><p>An ertte model object.</p></dd>
 
 
 <dt id="arg-term">term<a class="anchor" aria-label="anchor" href="#arg-term"></a></dt>
 <dd><p>A one-sided formula naming the term to add/remove, e.g.
-<code>~ sex</code></p></dd>
+<code>~ sex</code>.</p></dd>
 
 
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
-<dd><p>If <code>TRUE</code>, suppress the warning issued when the term
-can't be added/removed (because it's already in the model / isn't in
-the model, respectively). Defaults to <code>FALSE</code>.</p></dd>
+<dd><p>Should warnings be suppressed? Defaults to <code>FALSE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -87,26 +84,22 @@ the model, respectively). Defaults to <code>FALSE</code>.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>These functions are not typically called directly; they
-underpin <code><a href="ertte_scm.html">ertte_scm_forward()</a></code> and <code><a href="ertte_scm.html">ertte_scm_backward()</a></code>. Named and
-shaped to match the companion <code>erglm</code> package's
-<code>erglm_add_term()</code>/<code>erglm_remove_term()</code>: <code>term</code>/<code>candidates</code> are plain
-formula terms, added/removed additively – categorical covariates enter
-as factor levels, continuous covariates enter linearly by default or,
-for a power-function parameterisation (<code>theta</code> such that <code>T ~ (x / ref)^theta</code> on the AFT time scale, or <code>h(t|x) ~ h0(t) * (x / ref)^theta</code>
-on the Cox hazard scale), by wrapping the covariate in <code><a href="ertte_power.html">ertte_power()</a></code>,
-e.g. <code>~ ertte_power(age)</code> or <code>candidates = "ertte_power(age)"</code>. Term
-handling here works generically on formula term-labels, so
-<code><a href="ertte_power.html">ertte_power()</a></code> terms need no special-casing.</p>
-<p><code>mod</code> is refit using the matching engine constructor
-(<code><a href="ertte_aft.html">ertte_aft()</a></code>/<code><a href="ertte_coxph.html">ertte_coxph()</a></code>), based on its class – so these
-functions (and the SCM family built on them) work for both
-<code>ertte_aft</code> and <code>ertte_coxph</code> models.</p>
+underpin <code><a href="ertte_scm.html">ertte_scm_forward()</a></code> and <code><a href="ertte_scm.html">ertte_scm_backward()</a></code>, used to
+add or remove a single term from a time-to-event regression model.
+Regardless of whether the model is a parametric AFT model or a Cox
+proportional hazard model, the <code>term</code> to be added or removed is
+defined by a single one-sided formula. Categorical covariates enter
+the model as factor levels, whereas continuous covariates enter as
+linear terms by default. However, for a power-function parameterisation
+(<code>theta</code> such that <code>T ~ (x /ref)^theta</code> on the AFT time scale, or
+<code>h(t|x) ~ h0(t) * (x / ref)^theta</code> on the Cox hazard scale), the
+covariate can be wrapped in <code><a href="ertte_power.html">ertte_power()</a></code>, e.g. <code>~ ertte_power(age)</code>.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">mod2</span> <span class="op">&lt;-</span> <span class="fu">ertte_add_term</span><span class="op">(</span><span class="va">mod</span>, <span class="op">~</span> <span class="va">sex</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod1</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mod2</span> <span class="op">&lt;-</span> <span class="fu">ertte_add_term</span><span class="op">(</span><span class="va">mod1</span>, <span class="op">~</span> <span class="va">sex</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">mod3</span> <span class="op">&lt;-</span> <span class="fu">ertte_remove_term</span><span class="op">(</span><span class="va">mod2</span>, <span class="op">~</span> <span class="va">sex</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>
