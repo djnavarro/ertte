@@ -19,8 +19,7 @@ ertte_rmst(object, newdata = NULL, tau, conf_level = 0.95, ...)
 \item{newdata}{Data frame containing cases to be predicted. Defaults
 to the data the model was fitted to.}
 
-\item{tau}{Numeric vector of restriction horizons at which to compute RSMT
-\verb{RMST(tau) = integral of S(t) from 0 to tau}.}
+\item{tau}{Numeric vector of restriction horizons at which to compute RSMT.}
 
 \item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.}
 

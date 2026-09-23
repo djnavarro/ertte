@@ -11,8 +11,7 @@
 #' [ertte_coxph()].
 #' @param newdata Data frame containing cases to be predicted. Defaults
 #' to the data the model was fitted to.
-#' @param tau Numeric vector of restriction horizons at which to compute RSMT
-#' `RMST(tau) = integral of S(t) from 0 to tau`.
+#' @param tau Numeric vector of restriction horizons at which to compute RSMT.
 #' @param conf_level Confidence level for the intervals. Defaults to `.95`.
 #' @param ... Passed to methods.
 #' @returns A tibble with one row per combination of `newdata` row and
