@@ -89,9 +89,9 @@ the median value of <code>x</code>.</p></dd>
 the model's natural scale (i.e., log-time for AFT models and log-hazard-ratio
 for Cox models). A power-function covariate effect is defined as follows for
 an AFT model:</p>
-<p>$$t = t_\mbox{ref} \times (x / x_\mbox{ref})^\theta$$</p>
+<p>$$t = t_{\mbox{ref}} \times (x / x_{\mbox{ref}})^\theta$$</p>
 <p>The equivalent for Cox models is as follows:</p>
-<p>$$h(t | x) = h_0(t) \times (x / x_\mbox{ref})^\theta$$</p>
+<p>$$h(t | x) = h_0(t) \times (x / x_{\mbox{ref}})^\theta$$</p>
 <p>Once log-transformed, these become linear terms in <code>log(x / ref)</code>.</p>
 <p>So <code>ertte_power(x)</code> reduces the power-function parameterisation to an
 ordinary covariate column: the fitted <code>survreg()</code>/<code>coxph()</code> coefficient

@@ -35,11 +35,11 @@ are linear in their covariates on the model's natural scale (i.e.,
 log-time for AFT models and log-hazard-ratio for Cox models). A
 power-function covariate effect is defined as follows for an AFT model:
 
-\$\$t = t\_\mbox{ref} \times (x / x\_\mbox{ref})^\theta\$\$
+\$\$t = t\_{\mbox{ref}} \times (x / x\_{\mbox{ref}})^\theta\$\$
 
 The equivalent for Cox models is as follows:
 
-\$\$h(t \| x) = h_0(t) \times (x / x\_\mbox{ref})^\theta\$\$
+\$\$h(t \| x) = h_0(t) \times (x / x\_{\mbox{ref}})^\theta\$\$
 
 Once log-transformed, these become linear terms in `log(x / ref)`.
 
