@@ -22,18 +22,18 @@ background on
 
 ## Why a landmark?
 
-A fitted TTE model describes an entire survival curve $`S(t \mid x)`$,
+A fitted TTE model describes an entire survival curve \\S(t \mid x)\\,
 but many exposure-response questions are really about one particular
 point on it: *what fraction of subjects with a given exposure profile
 are expected to have had the event by some fixed, clinically meaningful
-time* $`t^*`$? (“Landmark” here refers to that fixed time, not to
+time* \\t^\*\\? (“Landmark” here refers to that fixed time, not to
 landmark-based dynamic prediction from repeated measurements, a
 different technique with the same name.)
 
 Reducing to a single time point converts a TTE endpoint into an ordinary
-binary response, $`P(\text{event by } t^*) = 1 - S(t^* \mid x)`$, which
-`erplots`’ existing `er_plot()`/`er_vpc()` grammars – built for scalar
-exposure-response summaries – can visualise with no TTE-specific
+binary response, \\P(\text{event by } t^\*) = 1 - S(t^\* \mid x)\\,
+which `erplots`’ existing `er_plot()`/`er_vpc()` grammars – built for
+scalar exposure-response summaries – can visualise with no TTE-specific
 plotting code at all.
 
 ## How it’s computed
@@ -42,9 +42,7 @@ plotting code at all.
 doesn’t implement any new survival-curve machinery of its own. It calls
 \[ertte_predict()\] at `time = landmark_time` and transforms the result:
 
-``` math
-P(\text{event by } t^*) = 1 - S(t^*).
-```
+\\ P(\text{event by } t^\*) = 1 - S(t^\*). \\
 
 Because this is a decreasing, monotonic transform, the confidence
 interval bounds simply swap – the upper bound on survival becomes the
@@ -146,7 +144,7 @@ Internally, this reduces each replicate to `1` (an event on or before
 `landmark_time`), `0` (known to still be event-free at `landmark_time`),
 or `NA` if the replicate was censored strictly before `landmark_time` –
 a genuinely ambiguous outcome, since it’s not known whether that
-replicate would have had the event by $`t^*`$ had follow-up continued.
+replicate would have had the event by \\t^\*\\ had follow-up continued.
 This is the same complete-case convention used for RMST-based VPCs (see
 the [RMST article](https://ertte.djnavarro.net/articles/rmst.md)’s
 “Using RMST in a visual predictive check” section for the full
@@ -160,13 +158,13 @@ automatically.
 - **A landmark answers a question about one time point only.** It’s
   simpler and more directly interpretable than RMST, but it discards
   everything the fitted model says about the survival curve away from
-  $`t^*`$ – two exposure profiles with very different survival curves
+  \\t^\*\\ – two exposure profiles with very different survival curves
   can have the same landmark probability if the curves happen to cross
-  near $`t^*`$.
-- **The choice of $`t^*`$ matters, and isn’t estimated from the data.**
+  near \\t^\*\\.
+- **The choice of \\t^\*\\ matters, and isn’t estimated from the data.**
   Different landmark times can tell different (both valid) stories about
   the same fitted model, the same caveat RMST’s choice of `tau` carries.
-- **A replicate censored before $`t^*`$ contributes no information to a
+- **A replicate censored before \\t^\*\\ contributes no information to a
   landmark VPC and is dropped, not imputed or reweighted** – see “Using
   a landmark in a visual predictive check” above.
 

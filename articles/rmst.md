@@ -17,19 +17,17 @@ more clinically intuitive: *on average, how much event-free time does a
 subject with a given exposure profile experience, up to some horizon?*
 
 **Restricted mean survival time (RMST)** answers exactly that. For a
-survival function $`S(t \mid x)`$ describing a subject with covariate
-profile $`x`$, and a fixed horizon $`\tau`$, RMST is defined as
+survival function \\S(t \mid x)\\ describing a subject with covariate
+profile \\x\\, and a fixed horizon \\\tau\\, RMST is defined as
 
-``` math
-\text{RMST}(\tau \mid x) = \int_0^\tau S(t \mid x) \, dt.
-```
+\\ \text{RMST}(\tau \mid x) = \int_0^\tau S(t \mid x) \\ dt. \\
 
 Geometrically, this is the area under the survival curve between 0 and
-$`\tau`$. It has units of time (e.g. “expected days event-free in the
+\\\tau\\. It has units of time (e.g. “expected days event-free in the
 first 90 days”), doesn’t rely on a proportional-hazards assumption to
 interpret, and stays well-defined even when a study’s follow-up is too
 short to observe the survival curve reach zero – which is exactly why
-it’s “restricted” to $`\tau`$ rather than defined over $`[0, \infty)`$.
+it’s “restricted” to \\\tau\\ rather than defined over \\\[0, \infty)\\.
 
 [`ertte_rmst()`](https://ertte.djnavarro.net/reference/ertte_rmst.md)
 computes RMST (with a confidence interval) for a fitted
@@ -55,7 +53,7 @@ first.
 `ertte` fits two kinds of TTE models, and
 [`ertte_rmst()`](https://ertte.djnavarro.net/reference/ertte_rmst.md)
 needs a genuinely different calculation for each, because they represent
-$`S(t \mid x)`$ differently.
+\\S(t \mid x)\\ differently.
 
 **[`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)**
 fits a parametric accelerated failure time (AFT) model via
@@ -63,37 +61,32 @@ fits a parametric accelerated failure time (AFT) model via
 All four supported distributions share the same log-location-scale
 structure,
 
-``` math
-\log(T) = \mu(x) + \sigma W,
-```
+\\ \log(T) = \mu(x) + \sigma W, \\
 
-where $`\mu(x)`$ is the linear predictor (intercept + covariate
-effects), $`\sigma`$ is a scale parameter, and $`W`$ follows a fixed
+where \\\mu(x)\\ is the linear predictor (intercept + covariate
+effects), \\\sigma\\ is a scale parameter, and \\W\\ follows a fixed
 “base” distribution (extreme-value for the Weibull/exponential case,
 standard normal for log-normal, standard logistic for log-logistic).
-This gives a fully parametric, closed-form survival function
-$`S(t \mid x) = 1 - F\!\left(
-\frac{\log t - \mu(x)}{\sigma}\right)`$, where $`F`$ is the base
-distribution’s CDF.
+This gives a fully parametric, closed-form survival function \\S(t \mid
+x) = 1 - F\\\left( \frac{\log t - \mu(x)}{\sigma}\right)\\, where \\F\\
+is the base distribution’s CDF.
 
 **[`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)**
 fits a semi-parametric Cox proportional-hazards model via
 [`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html).
-There’s no parametric form for the baseline hazard $`h_0(t)`$; it’s
+There’s no parametric form for the baseline hazard \\h_0(t)\\; it’s
 estimated nonparametrically (Breslow’s estimator, the same one behind
 [`survival::basehaz()`](https://rdrr.io/pkg/survival/man/basehaz.html)),
-and the survival curve for a covariate profile $`x`$ is
+and the survival curve for a covariate profile \\x\\ is
 
-``` math
-S(t \mid x) = S_0(t)^{\exp\left((x - \bar x)'\beta\right)},
-```
+\\ S(t \mid x) = S_0(t)^{\exp\left((x - \bar x)'\beta\right)}, \\
 
-where $`S_0(t) = \exp(-H_0(t))`$ is the fitted baseline survival curve
-and $`\bar x`$ is the mean covariate profile the partial likelihood was
-centered on. Because $`H_0(t)`$ is estimated from a finite set of
-observed event times, $`S(t \mid x)`$ is a **right-continuous step
+where \\S_0(t) = \exp(-H_0(t))\\ is the fitted baseline survival curve
+and \\\bar x\\ is the mean covariate profile the partial likelihood was
+centered on. Because \\H_0(t)\\ is estimated from a finite set of
+observed event times, \\S(t \mid x)\\ is a **right-continuous step
 function** – it only changes value at the observed event times in the
-fitting data, however far $`x`$ is from $`\bar x`$.
+fitting data, however far \\x\\ is from \\\bar x\\.
 
 That structural difference – closed-form vs. step-function – is what
 drives most of the implementation differences below.
@@ -102,13 +95,12 @@ drives most of the implementation differences below.
 
 ### AFT: numerical integration of a known curve
 
-Since $`S(t \mid x)`$ has a closed form for the AFT engine,
+Since \\S(t \mid x)\\ has a closed form for the AFT engine,
 [`ertte_rmst.ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_rmst.md)
 computes
 
-``` math
-\widehat{\text{RMST}}(\tau \mid x) = \int_0^\tau \hat S(t \mid x) \, dt
-```
+\\ \widehat{\text{RMST}}(\tau \mid x) = \int_0^\tau \hat S(t \mid x) \\
+dt \\
 
 via [`stats::integrate()`](https://rdrr.io/r/stats/integrate.html). This
 is straightforward numerical quadrature on a smooth, fully known
@@ -120,15 +112,14 @@ quadrature error, which is negligible for a function this well-behaved.
 For the Cox engine, it’s tempting to assume the same kind of numerical
 integration is needed, since the “curve” comes from an empirical
 baseline hazard rather than a formula. In fact the opposite is true:
-because $`\hat S(t \mid x)`$ is a **step function** with jumps only at
-the observed event times $`t_{(1)} < t_{(2)} < \dots < t_{(m)}`$, the
-area under it between two jumps is exactly a rectangle, and the whole
-integral reduces to an *exact* finite sum:
+because \\\hat S(t \mid x)\\ is a **step function** with jumps only at
+the observed event times \\t\_{(1)} \< t\_{(2)} \< \dots \< t\_{(m)}\\,
+the area under it between two jumps is exactly a rectangle, and the
+whole integral reduces to an *exact* finite sum:
 
-``` math
-\widehat{\text{RMST}}(\tau \mid x) = \sum_{k} \hat S\!\left(t_{(k)}^{-} \mid x\right) \cdot
-\Big(\min(t_{(k+1)}, \tau) - t_{(k)}\Big).
-```
+\\ \widehat{\text{RMST}}(\tau \mid x) = \sum\_{k} \hat
+S\\\left(t\_{(k)}^{-} \mid x\right) \cdot \Big(\min(t\_{(k+1)}, \tau) -
+t\_{(k)}\Big). \\
 
 [`ertte_rmst.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_rmst.md)
 computes this directly from `survival::survfit(object, newdata)`’s own
@@ -148,40 +139,37 @@ and the two engines’ methods are not analogous to each other.
 
 [`ertte_predict.ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
 already reports a Wald confidence interval on the survival probability
-by propagating the uncertainty in $`\mu(x)`$ (the linear predictor) and
-*not* the uncertainty in $`\sigma`$ (the scale parameter) – a
-simplification made throughout `ertte`, on the grounds that $`\sigma`$’s
-sampling variability is typically small relative to $`\mu(x)`$’s and
+by propagating the uncertainty in \\\mu(x)\\ (the linear predictor) and
+*not* the uncertainty in \\\sigma\\ (the scale parameter) – a
+simplification made throughout `ertte`, on the grounds that \\\sigma\\’s
+sampling variability is typically small relative to \\\mu(x)\\’s and
 that jointly propagating both would need a full delta-method gradient
 rather than a simple `predict(..., se.fit = TRUE)` call.
 [`ertte_rmst.ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_rmst.md)
 makes the identical simplification.
 
-Differentiating the RMST integral with respect to $`\mu`$
+Differentiating the RMST integral with respect to \\\mu\\
 (differentiating under the integral sign) gives
 
-``` math
-\frac{\partial}{\partial \mu} \text{RMST}(\tau \mid x) =
-\int_0^\tau \frac{f\!\left(\frac{\log t - \mu(x)}{\sigma}\right)}{\sigma} \, dt,
-```
+\\ \frac{\partial}{\partial \mu} \text{RMST}(\tau \mid x) = \int_0^\tau
+\frac{f\\\left(\frac{\log t - \mu(x)}{\sigma}\right)}{\sigma} \\ dt, \\
 
-where $`f`$ is the base distribution’s density.
+where \\f\\ is the base distribution’s density.
 [`ertte_rmst.ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_rmst.md)
 evaluates this gradient numerically (another
 [`stats::integrate()`](https://rdrr.io/r/stats/integrate.html) call),
 then applies the standard delta-method variance,
 
-``` math
-\widehat{\text{Var}}\!\left[\widehat{\text{RMST}}(\tau \mid x)\right] \approx
-\left(\frac{\partial \text{RMST}}{\partial \mu}\right)^{\!2} \widehat{\text{Var}}(\hat\mu),
-```
+\\ \widehat{\text{Var}}\\\left\[\widehat{\text{RMST}}(\tau \mid
+x)\right\] \approx \left(\frac{\partial \text{RMST}}{\partial
+\mu}\right)^{\\2} \widehat{\text{Var}}(\hat\mu), \\
 
-with $`\widehat{\text{Var}}(\hat\mu)`$ coming from
+with \\\widehat{\text{Var}}(\hat\mu)\\ coming from
 `predict(object, newdata, type = "linear", se.fit = TRUE)`, exactly as
 in
 [`ertte_predict.ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_predict.md).
-The resulting interval is a symmetric Wald interval, `fit_rmst`
-$`\pm\ z \cdot`$`se_rmst`.
+The resulting interval is a symmetric Wald interval, `fit_rmst` \\\pm\\
+z \cdot\\ `se_rmst`.
 
 ### Cox: why the obvious shortcut doesn’t work
 
@@ -197,11 +185,9 @@ profile.
 The problem surfaces on closer inspection. `survmean()`’s variance
 calculation uses a Greenwood-type increment,
 
-``` math
-\hat h_k = \frac{d_k}{n_k (n_k - d_k)},
-```
+\\ \hat h_k = \frac{d_k}{n_k (n_k - d_k)}, \\
 
-built entirely from `n.risk` ($`n_k`$) and `n.event` ($`d_k`$) – the
+built entirely from `n.risk` (\\n_k\\) and `n.event` (\\d_k\\) – the
 *number of subjects at risk and experiencing an event* at each observed
 time, in the whole fitting cohort. These are properties of the shared
 baseline hazard estimate, **not of the covariate profile being predicted
@@ -230,7 +216,7 @@ analysis often cares most about (e.g. a high-exposure arm).
 instead builds on
 [`survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)’s own
 `std.err` field, which is on the cumulative-hazard scale: `std.err(t)`
-is the estimated standard error of $`\hat H(t \mid x)`$, the
+is the estimated standard error of \\\hat H(t \mid x)\\, the
 profile-specific cumulative hazard (confirmed by checking that
 `sf$cumhaz` equals `-log(sf$surv)` exactly, and `sf$logse` is `TRUE`).
 This *does* vary correctly by covariate profile, since it comes from the
@@ -238,28 +224,26 @@ same delta-method calculation `survfit.coxph()` uses internally to build
 its own per-time confidence intervals.
 
 The fix keeps `survmean()`’s overall construction – summing squared
-“area remaining beyond $`t_k`$” terms, each weighted by a variance
-increment at $`t_k`$ – but replaces the increment itself:
+“area remaining beyond \\t_k\\” terms, each weighted by a variance
+increment at \\t_k\\ – but replaces the increment itself:
 
-``` math
-\hat h_k = \widehat{\text{Var}}\!\left[\hat H(t_{(k)} \mid x)\right] -
-\widehat{\text{Var}}\!\left[\hat H(t_{(k-1)} \mid x)\right] =
-\text{std.err}(t_{(k)})^2 - \text{std.err}(t_{(k-1)})^2.
-```
+\\ \hat h_k = \widehat{\text{Var}}\\\left\[\hat H(t\_{(k)} \mid
+x)\right\] - \widehat{\text{Var}}\\\left\[\hat H(t\_{(k-1)} \mid
+x)\right\] = \text{std.err}(t\_{(k)})^2 - \text{std.err}(t\_{(k-1)})^2.
+\\
 
 This is a genuine improvement, but it’s still an **approximation**, and
 it’s worth understanding exactly which assumption it makes. The classic
 Greenwood-type construction (and this adapted version of it) implicitly
-treats $`\hat H(t \mid x)`$ as accumulating via a sequence of
+treats \\\hat H(t \mid x)\\ as accumulating via a sequence of
 *statistically independent* increments over time – true, in an
 appropriate asymptotic sense, for the martingale-based part of a
-nonparametric hazard estimator. But for a Cox model, part of
-$`\hat H(t \mid x)`$’s uncertainty comes from the regression
-coefficients $`\hat\beta`$, and that part is really **one shared random
-quantity affecting every time point together**, not something that
-accumulates independently as $`t`$ increases. Treating its contribution
-as if it did accumulate independently is a simplification, not an exact
-result.
+nonparametric hazard estimator. But for a Cox model, part of \\\hat H(t
+\mid x)\\’s uncertainty comes from the regression coefficients
+\\\hat\beta\\, and that part is really **one shared random quantity
+affecting every time point together**, not something that accumulates
+independently as \\t\\ increases. Treating its contribution as if it did
+accumulate independently is a simplification, not an exact result.
 
 This was checked empirically during development: for two contrasting
 covariate profiles, a 300-replicate nonparametric bootstrap (refitting
@@ -267,7 +251,7 @@ the Cox model on resampled data and recomputing RMST each time) was used
 as a independent benchmark. The corrected delta-method standard error
 tracked the bootstrap substantially more closely than either
 `survmean()`’s naive version or a second, cheaper alternative that holds
-the baseline hazard fixed and treats only $`\hat\beta`$ as random
+the baseline hazard fixed and treats only \\\hat\beta\\ as random
 (which, depending on how extreme the covariate profile is, can either
 over- or under-state the true uncertainty). It was not, however, checked
 across a wide range of sample sizes, censoring patterns, or covariate
@@ -276,7 +260,7 @@ proven-exact one.
 
 ## Extrapolating beyond the data
 
-Both engines can, in principle, be asked for RMST at a horizon $`\tau`$
+Both engines can, in principle, be asked for RMST at a horizon \\\tau\\
 that exceeds the longest follow-up time observed in the fitting data.
 
 - For
@@ -287,7 +271,7 @@ that exceeds the longest follow-up time observed in the fitting data.
   follows the same convention as
   [`ertte_predict.ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_predict.md):
   survival is held flat at its last estimated value beyond that point.
-  Because RMST integrates the *entire* curve up to $`\tau`$, this
+  Because RMST integrates the *entire* curve up to \\\tau\\, this
   flat-tail assumption has a much larger effect on an RMST value than it
   does on a single survival-probability prediction at one time point – a
   long flat tail can inflate the estimated area substantially.
@@ -298,7 +282,7 @@ that exceeds the longest follow-up time observed in the fitting data.
 - For
   [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md),
   there’s no equivalent hard boundary – the parametric survival curve is
-  defined for all $`t > 0`$ – but that comes with its own caveat: far
+  defined for all \\t \> 0\\ – but that comes with its own caveat: far
   beyond the observed data, the estimate is governed entirely by the
   assumed parametric family, with no data left to check whether that
   assumption still holds.

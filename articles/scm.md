@@ -268,9 +268,9 @@ coef(mod4)["ertte_power(age)"]
 ```
 
 The fitted coefficient on `ertte_power(age)` *is* the power exponent
-$`\theta`$ directly, and its ordinary Wald confidence interval (from
+\\\theta\\ directly, and its ordinary Wald confidence interval (from
 [`confint()`](https://rdrr.io/r/stats/confint.html)) is already the
-confidence interval on $`\theta`$ – no delta method or profile
+confidence interval on \\\theta\\ – no delta method or profile
 likelihood needed.
 [`ertte_power()`](https://ertte.djnavarro.net/reference/ertte_power.md)
 requires every non-missing value of its input to be strictly positive,

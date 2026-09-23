@@ -62,28 +62,26 @@ distinct class of model, rather than just regressing `time` directly.
 
 Two closely related functions describe a TTE outcome’s distribution.
 
-The **survival function** $`S(t) = P(T > t)`$ is the probability of
-still being event-free at time $`t`$. It starts at $`S(0) = 1`$ and
-decreases (weakly) as $`t`$ increases.
+The **survival function** \\S(t) = P(T \> t)\\ is the probability of
+still being event-free at time \\t\\. It starts at \\S(0) = 1\\ and
+decreases (weakly) as \\t\\ increases.
 
-The **hazard function** $`h(t)`$ is the instantaneous event rate at time
-$`t`$, conditional on having survived to $`t`$:
+The **hazard function** \\h(t)\\ is the instantaneous event rate at time
+\\t\\, conditional on having survived to \\t\\:
 
-``` math
-h(t) = \lim_{\Delta t \to 0} \frac{P(t \le T < t + \Delta t \mid T \ge t)}{\Delta t}.
-```
+\\ h(t) = \lim\_{\Delta t \to 0} \frac{P(t \le T \< t + \Delta t \mid T
+\ge t)}{\Delta t}. \\
 
-The two are related by $`S(t) = \exp\left(-\int_0^t h(u)\, du\right)`$:
+The two are related by \\S(t) = \exp\left(-\int_0^t h(u)\\ du\right)\\:
 the survival function is fully determined by the hazard, and vice versa.
 Every model discussed below is really a model for one of these two
-functions (optionally as a function of covariates $`x`$) –
+functions (optionally as a function of covariates \\x\\) –
 [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
-models $`S(t
-\mid x)`$ directly, and
+models \\S(t \mid x)\\ directly, and
 [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
-models $`h(t \mid x)`$ directly, and each can recover the other.
+models \\h(t \mid x)\\ directly, and each can recover the other.
 
-## Two engines, two ways of modelling $`S(t \mid x)`$
+## Two engines, two ways of modelling \\S(t \mid x)\\
 
 `ertte` fits two structurally different kinds of TTE model. Both accept
 the same kind of formula and the same kind of covariates, but make
@@ -96,21 +94,19 @@ multiplicatively on the *time scale* – a covariate can speed up or slow
 down the passage toward the event, like a “clock” running fast or slow.
 Equivalently, on the log-time scale, it’s an ordinary linear model:
 
-``` math
-\log(T) = \mu(x) + \sigma W,
-```
+\\ \log(T) = \mu(x) + \sigma W, \\
 
-where $`\mu(x)`$ is the linear predictor (intercept + covariate
-effects), $`\sigma`$ is a scale parameter, and $`W`$ is a random
+where \\\mu(x)\\ is the linear predictor (intercept + covariate
+effects), \\\sigma\\ is a scale parameter, and \\W\\ is a random
 variable following a fixed “base” distribution that doesn’t depend on
-$`x`$. Different choices of base distribution give different named AFT
+\\x\\. Different choices of base distribution give different named AFT
 models, all supported by
 [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)’s
 `dist` argument:
 
-| `dist` | Base distribution of $`W`$ | Named model |
+| `dist` | Base distribution of \\W\\ | Named model |
 |----|----|----|
-| `"exponential"` | Standard extreme-value, fixed $`\sigma = 1`$ | Exponential |
+| `"exponential"` | Standard extreme-value, fixed \\\sigma = 1\\ | Exponential |
 | `"weibull"` (default) | Standard extreme-value | Weibull |
 | `"lognormal"` | Standard normal | Log-normal |
 | `"loglogistic"` | Standard logistic | Log-logistic |
@@ -118,11 +114,9 @@ models, all supported by
 Because the whole family shares this log-location-scale structure, all
 four give a fully parametric, closed-form survival function
 
-``` math
-S(t \mid x) = 1 - F\!\left(\frac{\log t - \mu(x)}{\sigma}\right),
-```
+\\ S(t \mid x) = 1 - F\\\left(\frac{\log t - \mu(x)}{\sigma}\right), \\
 
-where $`F`$ is the base distribution’s CDF.
+where \\F\\ is the base distribution’s CDF.
 [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
 wraps
 [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html),
@@ -188,30 +182,27 @@ The Cox model instead assumes covariates act multiplicatively on the
 *hazard scale*, and – unlike the AFT family – makes no assumption about
 the shape of the baseline hazard over time:
 
-``` math
-h(t \mid x) = h_0(t) \exp(x'\beta),
-```
+\\ h(t \mid x) = h_0(t) \exp(x'\beta), \\
 
-where $`h_0(t)`$ is an unspecified **baseline hazard** (the hazard for a
-subject with $`x = 0`$, or more precisely $`x`$ at the values
+where \\h_0(t)\\ is an unspecified **baseline hazard** (the hazard for a
+subject with \\x = 0\\, or more precisely \\x\\ at the values
 [`coxph()`](https://rdrr.io/pkg/survival/man/coxph.html) centers on) and
-$`\beta`$ are the log-hazard-ratio coefficients. This is a
-*semi-parametric* model: $`\beta`$ is estimated by maximising a partial
-likelihood that doesn’t require ever specifying $`h_0(t)`$’s functional
-form, and $`h_0(t)`$ itself (if needed) is estimated afterwards,
+\\\beta\\ are the log-hazard-ratio coefficients. This is a
+*semi-parametric* model: \\\beta\\ is estimated by maximising a partial
+likelihood that doesn’t require ever specifying \\h_0(t)\\’s functional
+form, and \\h_0(t)\\ itself (if needed) is estimated afterwards,
 nonparametrically, from the same fit (via
 [`survival::basehaz()`](https://rdrr.io/pkg/survival/man/basehaz.html),
 Breslow’s estimator).
 
 The name “proportional hazards” describes its central, testable
 assumption: the *ratio* of hazards between any two covariate profiles,
-$`h(t \mid
-x_1)/h(t \mid x_2) = \exp((x_1 - x_2)'\beta)`$, is constant over time –
-it doesn’t depend on $`t`$. This is a genuinely different assumption
-from the AFT family’s “constant multiplicative effect on the time
-scale”, and the two coincide only for the Weibull/exponential AFT model
-(the only member of the AFT family that is *also* a proportional-hazards
-model).
+\\h(t \mid x_1)/h(t \mid x_2) = \exp((x_1 - x_2)'\beta)\\, is constant
+over time – it doesn’t depend on \\t\\. This is a genuinely different
+assumption from the AFT family’s “constant multiplicative effect on the
+time scale”, and the two coincide only for the Weibull/exponential AFT
+model (the only member of the AFT family that is *also* a
+proportional-hazards model).
 
 ``` r
 
@@ -229,7 +220,7 @@ mod_cox
 
 Coefficients are on the log-hazard-ratio scale, so `exp(coef(...))`
 gives a **hazard ratio**: the multiplicative change in the instantaneous
-event rate per unit change in the covariate, at any time $`t`$.
+event rate per unit change in the covariate, at any time \\t\\.
 
 ``` r
 
@@ -269,11 +260,11 @@ agree in substance (as above). Some practical differences worth knowing
 about:
 
 - [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
-  gives a fully parametric survival curve defined for all $`t
-  > 0`$, and a `dist`-dependent closed form for effects like time ratios
-  – useful when extrapolating beyond the observed follow-up range, or
-  when a parametric quantity like RMST needs integrating over the whole
-  curve (see the [RMST
+  gives a fully parametric survival curve defined for all \\t \> 0\\,
+  and a `dist`-dependent closed form for effects like time ratios –
+  useful when extrapolating beyond the observed follow-up range, or when
+  a parametric quantity like RMST needs integrating over the whole curve
+  (see the [RMST
   article](https://ertte.djnavarro.net/articles/rmst.md)).
 - [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
   makes no assumption about the *shape* of the baseline hazard over
@@ -333,7 +324,7 @@ log-transform interval for the Cox model – so they’re not expected to
 match exactly even when the point estimates agree closely.
 
 [`ertte_fun()`](https://ertte.djnavarro.net/reference/ertte_fun.md)
-instead returns a plain R function evaluating $`S(t \mid x)`$ at
+instead returns a plain R function evaluating \\S(t \mid x)\\ at
 user-specified parameters/data/times, useful for counterfactual
 scenarios or plugging into simulation code:
 

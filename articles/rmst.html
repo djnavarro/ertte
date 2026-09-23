@@ -6,7 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Restricted mean survival time in ertte • ertte</title>
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
+  window.MathJax = {
+    chtml: {
+      fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
+    }
+  };
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -83,27 +89,17 @@ clinically intuitive: <em>on average, how much event-free time does a
 subject with a given exposure profile experience, up to some
 horizon?</em></p>
 <p><strong>Restricted mean survival time (RMST)</strong> answers exactly
-that. For a survival function
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t \mid x)</annotation></semantics></math>
-describing a subject with covariate profile
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>,
-and a fixed horizon
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>,
-RMST is defined as</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">RMST</mtext><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msubsup><mo>∫</mo><mn>0</mn><mi>τ</mi></msubsup><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mi>d</mi><mi>t</mi><mi>.</mi></mrow><annotation encoding="application/x-tex">
+that. For a survival function <span class="math inline">\(S(t \mid
+x)\)</span> describing a subject with covariate profile <span class="math inline">\(x\)</span>, and a fixed horizon <span class="math inline">\(\tau\)</span>, RMST is defined as</p>
+<p><span class="math display">\[
 \text{RMST}(\tau \mid x) = \int_0^\tau S(t \mid x) \, dt.
-</annotation></semantics></math></p>
+\]</span></p>
 <p>Geometrically, this is the area under the survival curve between 0
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>.
-It has units of time (e.g. “expected days event-free in the first 90
-days”), doesn’t rely on a proportional-hazards assumption to interpret,
-and stays well-defined even when a study’s follow-up is too short to
-observe the survival curve reach zero – which is exactly why it’s
-“restricted” to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>
-rather than defined over
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mi>∞</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">[0, \infty)</annotation></semantics></math>.</p>
+and <span class="math inline">\(\tau\)</span>. It has units of time
+(e.g. “expected days event-free in the first 90 days”), doesn’t rely on
+a proportional-hazards assumption to interpret, and stays well-defined
+even when a study’s follow-up is too short to observe the survival curve
+reach zero – which is exactly why it’s “restricted” to <span class="math inline">\(\tau\)</span> rather than defined over <span class="math inline">\([0, \infty)\)</span>.</p>
 <p><code><a href="../reference/ertte_rmst.html">ertte_rmst()</a></code> computes RMST (with a confidence interval)
 for a fitted <code><a href="../reference/ertte_aft.html">ertte_aft()</a></code> or <code><a href="../reference/ertte_coxph.html">ertte_coxph()</a></code>
 model, at one or more horizons <code>tau</code>, for one or more
@@ -124,57 +120,37 @@ models via the <code>survival</code> package
 </h2>
 <p><code>ertte</code> fits two kinds of TTE models, and
 <code><a href="../reference/ertte_rmst.html">ertte_rmst()</a></code> needs a genuinely different calculation for
-each, because they represent
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t \mid x)</annotation></semantics></math>
-differently.</p>
+each, because they represent <span class="math inline">\(S(t \mid
+x)\)</span> differently.</p>
 <p><strong><code><a href="../reference/ertte_aft.html">ertte_aft()</a></code></strong> fits a parametric
 accelerated failure time (AFT) model via
 <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code>. All four supported distributions share
 the same log-location-scale structure,</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>σ</mi><mi>W</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \log(T) = \mu(x) + \sigma W,
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mu(x)</annotation></semantics></math>
-is the linear predictor (intercept + covariate effects),
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>σ</mi><annotation encoding="application/x-tex">\sigma</annotation></semantics></math>
-is a scale parameter, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>W</mi><annotation encoding="application/x-tex">W</annotation></semantics></math>
-follows a fixed “base” distribution (extreme-value for the
-Weibull/exponential case, standard normal for log-normal, standard
-logistic for log-logistic). This gives a fully parametric, closed-form
-survival function
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1</mn><mo>−</mo><mi>F</mi><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi>t</mi><mo>−</mo><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><mi>σ</mi></mfrac><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">S(t \mid x) = 1 - F\!\left(
-\frac{\log t - \mu(x)}{\sigma}\right)</annotation></semantics></math>,
-where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>F</mi><annotation encoding="application/x-tex">F</annotation></semantics></math>
-is the base distribution’s CDF.</p>
+\]</span></p>
+<p>where <span class="math inline">\(\mu(x)\)</span> is the linear
+predictor (intercept + covariate effects), <span class="math inline">\(\sigma\)</span> is a scale parameter, and <span class="math inline">\(W\)</span> follows a fixed “base” distribution
+(extreme-value for the Weibull/exponential case, standard normal for
+log-normal, standard logistic for log-logistic). This gives a fully
+parametric, closed-form survival function <span class="math inline">\(S(t \mid x) = 1 - F\!\left(
+\frac{\log t - \mu(x)}{\sigma}\right)\)</span>, where <span class="math inline">\(F\)</span> is the base distribution’s CDF.</p>
 <p><strong><code><a href="../reference/ertte_coxph.html">ertte_coxph()</a></code></strong> fits a semi-parametric
 Cox proportional-hazards model via <code><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">survival::coxph()</a></code>.
-There’s no parametric form for the baseline hazard
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">h_0(t)</annotation></semantics></math>;
-it’s estimated nonparametrically (Breslow’s estimator, the same one
-behind <code><a href="https://rdrr.io/pkg/survival/man/basehaz.html" class="external-link">survival::basehaz()</a></code>), and the survival curve for a
-covariate profile
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-is</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>S</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><msup><mo stretchy="false" form="postfix">)</mo><mrow><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>−</mo><mover><mi>x</mi><mo accent="true">‾</mo></mover><msup><mo stretchy="false" form="postfix">)</mo><mo>′</mo></msup><mi>β</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow></msup><mo>,</mo></mrow><annotation encoding="application/x-tex">
+There’s no parametric form for the baseline hazard <span class="math inline">\(h_0(t)\)</span>; it’s estimated nonparametrically
+(Breslow’s estimator, the same one behind
+<code><a href="https://rdrr.io/pkg/survival/man/basehaz.html" class="external-link">survival::basehaz()</a></code>), and the survival curve for a
+covariate profile <span class="math inline">\(x\)</span> is</p>
+<p><span class="math display">\[
 S(t \mid x) = S_0(t)^{\exp\left((x - \bar x)'\beta\right)},
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>S</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><msub><mi>H</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S_0(t) = \exp(-H_0(t))</annotation></semantics></math>
-is the fitted baseline survival curve and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>x</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar x</annotation></semantics></math>
-is the mean covariate profile the partial likelihood was centered on.
-Because
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">H_0(t)</annotation></semantics></math>
-is estimated from a finite set of observed event times,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t \mid x)</annotation></semantics></math>
-is a <strong>right-continuous step function</strong> – it only changes
-value at the observed event times in the fitting data, however far
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-is from
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>x</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar x</annotation></semantics></math>.</p>
+\]</span></p>
+<p>where <span class="math inline">\(S_0(t) = \exp(-H_0(t))\)</span> is
+the fitted baseline survival curve and <span class="math inline">\(\bar
+x\)</span> is the mean covariate profile the partial likelihood was
+centered on. Because <span class="math inline">\(H_0(t)\)</span> is
+estimated from a finite set of observed event times, <span class="math inline">\(S(t \mid x)\)</span> is a <strong>right-continuous
+step function</strong> – it only changes value at the observed event
+times in the fitting data, however far <span class="math inline">\(x\)</span> is from <span class="math inline">\(\bar x\)</span>.</p>
 <p>That structural difference – closed-form vs. step-function – is what
 drives most of the implementation differences below.</p>
 </div>
@@ -184,13 +160,12 @@ drives most of the implementation differences below.</p>
 <div class="section level3">
 <h3 id="aft-numerical-integration-of-a-known-curve">AFT: numerical integration of a known curve<a class="anchor" aria-label="anchor" href="#aft-numerical-integration-of-a-known-curve"></a>
 </h3>
-<p>Since
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t \mid x)</annotation></semantics></math>
-has a closed form for the AFT engine,
-<code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_aft()</a></code> computes</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mtext mathvariant="normal">RMST</mtext><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msubsup><mo>∫</mo><mn>0</mn><mi>τ</mi></msubsup><mover><mi>S</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mi>d</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">
+<p>Since <span class="math inline">\(S(t \mid x)\)</span> has a closed
+form for the AFT engine, <code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_aft()</a></code>
+computes</p>
+<p><span class="math display">\[
 \widehat{\text{RMST}}(\tau \mid x) = \int_0^\tau \hat S(t \mid x) \, dt
-</annotation></semantics></math></p>
+\]</span></p>
 <p>via <code><a href="https://rdrr.io/r/stats/integrate.html" class="external-link">stats::integrate()</a></code>. This is straightforward
 numerical quadrature on a smooth, fully known function – there’s no
 approximation of consequence here beyond ordinary quadrature error,
@@ -202,17 +177,17 @@ which is negligible for a function this well-behaved.</p>
 <p>For the Cox engine, it’s tempting to assume the same kind of
 numerical integration is needed, since the “curve” comes from an
 empirical baseline hazard rather than a formula. In fact the opposite is
-true: because
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>S</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat S(t \mid x)</annotation></semantics></math>
-is a <strong>step function</strong> with jumps only at the observed
-event times
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow></msub><mo>&lt;</mo><msub><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo></mrow></msub><mo>&lt;</mo><mi>…</mi><mo>&lt;</mo><msub><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>m</mi><mo stretchy="false" form="postfix">)</mo></mrow></msub></mrow><annotation encoding="application/x-tex">t_{(1)} &lt; t_{(2)} &lt; \dots &lt; t_{(m)}</annotation></semantics></math>,
-the area under it between two jumps is exactly a rectangle, and the
-whole integral reduces to an <em>exact</em> finite sum:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mtext mathvariant="normal">RMST</mtext><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><mo>∑</mo><mi>k</mi></munder><mover><mi>S</mi><mo accent="true">̂</mo></mover><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow><mo>−</mo></msubsup><mo>∣</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>⋅</mo><mo minsize="180%" maxsize="180%" stretchy="true" form="prefix">(</mo><mrow><mi mathvariant="normal">min</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow></msub><mo>,</mo><mi>τ</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msub><mo minsize="180%" maxsize="180%" stretchy="true" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
-\widehat{\text{RMST}}(\tau \mid x) = \sum_{k} \hat S\!\left(t_{(k)}^{-} \mid x\right) \cdot
+true: because <span class="math inline">\(\hat S(t \mid x)\)</span> is a
+<strong>step function</strong> with jumps only at the observed event
+times <span class="math inline">\(t_{(1)} &lt; t_{(2)} &lt; \dots &lt;
+t_{(m)}\)</span>, the area under it between two jumps is exactly a
+rectangle, and the whole integral reduces to an <em>exact</em> finite
+sum:</p>
+<p><span class="math display">\[
+\widehat{\text{RMST}}(\tau \mid x) = \sum_{k} \hat S\!\left(t_{(k)}^{-}
+\mid x\right) \cdot
 \Big(\min(t_{(k+1)}, \tau) - t_{(k)}\Big).
-</annotation></semantics></math></p>
+\]</span></p>
 <p><code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_coxph()</a></code> computes this directly from
 <code>survival::survfit(object, newdata)</code>’s own
 <code>time</code>/<code>surv</code> fields – there’s no
@@ -233,43 +208,36 @@ and the two engines’ methods are not analogous to each other.</p>
 </h3>
 <p><code><a href="../reference/ertte_predict.html">ertte_predict.ertte_aft()</a></code> already reports a Wald
 confidence interval on the survival probability by propagating the
-uncertainty in
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mu(x)</annotation></semantics></math>
-(the linear predictor) and <em>not</em> the uncertainty in
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>σ</mi><annotation encoding="application/x-tex">\sigma</annotation></semantics></math>
-(the scale parameter) – a simplification made throughout
-<code>ertte</code>, on the grounds that
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>σ</mi><annotation encoding="application/x-tex">\sigma</annotation></semantics></math>’s
-sampling variability is typically small relative to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mu(x)</annotation></semantics></math>’s
-and that jointly propagating both would need a full delta-method
-gradient rather than a simple <code>predict(..., se.fit = TRUE)</code>
-call. <code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_aft()</a></code> makes the identical
+uncertainty in <span class="math inline">\(\mu(x)\)</span> (the linear
+predictor) and <em>not</em> the uncertainty in <span class="math inline">\(\sigma\)</span> (the scale parameter) – a
+simplification made throughout <code>ertte</code>, on the grounds that
+<span class="math inline">\(\sigma\)</span>’s sampling variability is
+typically small relative to <span class="math inline">\(\mu(x)\)</span>’s and that jointly propagating
+both would need a full delta-method gradient rather than a simple
+<code>predict(..., se.fit = TRUE)</code> call.
+<code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_aft()</a></code> makes the identical
 simplification.</p>
-<p>Differentiating the RMST integral with respect to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>μ</mi><annotation encoding="application/x-tex">\mu</annotation></semantics></math>
-(differentiating under the integral sign) gives</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mi>∂</mi><mrow><mi>∂</mi><mi>μ</mi></mrow></mfrac><mtext mathvariant="normal">RMST</mtext><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msubsup><mo>∫</mo><mn>0</mn><mi>τ</mi></msubsup><mfrac><mrow><mi>f</mi><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi>t</mi><mo>−</mo><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><mi>σ</mi></mfrac><mo stretchy="true" form="postfix">)</mo></mrow></mrow><mi>σ</mi></mfrac><mspace width="0.167em"></mspace><mi>d</mi><mi>t</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p>Differentiating the RMST integral with respect to <span class="math inline">\(\mu\)</span> (differentiating under the integral
+sign) gives</p>
+<p><span class="math display">\[
 \frac{\partial}{\partial \mu} \text{RMST}(\tau \mid x) =
-\int_0^\tau \frac{f\!\left(\frac{\log t - \mu(x)}{\sigma}\right)}{\sigma} \, dt,
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>f</mi><annotation encoding="application/x-tex">f</annotation></semantics></math>
-is the base distribution’s density. <code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_aft()</a></code>
-evaluates this gradient numerically (another
-<code><a href="https://rdrr.io/r/stats/integrate.html" class="external-link">stats::integrate()</a></code> call), then applies the standard
-delta-method variance,</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mtext mathvariant="normal">Var</mtext><mo accent="true">̂</mo></mover><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">[</mo><mover><mtext mathvariant="normal">RMST</mtext><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">]</mo></mrow><mo>≈</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><mi>∂</mi><mtext mathvariant="normal">RMST</mtext></mrow><mrow><mi>∂</mi><mi>μ</mi></mrow></mfrac><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mspace width="-0.167em"></mspace><mn>2</mn></mrow></msup><mover><mtext mathvariant="normal">Var</mtext><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mover><mi>μ</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
-\widehat{\text{Var}}\!\left[\widehat{\text{RMST}}(\tau \mid x)\right] \approx
-\left(\frac{\partial \text{RMST}}{\partial \mu}\right)^{\!2} \widehat{\text{Var}}(\hat\mu),
-</annotation></semantics></math></p>
-<p>with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mtext mathvariant="normal">Var</mtext><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mover><mi>μ</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\widehat{\text{Var}}(\hat\mu)</annotation></semantics></math>
-coming from
+\int_0^\tau \frac{f\!\left(\frac{\log t -
+\mu(x)}{\sigma}\right)}{\sigma} \, dt,
+\]</span></p>
+<p>where <span class="math inline">\(f\)</span> is the base
+distribution’s density. <code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_aft()</a></code> evaluates
+this gradient numerically (another <code><a href="https://rdrr.io/r/stats/integrate.html" class="external-link">stats::integrate()</a></code>
+call), then applies the standard delta-method variance,</p>
+<p><span class="math display">\[
+\widehat{\text{Var}}\!\left[\widehat{\text{RMST}}(\tau \mid x)\right]
+\approx
+\left(\frac{\partial \text{RMST}}{\partial \mu}\right)^{\!2}
+\widehat{\text{Var}}(\hat\mu),
+\]</span></p>
+<p>with <span class="math inline">\(\widehat{\text{Var}}(\hat\mu)\)</span> coming from
 <code>predict(object, newdata, type = "linear", se.fit = TRUE)</code>,
 exactly as in <code><a href="../reference/ertte_predict.html">ertte_predict.ertte_aft()</a></code>. The resulting
-interval is a symmetric Wald interval, <code>fit_rmst</code>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mspace width="0.222em"></mspace><mi>z</mi><mo>⋅</mo></mrow><annotation encoding="application/x-tex">\pm\ z \cdot</annotation></semantics></math><code>se_rmst</code>.</p>
+interval is a symmetric Wald interval, <code>fit_rmst</code> <span class="math inline">\(\pm\ z \cdot\)</span> <code>se_rmst</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="cox-why-the-obvious-shortcut-doesnt-work">Cox: why the obvious shortcut doesn’t work<a class="anchor" aria-label="anchor" href="#cox-why-the-obvious-shortcut-doesnt-work"></a>
@@ -286,18 +254,15 @@ by covariate profile, because the <em>survival curve itself</em> differs
 by profile.</p>
 <p>The problem surfaces on closer inspection. <code>survmean()</code>’s
 variance calculation uses a Greenwood-type increment,</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>h</mi><mo accent="true">̂</mo></mover><mi>k</mi></msub><mo>=</mo><mfrac><msub><mi>d</mi><mi>k</mi></msub><mrow><msub><mi>n</mi><mi>k</mi></msub><mo stretchy="false" form="prefix">(</mo><msub><mi>n</mi><mi>k</mi></msub><mo>−</mo><msub><mi>d</mi><mi>k</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow></mfrac><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \hat h_k = \frac{d_k}{n_k (n_k - d_k)},
-</annotation></semantics></math></p>
-<p>built entirely from <code>n.risk</code>
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>n</mi><mi>k</mi></msub><annotation encoding="application/x-tex">n_k</annotation></semantics></math>)
-and <code>n.event</code>
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>d</mi><mi>k</mi></msub><annotation encoding="application/x-tex">d_k</annotation></semantics></math>)
-– the <em>number of subjects at risk and experiencing an event</em> at
-each observed time, in the whole fitting cohort. These are properties of
-the shared baseline hazard estimate, <strong>not of the covariate
-profile being predicted for</strong>: two very different covariate
-profiles passed through the same fitted Cox model get <em>identical</em>
+\]</span></p>
+<p>built entirely from <code>n.risk</code> (<span class="math inline">\(n_k\)</span>) and <code>n.event</code> (<span class="math inline">\(d_k\)</span>) – the <em>number of subjects at risk
+and experiencing an event</em> at each observed time, in the whole
+fitting cohort. These are properties of the shared baseline hazard
+estimate, <strong>not of the covariate profile being predicted
+for</strong>: two very different covariate profiles passed through the
+same fitted Cox model get <em>identical</em>
 <code>n.risk</code>/<code>n.event</code> sequences, because both curves
 are built from the same baseline hazard and the same underlying risk
 sets. The formula never touches <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survfit()</a></code>‘s own
@@ -322,8 +287,7 @@ covariate profiles an exposure-response analysis often cares most about
 <p><code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_coxph()</a></code> instead builds on
 <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survfit()</a></code>’s own <code>std.err</code> field, which is on the
 cumulative-hazard scale: <code>std.err(t)</code> is the estimated
-standard error of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>H</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat H(t \mid x)</annotation></semantics></math>,
+standard error of <span class="math inline">\(\hat H(t \mid x)\)</span>,
 the profile-specific cumulative hazard (confirmed by checking that
 <code>sf$cumhaz</code> equals <code>-log(sf$surv)</code> exactly, and
 <code>sf$logse</code> is <code>TRUE</code>). This <em>does</em> vary
@@ -331,64 +295,51 @@ correctly by covariate profile, since it comes from the same
 delta-method calculation <code>survfit.coxph()</code> uses internally to
 build its own per-time confidence intervals.</p>
 <p>The fix keeps <code>survmean()</code>’s overall construction –
-summing squared “area remaining beyond
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>t</mi><mi>k</mi></msub><annotation encoding="application/x-tex">t_k</annotation></semantics></math>”
-terms, each weighted by a variance increment at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>t</mi><mi>k</mi></msub><annotation encoding="application/x-tex">t_k</annotation></semantics></math>
-– but replaces the increment itself:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>h</mi><mo accent="true">̂</mo></mover><mi>k</mi></msub><mo>=</mo><mover><mtext mathvariant="normal">Var</mtext><mo accent="true">̂</mo></mover><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">[</mo><mover><mi>H</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><msub><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msub><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">]</mo></mrow><mo>−</mo><mover><mtext mathvariant="normal">Var</mtext><mo accent="true">̂</mo></mover><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">[</mo><mover><mi>H</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><msub><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow></msub><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">]</mo></mrow><mo>=</mo><mtext mathvariant="normal">std.err</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msub><msup><mo stretchy="false" form="postfix">)</mo><mn>2</mn></msup><mo>−</mo><mtext mathvariant="normal">std.err</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi>t</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow></msub><msup><mo stretchy="false" form="postfix">)</mo><mn>2</mn></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+summing squared “area remaining beyond <span class="math inline">\(t_k\)</span>” terms, each weighted by a variance
+increment at <span class="math inline">\(t_k\)</span> – but replaces the
+increment itself:</p>
+<p><span class="math display">\[
 \hat h_k = \widehat{\text{Var}}\!\left[\hat H(t_{(k)} \mid x)\right] -
 \widehat{\text{Var}}\!\left[\hat H(t_{(k-1)} \mid x)\right] =
 \text{std.err}(t_{(k)})^2 - \text{std.err}(t_{(k-1)})^2.
-</annotation></semantics></math></p>
+\]</span></p>
 <p>This is a genuine improvement, but it’s still an
 <strong>approximation</strong>, and it’s worth understanding exactly
 which assumption it makes. The classic Greenwood-type construction (and
-this adapted version of it) implicitly treats
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>H</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat H(t \mid x)</annotation></semantics></math>
-as accumulating via a sequence of <em>statistically independent</em>
-increments over time – true, in an appropriate asymptotic sense, for the
-martingale-based part of a nonparametric hazard estimator. But for a Cox
-model, part of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>H</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat H(t \mid x)</annotation></semantics></math>’s
-uncertainty comes from the regression coefficients
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>β</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat\beta</annotation></semantics></math>,
-and that part is really <strong>one shared random quantity affecting
-every time point together</strong>, not something that accumulates
-independently as
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>
-increases. Treating its contribution as if it did accumulate
-independently is a simplification, not an exact result.</p>
+this adapted version of it) implicitly treats <span class="math inline">\(\hat H(t \mid x)\)</span> as accumulating via a
+sequence of <em>statistically independent</em> increments over time –
+true, in an appropriate asymptotic sense, for the martingale-based part
+of a nonparametric hazard estimator. But for a Cox model, part of <span class="math inline">\(\hat H(t \mid x)\)</span>’s uncertainty comes from
+the regression coefficients <span class="math inline">\(\hat\beta\)</span>, and that part is really
+<strong>one shared random quantity affecting every time point
+together</strong>, not something that accumulates independently as <span class="math inline">\(t\)</span> increases. Treating its contribution as
+if it did accumulate independently is a simplification, not an exact
+result.</p>
 <p>This was checked empirically during development: for two contrasting
 covariate profiles, a 300-replicate nonparametric bootstrap (refitting
 the Cox model on resampled data and recomputing RMST each time) was used
 as a independent benchmark. The corrected delta-method standard error
 tracked the bootstrap substantially more closely than either
 <code>survmean()</code>’s naive version or a second, cheaper alternative
-that holds the baseline hazard fixed and treats only
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>β</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat\beta</annotation></semantics></math>
-as random (which, depending on how extreme the covariate profile is, can
-either over- or under-state the true uncertainty). It was not, however,
-checked across a wide range of sample sizes, censoring patterns, or
-covariate profiles – treat it as a meaningfully better approximation,
-not a proven-exact one.</p>
+that holds the baseline hazard fixed and treats only <span class="math inline">\(\hat\beta\)</span> as random (which, depending on
+how extreme the covariate profile is, can either over- or under-state
+the true uncertainty). It was not, however, checked across a wide range
+of sample sizes, censoring patterns, or covariate profiles – treat it as
+a meaningfully better approximation, not a proven-exact one.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="extrapolating-beyond-the-data">Extrapolating beyond the data<a class="anchor" aria-label="anchor" href="#extrapolating-beyond-the-data"></a>
 </h2>
-<p>Both engines can, in principle, be asked for RMST at a horizon
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>
-that exceeds the longest follow-up time observed in the fitting
-data.</p>
+<p>Both engines can, in principle, be asked for RMST at a horizon <span class="math inline">\(\tau\)</span> that exceeds the longest follow-up
+time observed in the fitting data.</p>
 <ul>
 <li>For <code><a href="../reference/ertte_coxph.html">ertte_coxph()</a></code>, the baseline hazard has no
 information past the last observed event/censoring time.
 <code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_coxph()</a></code> follows the same convention as
 <code><a href="../reference/ertte_predict.html">ertte_predict.ertte_coxph()</a></code>: survival is held flat at its
 last estimated value beyond that point. Because RMST integrates the
-<em>entire</em> curve up to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>,
+<em>entire</em> curve up to <span class="math inline">\(\tau\)</span>,
 this flat-tail assumption has a much larger effect on an RMST value than
 it does on a single survival-probability prediction at one time point –
 a long flat tail can inflate the estimated area substantially.
@@ -396,11 +347,10 @@ a long flat tail can inflate the estimated area substantially.
 <code>tau</code> exceeds the observed follow-up range, specifically
 because this matters more here than elsewhere in the package.</li>
 <li>For <code><a href="../reference/ertte_aft.html">ertte_aft()</a></code>, there’s no equivalent hard boundary –
-the parametric survival curve is defined for all
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">t &gt; 0</annotation></semantics></math>
-– but that comes with its own caveat: far beyond the observed data, the
-estimate is governed entirely by the assumed parametric family, with no
-data left to check whether that assumption still holds.</li>
+the parametric survival curve is defined for all <span class="math inline">\(t &gt; 0\)</span> – but that comes with its own
+caveat: far beyond the observed data, the estimate is governed entirely
+by the assumed parametric family, with no data left to check whether
+that assumption still holds.</li>
 </ul>
 </div>
 <div class="section level2">

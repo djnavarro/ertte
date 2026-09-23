@@ -6,7 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Stepwise covariate modelling in ertte • ertte</title>
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
+  window.MathJax = {
+    chtml: {
+      fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
+    }
+  };
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -297,17 +303,14 @@ is already a legitimate term/candidate.</p>
 <span><span class="co">#&gt; ertte_power(age) </span></span>
 <span><span class="co">#&gt;       -0.3342985</span></span></code></pre></div>
 <p>The fitted coefficient on <code>ertte_power(age)</code> <em>is</em>
-the power exponent
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
-directly, and its ordinary Wald confidence interval (from
-<code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code>) is already the confidence interval on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
-– no delta method or profile likelihood needed.
-<code><a href="../reference/ertte_power.html">ertte_power()</a></code> requires every non-missing value of its input
-to be strictly positive, which is why it’s suited to covariates like age
-or weight rather than an exposure metric with a placebo/zero-dose group
-(e.g. <code>aucss</code>, which has <code>0</code>s for the placebo arm
-in <code>ertte_data</code>).</p>
+the power exponent <span class="math inline">\(\theta\)</span> directly,
+and its ordinary Wald confidence interval (from <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code>)
+is already the confidence interval on <span class="math inline">\(\theta\)</span> – no delta method or profile
+likelihood needed. <code><a href="../reference/ertte_power.html">ertte_power()</a></code> requires every non-missing
+value of its input to be strictly positive, which is why it’s suited to
+covariates like age or weight rather than an exposure metric with a
+placebo/zero-dose group (e.g. <code>aucss</code>, which has
+<code>0</code>s for the placebo arm in <code>ertte_data</code>).</p>
 <p>A candidate set can freely mix plain linear terms and power terms for
 different (or even the same) underlying variable – <code>ertte</code>
 doesn’t reason about variable semantics, so combining <code>age</code>

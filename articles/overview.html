@@ -6,7 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Survival models in ertte • ertte</title>
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
+  window.MathJax = {
+    chtml: {
+      fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
+    }
+  };
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -122,40 +128,29 @@ directly.</p>
 </h2>
 <p>Two closely related functions describe a TTE outcome’s
 distribution.</p>
-<p>The <strong>survival function</strong>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mo>&gt;</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t) = P(T &gt; t)</annotation></semantics></math>
-is the probability of still being event-free at time
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>.
-It starts at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">S(0) = 1</annotation></semantics></math>
-and decreases (weakly) as
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>
-increases.</p>
-<p>The <strong>hazard function</strong>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">h(t)</annotation></semantics></math>
-is the instantaneous event rate at time
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>,
-conditional on having survived to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><mi mathvariant="normal">lim</mi><mrow><mi mathvariant="normal">Δ</mi><mi>t</mi><mo>→</mo><mn>0</mn></mrow></munder><mfrac><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>≤</mo><mi>T</mi><mo>&lt;</mo><mi>t</mi><mo>+</mo><mi mathvariant="normal">Δ</mi><mi>t</mi><mo>∣</mo><mi>T</mi><mo>≥</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><mrow><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
-h(t) = \lim_{\Delta t \to 0} \frac{P(t \le T &lt; t + \Delta t \mid T \ge t)}{\Delta t}.
-</annotation></semantics></math></p>
-<p>The two are related by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mi>−</mi><msubsup><mo>∫</mo><mn>0</mn><mi>t</mi></msubsup><mi>h</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mi>d</mi><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">S(t) = \exp\left(-\int_0^t h(u)\, du\right)</annotation></semantics></math>:
-the survival function is fully determined by the hazard, and vice versa.
-Every model discussed below is really a model for one of these two
-functions (optionally as a function of covariates
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>)
-– <code><a href="../reference/ertte_aft.html">ertte_aft()</a></code> models
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t
-\mid x)</annotation></semantics></math> directly, and
-<code><a href="../reference/ertte_coxph.html">ertte_coxph()</a></code> models
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">h(t \mid x)</annotation></semantics></math>
-directly, and each can recover the other.</p>
+<p>The <strong>survival function</strong> <span class="math inline">\(S(t) = P(T &gt; t)\)</span> is the probability of
+still being event-free at time <span class="math inline">\(t\)</span>.
+It starts at <span class="math inline">\(S(0) = 1\)</span> and decreases
+(weakly) as <span class="math inline">\(t\)</span> increases.</p>
+<p>The <strong>hazard function</strong> <span class="math inline">\(h(t)\)</span> is the instantaneous event rate at
+time <span class="math inline">\(t\)</span>, conditional on having
+survived to <span class="math inline">\(t\)</span>:</p>
+<p><span class="math display">\[
+h(t) = \lim_{\Delta t \to 0} \frac{P(t \le T &lt; t + \Delta t \mid T
+\ge t)}{\Delta t}.
+\]</span></p>
+<p>The two are related by <span class="math inline">\(S(t) =
+\exp\left(-\int_0^t h(u)\, du\right)\)</span>: the survival function is
+fully determined by the hazard, and vice versa. Every model discussed
+below is really a model for one of these two functions (optionally as a
+function of covariates <span class="math inline">\(x\)</span>) –
+<code><a href="../reference/ertte_aft.html">ertte_aft()</a></code> models <span class="math inline">\(S(t
+\mid x)\)</span> directly, and <code><a href="../reference/ertte_coxph.html">ertte_coxph()</a></code> models <span class="math inline">\(h(t \mid x)\)</span> directly, and each can
+recover the other.</p>
 </div>
 <div class="section level2">
-<h2 id="two-engines-two-ways-of-modelling-st-mid-x">Two engines, two ways of modelling
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t \mid x)</annotation></semantics></math><a class="anchor" aria-label="anchor" href="#two-engines-two-ways-of-modelling-st-mid-x"></a>
+<h2 id="two-engines-two-ways-of-modelling-st-mid-x">Two engines, two ways of modelling <span class="math inline">\(S(t
+\mid x)\)</span><a class="anchor" aria-label="anchor" href="#two-engines-two-ways-of-modelling-st-mid-x"></a>
 </h2>
 <p><code>ertte</code> fits two structurally different kinds of TTE
 model. Both accept the same kind of formula and the same kind of
@@ -171,21 +166,14 @@ multiplicatively on the <em>time scale</em> – a covariate can speed up
 or slow down the passage toward the event, like a “clock” running fast
 or slow. Equivalently, on the log-time scale, it’s an ordinary linear
 model:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>σ</mi><mi>W</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \log(T) = \mu(x) + \sigma W,
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mu(x)</annotation></semantics></math>
-is the linear predictor (intercept + covariate effects),
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>σ</mi><annotation encoding="application/x-tex">\sigma</annotation></semantics></math>
-is a scale parameter, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>W</mi><annotation encoding="application/x-tex">W</annotation></semantics></math>
-is a random variable following a fixed “base” distribution that doesn’t
-depend on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>.
-Different choices of base distribution give different named AFT models,
-all supported by <code><a href="../reference/ertte_aft.html">ertte_aft()</a></code>’s <code>dist</code>
-argument:</p>
+\]</span></p>
+<p>where <span class="math inline">\(\mu(x)\)</span> is the linear
+predictor (intercept + covariate effects), <span class="math inline">\(\sigma\)</span> is a scale parameter, and <span class="math inline">\(W\)</span> is a random variable following a fixed
+“base” distribution that doesn’t depend on <span class="math inline">\(x\)</span>. Different choices of base distribution
+give different named AFT models, all supported by
+<code><a href="../reference/ertte_aft.html">ertte_aft()</a></code>’s <code>dist</code> argument:</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -194,16 +182,15 @@ argument:</p>
 </colgroup>
 <thead><tr class="header">
 <th><code>dist</code></th>
-<th>Base distribution of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>W</mi><annotation encoding="application/x-tex">W</annotation></semantics></math>
+<th>Base distribution of <span class="math inline">\(W\)</span>
 </th>
 <th>Named model</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td><code>"exponential"</code></td>
-<td>Standard extreme-value, fixed
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\sigma = 1</annotation></semantics></math>
+<td>Standard extreme-value, fixed <span class="math inline">\(\sigma =
+1\)</span>
 </td>
 <td>Exponential</td>
 </tr>
@@ -227,12 +214,11 @@ argument:</p>
 </table>
 <p>Because the whole family shares this log-location-scale structure,
 all four give a fully parametric, closed-form survival function</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1</mn><mo>−</mo><mi>F</mi><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi>t</mi><mo>−</mo><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><mi>σ</mi></mfrac><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 S(t \mid x) = 1 - F\!\left(\frac{\log t - \mu(x)}{\sigma}\right),
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>F</mi><annotation encoding="application/x-tex">F</annotation></semantics></math>
-is the base distribution’s CDF. <code><a href="../reference/ertte_aft.html">ertte_aft()</a></code> wraps
+\]</span></p>
+<p>where <span class="math inline">\(F\)</span> is the base
+distribution’s CDF. <code><a href="../reference/ertte_aft.html">ertte_aft()</a></code> wraps
 <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code>, and adds two
 <code>ertte_aft</code>/<code>ertte_model</code> classes on top so it
 interoperates with the rest of the package (and, if installed, with
@@ -285,36 +271,22 @@ proportional-hazards model<a class="anchor" aria-label="anchor" href="#ertte_cox
 <p>The Cox model instead assumes covariates act multiplicatively on the
 <em>hazard scale</em>, and – unlike the AFT family – makes no assumption
 about the shape of the baseline hazard over time:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>h</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><msup><mi>x</mi><mo>′</mo></msup><mi>β</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 h(t \mid x) = h_0(t) \exp(x'\beta),
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">h_0(t)</annotation></semantics></math>
-is an unspecified <strong>baseline hazard</strong> (the hazard for a
-subject with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">x = 0</annotation></semantics></math>,
-or more precisely
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-at the values <code><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph()</a></code> centers on) and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
-are the log-hazard-ratio coefficients. This is a
-<em>semi-parametric</em> model:
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
-is estimated by maximising a partial likelihood that doesn’t require
-ever specifying
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">h_0(t)</annotation></semantics></math>’s
-functional form, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">h_0(t)</annotation></semantics></math>
-itself (if needed) is estimated afterwards, nonparametrically, from the
-same fit (via <code><a href="https://rdrr.io/pkg/survival/man/basehaz.html" class="external-link">survival::basehaz()</a></code>, Breslow’s
-estimator).</p>
+\]</span></p>
+<p>where <span class="math inline">\(h_0(t)\)</span> is an unspecified
+<strong>baseline hazard</strong> (the hazard for a subject with <span class="math inline">\(x = 0\)</span>, or more precisely <span class="math inline">\(x\)</span> at the values <code><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph()</a></code>
+centers on) and <span class="math inline">\(\beta\)</span> are the
+log-hazard-ratio coefficients. This is a <em>semi-parametric</em> model:
+<span class="math inline">\(\beta\)</span> is estimated by maximising a
+partial likelihood that doesn’t require ever specifying <span class="math inline">\(h_0(t)\)</span>’s functional form, and <span class="math inline">\(h_0(t)\)</span> itself (if needed) is estimated
+afterwards, nonparametrically, from the same fit (via
+<code><a href="https://rdrr.io/pkg/survival/man/basehaz.html" class="external-link">survival::basehaz()</a></code>, Breslow’s estimator).</p>
 <p>The name “proportional hazards” describes its central, testable
 assumption: the <em>ratio</em> of hazards between any two covariate
-profiles,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><msub><mi>x</mi><mn>1</mn></msub><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mi>h</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><msub><mi>x</mi><mn>2</mn></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mn>1</mn></msub><mo>−</mo><msub><mi>x</mi><mn>2</mn></msub><msup><mo stretchy="false" form="postfix">)</mo><mo>′</mo></msup><mi>β</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">h(t \mid
-x_1)/h(t \mid x_2) = \exp((x_1 - x_2)'\beta)</annotation></semantics></math>,
-is constant over time – it doesn’t depend on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>.
+profiles, <span class="math inline">\(h(t \mid
+x_1)/h(t \mid x_2) = \exp((x_1 - x_2)'\beta)\)</span>, is constant
+over time – it doesn’t depend on <span class="math inline">\(t\)</span>.
 This is a genuinely different assumption from the AFT family’s “constant
 multiplicative effect on the time scale”, and the two coincide only for
 the Weibull/exponential AFT model (the only member of the AFT family
@@ -333,8 +305,7 @@ that is <em>also</em> a proportional-hazards model).</p>
 <p>Coefficients are on the log-hazard-ratio scale, so
 <code>exp(coef(...))</code> gives a <strong>hazard ratio</strong>: the
 multiplicative change in the instantaneous event rate per unit change in
-the covariate, at any time
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>.</p>
+the covariate, at any time <span class="math inline">\(t\)</span>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">mod_cox</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    aucss </span></span>
@@ -369,13 +340,12 @@ knowing about:</p>
 <ul>
 <li>
 <code><a href="../reference/ertte_aft.html">ertte_aft()</a></code> gives a fully parametric survival curve
-defined for all
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">t
-&gt; 0</annotation></semantics></math>, and a
-<code>dist</code>-dependent closed form for effects like time ratios –
-useful when extrapolating beyond the observed follow-up range, or when a
-parametric quantity like RMST needs integrating over the whole curve
-(see the <a href="rmst.html">RMST article</a>).</li>
+defined for all <span class="math inline">\(t
+&gt; 0\)</span>, and a <code>dist</code>-dependent closed form for
+effects like time ratios – useful when extrapolating beyond the observed
+follow-up range, or when a parametric quantity like RMST needs
+integrating over the whole curve (see the <a href="rmst.html">RMST
+article</a>).</li>
 <li>
 <code><a href="../reference/ertte_coxph.html">ertte_coxph()</a></code> makes no assumption about the
 <em>shape</em> of the baseline hazard over time, which is often a safer
@@ -429,9 +399,8 @@ vs. <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="extern
 model – so they’re not expected to match exactly even when the point
 estimates agree closely.</p>
 <p><code><a href="../reference/ertte_fun.html">ertte_fun()</a></code> instead returns a plain R function
-evaluating
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t \mid x)</annotation></semantics></math>
-at user-specified parameters/data/times, useful for counterfactual
+evaluating <span class="math inline">\(S(t \mid x)\)</span> at
+user-specified parameters/data/times, useful for counterfactual
 scenarios or plugging into simulation code:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mod_fun</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ertte_fun.html">ertte_fun</a></span><span class="op">(</span><span class="va">mod_aft</span><span class="op">)</span></span>

@@ -6,7 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Landmark event probabilities in ertte • ertte</title>
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
+  window.MathJax = {
+    chtml: {
+      fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
+    }
+  };
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -82,20 +88,15 @@ background on <code><a href="../reference/ertte_aft.html">ertte_aft()</a></code>
 <div class="section level2">
 <h2 id="why-a-landmark">Why a landmark?<a class="anchor" aria-label="anchor" href="#why-a-landmark"></a>
 </h2>
-<p>A fitted TTE model describes an entire survival curve
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t \mid x)</annotation></semantics></math>,
-but many exposure-response questions are really about one particular
-point on it: <em>what fraction of subjects with a given exposure profile
-are expected to have had the event by some fixed, clinically meaningful
-time</em>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>t</mi><mo>*</mo></msup><annotation encoding="application/x-tex">t^*</annotation></semantics></math>?
-(“Landmark” here refers to that fixed time, not to landmark-based
-dynamic prediction from repeated measurements, a different technique
-with the same name.)</p>
+<p>A fitted TTE model describes an entire survival curve <span class="math inline">\(S(t \mid x)\)</span>, but many exposure-response
+questions are really about one particular point on it: <em>what fraction
+of subjects with a given exposure profile are expected to have had the
+event by some fixed, clinically meaningful time</em> <span class="math inline">\(t^*\)</span>? (“Landmark” here refers to that
+fixed time, not to landmark-based dynamic prediction from repeated
+measurements, a different technique with the same name.)</p>
 <p>Reducing to a single time point converts a TTE endpoint into an
-ordinary binary response,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mrow><mtext mathvariant="normal">event by </mtext><mspace width="0.333em"></mspace></mrow><msup><mi>t</mi><mo>*</mo></msup><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1</mn><mo>−</mo><mi>S</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>t</mi><mo>*</mo></msup><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">P(\text{event by } t^*) = 1 - S(t^* \mid x)</annotation></semantics></math>,
-which <code>erplots</code>’ existing
+ordinary binary response, <span class="math inline">\(P(\text{event by }
+t^*) = 1 - S(t^* \mid x)\)</span>, which <code>erplots</code>’ existing
 <code>er_plot()</code>/<code>er_vpc()</code> grammars – built for scalar
 exposure-response summaries – can visualise with no TTE-specific
 plotting code at all.</p>
@@ -106,9 +107,9 @@ plotting code at all.</p>
 <p><code><a href="../reference/ertte_landmark.html">ertte_landmark()</a></code> doesn’t implement any new
 survival-curve machinery of its own. It calls [ertte_predict()] at
 <code>time = landmark_time</code> and transforms the result:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mrow><mtext mathvariant="normal">event by </mtext><mspace width="0.333em"></mspace></mrow><msup><mi>t</mi><mo>*</mo></msup><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1</mn><mo>−</mo><mi>S</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>t</mi><mo>*</mo></msup><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 P(\text{event by } t^*) = 1 - S(t^*).
-</annotation></semantics></math></p>
+\]</span></p>
 <p>Because this is a decreasing, monotonic transform, the confidence
 interval bounds simply swap – the upper bound on survival becomes the
 lower bound on event probability, and vice versa – with no separate
@@ -189,12 +190,11 @@ on or before <code>landmark_time</code>), <code>0</code> (known to still
 be event-free at <code>landmark_time</code>), or <code>NA</code> if the
 replicate was censored strictly before <code>landmark_time</code> – a
 genuinely ambiguous outcome, since it’s not known whether that replicate
-would have had the event by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>t</mi><mo>*</mo></msup><annotation encoding="application/x-tex">t^*</annotation></semantics></math>
-had follow-up continued. This is the same complete-case convention used
-for RMST-based VPCs (see the <a href="rmst.html">RMST article</a>’s
-“Using RMST in a visual predictive check” section for the full
-reasoning); <code><a href="https://erplots.djnavarro.net/reference/er_vpc_add_simulated.html" class="external-link">erplots::er_vpc_add_simulated()</a></code>’s
+would have had the event by <span class="math inline">\(t^*\)</span> had
+follow-up continued. This is the same complete-case convention used for
+RMST-based VPCs (see the <a href="rmst.html">RMST article</a>’s “Using
+RMST in a visual predictive check” section for the full reasoning);
+<code><a href="https://erplots.djnavarro.net/reference/er_vpc_add_simulated.html" class="external-link">erplots::er_vpc_add_simulated()</a></code>’s
 <code>mean(..., na.rm = TRUE)</code> aggregation excludes these
 <code>NA</code>s automatically.</p>
 </div>
@@ -206,23 +206,18 @@ reasoning); <code><a href="https://erplots.djnavarro.net/reference/er_vpc_add_si
 <strong>A landmark answers a question about one time point
 only.</strong> It’s simpler and more directly interpretable than RMST,
 but it discards everything the fitted model says about the survival
-curve away from
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>t</mi><mo>*</mo></msup><annotation encoding="application/x-tex">t^*</annotation></semantics></math>
-– two exposure profiles with very different survival curves can have the
-same landmark probability if the curves happen to cross near
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>t</mi><mo>*</mo></msup><annotation encoding="application/x-tex">t^*</annotation></semantics></math>.</li>
+curve away from <span class="math inline">\(t^*\)</span> – two exposure
+profiles with very different survival curves can have the same landmark
+probability if the curves happen to cross near <span class="math inline">\(t^*\)</span>.</li>
 <li>
-<strong>The choice of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>t</mi><mo>*</mo></msup><annotation encoding="application/x-tex">t^*</annotation></semantics></math>
+<strong>The choice of <span class="math inline">\(t^*\)</span>
 matters, and isn’t estimated from the data.</strong> Different landmark
 times can tell different (both valid) stories about the same fitted
 model, the same caveat RMST’s choice of <code>tau</code> carries.</li>
 <li>
-<strong>A replicate censored before
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>t</mi><mo>*</mo></msup><annotation encoding="application/x-tex">t^*</annotation></semantics></math>
-contributes no information to a landmark VPC and is dropped, not imputed
-or reweighted</strong> – see “Using a landmark in a visual predictive
-check” above.</li>
+<strong>A replicate censored before <span class="math inline">\(t^*\)</span> contributes no information to a
+landmark VPC and is dropped, not imputed or reweighted</strong> – see
+“Using a landmark in a visual predictive check” above.</li>
 </ul>
 </div>
 <div class="section level2">
