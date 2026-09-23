@@ -5,8 +5,8 @@
       fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
     }
   };
-</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Landmark event-probability predictions for exposure-response TTE models — ertte_landmark"><meta name="description" content="Reduces the survival curve for an exposure-response time-to-even model
-to a binary landmark event probability at a single fixed time."><meta property="og:description" content="Reduces the survival curve for an exposure-response time-to-even model
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Landmark event-probability predictions for exposure-response TTE models — ertte_landmark"><meta name="description" content="Reduces the survival curve for an exposure-response time-to-event model
+to a binary landmark event probability at a single fixed time."><meta property="og:description" content="Reduces the survival curve for an exposure-response time-to-event model
 to a binary landmark event probability at a single fixed time."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
@@ -48,7 +48,7 @@ to a binary landmark event probability at a single fixed time."></head><body>
     </div>
 
     <div class="ref-description section level2">
-    <p>Reduces the survival curve for an exposure-response time-to-even model
+    <p>Reduces the survival curve for an exposure-response time-to-event model
 to a binary landmark event probability at a single fixed time.</p>
     </div>
 
@@ -88,7 +88,7 @@ to the data the model was fitted to.</p></dd>
 storing the original columns from <code>newdata</code>, it contains a column
 storing the <code>landmark_time</code> itself, a <code>fit_resp</code> column with
 the estimated probability of observing the event at or before the
-land mark time, and <code>ci_lower</code>, and <code>ci_upper</code> columns specifying
+landmark time, and <code>ci_lower</code>, and <code>ci_upper</code> columns specifying
 the confidence interval.</p>
     </div>
     <div class="section level2">
@@ -103,6 +103,10 @@ that time, and is computed using <code><a href="ertte_predict.html">ertte_predic
 unlike the typical usage of <code><a href="ertte_predict.html">ertte_predict()</a></code> in which a vector
 of times is passed, <code>landmark_time</code> must be a single
 fixed value – a landmark is by definition evaluated at one time.</p>
+<p>Because the event probability is a decreasing transform of the survival
+probability (<code>1 -</code> survival), the confidence interval is built by
+swapping <code><a href="ertte_predict.html">ertte_predict()</a></code>'s bounds: its lower survival bound becomes
+the upper event-probability bound, and vice versa.</p>
     </div>
 
     <div class="section level2">

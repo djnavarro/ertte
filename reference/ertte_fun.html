@@ -90,8 +90,8 @@ defaults to <code>coef(object)</code> (the fitted coefficients) if not supplied.
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>ertte_fun()</code> is a generic function, with methods for each the supported
-exposure-response time-to-even model classes.</p>
+    <p><code>ertte_fun()</code> is a generic function, with methods for each of the supported
+exposure-response time-to-event model classes.</p>
     </div>
     <div class="section level2">
     <h2 id="aft-models">AFT models<a class="anchor" aria-label="anchor" href="#aft-models"></a></h2>
@@ -110,10 +110,11 @@ via <code>param</code>.</p>
 <p>The <code>ertte_coxph</code> method takes a fitted Cox model as input and
 similarly returns a function that evaluates the survival probabilities.
 More precisely, it returns</p>
-<p>$$S(t|x) = S_0(t) \times \exp((x - \bar{x})' \beta)$$</p>
+<p>$$S(t|x) = S_0(t)^{\exp((x - \bar{x})' \beta)}$$</p>
 <p>where \(x\) is the vector of covariates, \(\bar{x}\) is the mean of the covariates
-in the fitted model, \(\beta\) is the vector of coefficients, and the exponentiation
-is a matrix multiplication (i.e., \((x - \bar{x})' \beta\) is the linear predictor).</p>
+in the fitted model, \(\beta\) is the vector of coefficients, and
+\((x - \bar{x})' \beta\) (a matrix multiplication) is the linear predictor
+that \(S_0(t)\) is raised to the power of.</p>
 <p>The baseline survival function \(S_0(t)\) refers to the fitted
 baseline survival curve, calulated by calling <code><a href="https://rdrr.io/pkg/survival/man/basehaz.html" class="external-link">survival::basehaz()</a></code>
 with <code>centered = TRUE</code> and held constant beyond the last observed

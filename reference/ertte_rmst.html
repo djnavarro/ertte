@@ -81,11 +81,12 @@ to the data the model was fitted to.</p></dd>
 
 
 <dt id="arg-tau">tau<a class="anchor" aria-label="anchor" href="#arg-tau"></a></dt>
-<dd><p>Numeric vector of restriction horizons at which to compute RSMT.</p></dd>
+<dd><p>Numeric vector of restriction horizons at which to compute RMST.</p></dd>
 
 
 <dt id="arg-conf-level">conf_level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
-<dd><p>Confidence level for the intervals. Defaults to <code>.95</code>.</p></dd>
+<dd><p>Confidence level for the intervals. Defaults to <code>.95</code>.
+Must be a single number between 0 and 1 (inclusive); other values error.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -113,10 +114,6 @@ the RMST scale. This is not automatically bounded to <code>[0, tau]</code> the w
 the survival probability intervals for <code><a href="ertte_predict.html">ertte_predict()</a></code> are bounded to <code>[0, 1]</code>.
 An unclipped Wald interval on RMST can, in principle, dip below 0 or
 exceed <code>tau</code> for small samples or near-boundary cases.</p>
-<p>If any value of <code>tau</code> exceeds the last observed follow-up time across the whole
-fitted cohort, <code>ertte_rmst()</code> produces a warning that informs the user that
-the assumption that survival stays flat beyond the observed range may be unreliable
-as this assumption has a larger effect on an area than on a point-in-time prediction.</p>
     </div>
     <div class="section level2">
     <h2 id="aft-method">AFT method<a class="anchor" aria-label="anchor" href="#aft-method"></a></h2>
@@ -124,18 +121,33 @@ as this assumption has a larger effect on an area than on a point-in-time predic
 
 <p>The <code>ertte_aft</code> method computes <code>fit_rmst</code> by numerically
 integrating the closed-form survival function via <code><a href="https://rdrr.io/r/stats/integrate.html" class="external-link">stats::integrate()</a></code>.
-The integration is performed on the log-time scale rather than directly
-integrating over time, as adaptive quadrature can fail silently on the
-raw time scale. Even with this, however, the integration is not always
-reliable for extreme values of <code>tau</code>, and so <code>ertte_rmst()</code> produces
-warnings when <code>tau</code> is especially large.</p>
+The integration variable is <code>u = log(t)</code> rather than <code>t</code> itself: adaptive
+quadrature over the raw time scale, <code>t</code> from <code>0</code> to <code>tau</code>, can fail
+silently for an extreme <code>tau</code>, whereas substituting <code>t = exp(u)</code> and
+integrating <code>u</code> from <code>-Inf</code> to <code>log(tau)</code> is numerically well-behaved.</p>
+<p>The standard error <code>se_rmst</code> uses the delta method: it's the absolute
+gradient of RMST with respect to the linear predictor \(\mu\), scaled
+by the standard error of \(\mu\) itself,</p>
+<p>$$\mathrm{se\_rmst} = \left| \frac{d \, \mathrm{RMST}(\tau)}{d\mu} \right| \times \mathrm{se}(\mu)$$</p>
+<p>where the gradient is itself obtained by numerical integration of the
+survival function's derivative with respect to \(\mu\).</p>
+<p><code>fit_rmst</code> itself stays numerically reliable well beyond the observed
+follow-up range, but <code>se_rmst</code>/the confidence interval, also computed via
+numerical integration, can become unreliable for a very extreme horizon
+– <code>ertte_rmst()</code> warns when any value of <code>tau</code> exceeds 10,000x the last
+observed follow-up time in the fitting data.</p>
     </div>
     <div class="section level2">
     <h2 id="cox-ph-method">Cox PH method<a class="anchor" aria-label="anchor" href="#cox-ph-method"></a></h2>
 
 
-<p>The <code>ertte_coxph</code> method delegates the work to <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code>
-Because the fitted baseline hazard (and therefore every covariate-adjusted
+<p>The <code>ertte_coxph</code> method delegates the work to <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code>.
+If any value of <code>tau</code> exceeds the last observed follow-up time across the
+whole fitted cohort, <code>ertte_rmst()</code> warns that the assumption that
+survival stays flat beyond the observed range may be unreliable, since
+this assumption has a larger effect on an area than on a point-in-time
+prediction.</p>
+<p>Because the fitted baseline hazard (and therefore every covariate-adjusted
 survival curve) is a right-continuous step function, <code>fit_rmst</code> is an
 <em>exact</em> finite sum of rectangle areas between consecutive jump times
 up to <code>tau</code>: it is not a numerical-quadrature approximation. The standard

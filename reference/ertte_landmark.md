@@ -1,6 +1,6 @@
 # Landmark event-probability predictions for exposure-response TTE models
 
-Reduces the survival curve for an exposure-response time-to-even model
+Reduces the survival curve for an exposure-response time-to-event model
 to a binary landmark event probability at a single fixed time.
 
 ## Usage
@@ -38,7 +38,7 @@ ertte_landmark(object, newdata = NULL, landmark_time, conf_level = 0.95, ...)
 A tibble with one row per row of `newdata`. In addition to storing the
 original columns from `newdata`, it contains a column storing the
 `landmark_time` itself, a `fit_resp` column with the estimated
-probability of observing the event at or before the land mark time, and
+probability of observing the event at or before the landmark time, and
 `ci_lower`, and `ci_upper` columns specifying the confidence interval.
 
 ## Details
@@ -54,6 +54,13 @@ However, unlike the typical usage of
 [`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
 in which a vector of times is passed, `landmark_time` must be a single
 fixed value – a landmark is by definition evaluated at one time.
+
+Because the event probability is a decreasing transform of the survival
+probability (`1 -` survival), the confidence interval is built by
+swapping
+[`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)'s
+bounds: its lower survival bound becomes the upper event-probability
+bound, and vice versa.
 
 ## Examples
 

@@ -23,7 +23,9 @@ ertte_remove_term(mod, term, quiet = FALSE)
 
 - quiet:
 
-  Should warnings be suppressed? Defaults to `FALSE`.
+  Should the warning issued when the term can't be added/removed
+  (because it's already in the model / isn't in the model, respectively)
+  be suppressed? Defaults to `FALSE`.
 
 ## Value
 
@@ -37,7 +39,9 @@ These functions are not typically called directly; they underpin
 and
 [`ertte_scm_backward()`](https://ertte.djnavarro.net/reference/ertte_scm.md),
 used to add or remove a single term from a time-to-event regression
-model. Regardless of whether the model is a parametric AFT model or a
+model. `mod` is refit using the matching engine constructor based on its
+class, so these functions work for both `ertte_aft` and `ertte_coxph`
+models. Regardless of whether the model is a parametric AFT model or a
 Cox proportional hazard model, the `term` to be added or removed is
 defined by a single one-sided formula. Categorical covariates enter the
 model as factor levels, whereas continuous covariates enter as linear

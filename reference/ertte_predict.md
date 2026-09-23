@@ -37,7 +37,8 @@ ertte_predict(object, newdata = NULL, time, conf_level = 0.95, ...)
 
 - conf_level:
 
-  Confidence level for the intervals. Defaults to `.95`.
+  Confidence level for the intervals. Defaults to `.95`. Must be a
+  single number between 0 and 1 (inclusive); other values error.
 
 ## Value
 
@@ -65,14 +66,14 @@ uncertainty in the scale parameter is not propagated.
 
 For Cox models,
 [`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)
-is used to compute the survival probability, When `time` exceeds the
+is used to compute the survival probability. When `time` exceeds the
 last observed follow-up time, the survival function is held constant
 (i.e., step-function extrapolation). Confidence intervals are calculated
 using the `conf.type = "log"` transform, which specifies Wald intervals
-on \\\log(-\log(S))\\, as this is is better suited to a probability
-bounded in `[0, 1]`. Because of this, it should be noted that the
-confidence intervals computed for a Cox model are not directly
-comparable to those computed for AFT models.
+on \\\log(-\log(S))\\, as this is better suited to a probability bounded
+in `[0, 1]`. Because of this, it should be noted that the confidence
+intervals computed for a Cox model are not directly comparable to those
+computed for AFT models.
 
 ## Examples
 

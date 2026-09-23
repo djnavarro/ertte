@@ -43,8 +43,8 @@ The function returns a vector of survival probabilities.
 
 ## Details
 
-`ertte_fun()` is a generic function, with methods for each the supported
-exposure-response time-to-even model classes.
+`ertte_fun()` is a generic function, with methods for each of the
+supported exposure-response time-to-event model classes.
 
 ## AFT models
 
@@ -59,12 +59,12 @@ The `ertte_coxph` method takes a fitted Cox model as input and similarly
 returns a function that evaluates the survival probabilities. More
 precisely, it returns
 
-\$\$S(t\|x) = S_0(t) \times \exp((x - \bar{x})' \beta)\$\$
+\$\$S(t\|x) = S_0(t)^{\exp((x - \bar{x})' \beta)}\$\$
 
 where \\x\\ is the vector of covariates, \\\bar{x}\\ is the mean of the
 covariates in the fitted model, \\\beta\\ is the vector of coefficients,
-and the exponentiation is a matrix multiplication (i.e., \\(x -
-\bar{x})' \beta\\ is the linear predictor).
+and \\(x - \bar{x})' \beta\\ (a matrix multiplication) is the linear
+predictor that \\S_0(t)\\ is raised to the power of.
 
 The baseline survival function \\S_0(t)\\ refers to the fitted baseline
 survival curve, calulated by calling

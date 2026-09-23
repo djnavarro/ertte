@@ -127,7 +127,7 @@ censored).</p>
 distribution implied by <code>vcov(object)</code>. Event times are then drawn by
 inverse-CDF sampling, differing by engine: for
 <code>ertte_aft</code> fits, directly from the fitted log-location-scale AFT
-distribution (see <code><a href="ertte_aft.html">ertte_aft()</a></code> Details); for <code>ertte_coxph</code> fits, by
+distribution implied by the model's <code>dist</code>; for <code>ertte_coxph</code> fits, by
 inverting the fitted baseline cumulative hazard (<code><a href="https://rdrr.io/pkg/survival/man/basehaz.html" class="external-link">survival::basehaz()</a></code>,
 held fixed regardless of the sampled coefficient draw – the same
 simplification <code><a href="ertte_fun.html">ertte_fun.ertte_coxph()</a></code> makes for a user-supplied

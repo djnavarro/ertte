@@ -140,6 +140,28 @@ computed, since it plays no role in selection). The <code>model_aic</code> and
 drove selection, and the history's <code>criterion</code> column records which one
 was used for each forward/backward step.</p>
     </div>
+    <div class="section level2">
+    <h2 id="handling-problem-candidates">Handling problem candidates<a class="anchor" aria-label="anchor" href="#handling-problem-candidates"></a></h2>
+
+
+<p>A candidate that can't be fit for a given step (e.g. it's aliased with
+a term already in the model, references a variable missing from the
+data, or fails to converge) is skipped for that step with a warning,
+rather than aborting the whole search or being silently selected.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="candidate-test-order-and-seed">Candidate test order and <code>seed</code><a class="anchor" aria-label="anchor" href="#candidate-test-order-and-seed"></a></h2>
+
+
+<p><code>seed</code> exists as a safety measure against run-to-run variation in the
+order candidate terms are tested within a step (<code><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample()</a></code>, shuffled
+before testing one at a time). Model fitting itself
+(<code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code>) is deterministic given a starting formula, so
+<code>seed</code> only matters in the (essentially measure-zero) case of an
+exact p-value tie between competing candidates within a step – see
+the companion <code>erglm</code> package's equivalent documentation for the full
+rationale, which applies unchanged here.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

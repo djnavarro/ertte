@@ -71,9 +71,8 @@ time), and `sim_event` (1 = event, 0 = censored).
 Coefficients are sampled from the asymptotic sampling distribution
 implied by `vcov(object)`. Event times are then drawn by inverse-CDF
 sampling, differing by engine: for `ertte_aft` fits, directly from the
-fitted log-location-scale AFT distribution (see
-[`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)
-Details); for `ertte_coxph` fits, by inverting the fitted baseline
+fitted log-location-scale AFT distribution implied by the model's
+`dist`; for `ertte_coxph` fits, by inverting the fitted baseline
 cumulative hazard
 ([`survival::basehaz()`](https://rdrr.io/pkg/survival/man/basehaz.html),
 held fixed regardless of the sampled coefficient draw – the same

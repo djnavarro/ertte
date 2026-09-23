@@ -88,6 +88,26 @@ computed, since it plays no role in selection). The `model_aic` and
 drove selection, and the history's `criterion` column records which one
 was used for each forward/backward step.
 
+## Handling problem candidates
+
+A candidate that can't be fit for a given step (e.g. it's aliased with a
+term already in the model, references a variable missing from the data,
+or fails to converge) is skipped for that step with a warning, rather
+than aborting the whole search or being silently selected.
+
+## Candidate test order and `seed`
+
+`seed` exists as a safety measure against run-to-run variation in the
+order candidate terms are tested within a step
+([`sample()`](https://rdrr.io/r/base/sample.html), shuffled before
+testing one at a time). Model fitting itself
+([`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html))
+is deterministic given a starting formula, so `seed` only matters in the
+(essentially measure-zero) case of an exact p-value tie between
+competing candidates within a step – see the companion `erglm` package's
+equivalent documentation for the full rationale, which applies unchanged
+here.
+
 ## Examples
 
 ``` r

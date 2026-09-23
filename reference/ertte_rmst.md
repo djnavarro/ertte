@@ -31,11 +31,12 @@ ertte_rmst(object, newdata = NULL, tau, conf_level = 0.95, ...)
 
 - tau:
 
-  Numeric vector of restriction horizons at which to compute RSMT.
+  Numeric vector of restriction horizons at which to compute RMST.
 
 - conf_level:
 
-  Confidence level for the intervals. Defaults to `.95`.
+  Confidence level for the intervals. Defaults to `.95`. Must be a
+  single number between 0 and 1 (inclusive); other values error.
 
 - ...:
 
@@ -68,27 +69,42 @@ are bounded to `[0, 1]`. An unclipped Wald interval on RMST can, in
 principle, dip below 0 or exceed `tau` for small samples or
 near-boundary cases.
 
-If any value of `tau` exceeds the last observed follow-up time across
-the whole fitted cohort, `ertte_rmst()` produces a warning that informs
-the user that the assumption that survival stays flat beyond the
-observed range may be unreliable as this assumption has a larger effect
-on an area than on a point-in-time prediction.
-
 ## AFT method
 
 The `ertte_aft` method computes `fit_rmst` by numerically integrating
 the closed-form survival function via
 [`stats::integrate()`](https://rdrr.io/r/stats/integrate.html). The
-integration is performed on the log-time scale rather than directly
-integrating over time, as adaptive quadrature can fail silently on the
-raw time scale. Even with this, however, the integration is not always
-reliable for extreme values of `tau`, and so `ertte_rmst()` produces
-warnings when `tau` is especially large.
+integration variable is `u = log(t)` rather than `t` itself: adaptive
+quadrature over the raw time scale, `t` from `0` to `tau`, can fail
+silently for an extreme `tau`, whereas substituting `t = exp(u)` and
+integrating `u` from `-Inf` to `log(tau)` is numerically well-behaved.
+
+The standard error `se_rmst` uses the delta method: it's the absolute
+gradient of RMST with respect to the linear predictor \\\mu\\, scaled by
+the standard error of \\\mu\\ itself,
+
+\$\$\mathrm{se\\rmst} = \left\| \frac{d \\ \mathrm{RMST}(\tau)}{d\mu}
+\right\| \times \mathrm{se}(\mu)\$\$
+
+where the gradient is itself obtained by numerical integration of the
+survival function's derivative with respect to \\\mu\\.
+
+`fit_rmst` itself stays numerically reliable well beyond the observed
+follow-up range, but `se_rmst`/the confidence interval, also computed
+via numerical integration, can become unreliable for a very extreme
+horizon – `ertte_rmst()` warns when any value of `tau` exceeds 10,000x
+the last observed follow-up time in the fitting data.
 
 ## Cox PH method
 
 The `ertte_coxph` method delegates the work to
-[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)
+[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html).
+If any value of `tau` exceeds the last observed follow-up time across
+the whole fitted cohort, `ertte_rmst()` warns that the assumption that
+survival stays flat beyond the observed range may be unreliable, since
+this assumption has a larger effect on an area than on a point-in-time
+prediction.
+
 Because the fitted baseline hazard (and therefore every
 covariate-adjusted survival curve) is a right-continuous step function,
 `fit_rmst` is an *exact* finite sum of rectangle areas between

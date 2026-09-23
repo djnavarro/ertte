@@ -5,8 +5,8 @@
       fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
     }
   };
-</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Power-function covariate transform for exposure-response TTE models — ertte_power"><meta name="description" content="A formula helper used to entering a continuous covariate as a power
-transformed covariate rather than a plain linear term."><meta property="og:description" content="A formula helper used to entering a continuous covariate as a power
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Power-function covariate transform for exposure-response TTE models — ertte_power"><meta name="description" content="A formula helper used to enter a continuous covariate as a power
+transformed covariate rather than a plain linear term."><meta property="og:description" content="A formula helper used to enter a continuous covariate as a power
 transformed covariate rather than a plain linear term."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
@@ -48,7 +48,7 @@ transformed covariate rather than a plain linear term."></head><body>
     </div>
 
     <div class="ref-description section level2">
-    <p>A formula helper used to entering a continuous covariate as a power
+    <p>A formula helper used to enter a continuous covariate as a power
 transformed covariate rather than a plain linear term.</p>
     </div>
 
@@ -96,6 +96,15 @@ positive, so cannot be used for covariates with a placebo/zero-dose
 group (e.g. <code>dose</code>, <code>aucss</code>, <code>cmaxss</code> in <code>ertte_data</code>). It is not
 generally appropriate for the exposure itself, only for (some) covariate
 terms in the TTE model.</p>
+<p>Nothing prevents combining a plain linear term (<code>age</code>) and a power term
+(<code>ertte_power(age)</code>) for the same underlying variable in the same model
+or SCM candidate set – term handling works on formula term-labels, not
+variable semantics, so this is left to the user's judgement.</p>
+<p><code>ref</code> is fixed at fitting time from the data <code>ertte_power()</code> is
+evaluated on, and reused (not recomputed) when the fitted model is used
+to predict or simulate on new data, via an internal
+<code><a href="https://rdrr.io/r/stats/makepredictcall.html" class="external-link">stats::makepredictcall()</a></code> method – the same mechanism <code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">stats::poly()</a></code>
+uses for this purpose.</p>
     </div>
 
     <div class="section level2">

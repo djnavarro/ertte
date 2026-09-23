@@ -44,7 +44,7 @@ downstream tools that have access to the model object but not
 necessarily the original data frame.
 
 Because the return value is a `coxph` object, all the usual methods for
-survival regression models work unchanged, without neeing an
+survival regression models work unchanged, without needing an
 ertte-specific equivalent. This includes
 [`summary()`](https://rdrr.io/r/base/summary.html),
 [`coef()`](https://rdrr.io/r/stats/coef.html),

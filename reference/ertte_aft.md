@@ -44,21 +44,35 @@ object, ensuring that the data set remains accessible to downstream
 tools that have access to the model object but not necessarily the
 original data frame.
 
-Like the `survreg()` function upon which it is based, `ertte_aft()`
-supports location-scale distributional families defined on some
-transformation of the time variable. In principle `ertte_aft()` could
-support the full range of distributions available to `survreg()`, but it
-is important to note that the extended functionality provided by the
-ertte package, and hooks into other exposure-response tools supplied by
-other packages such as erplots, have not been thoroughly tested beyond
-four core cases. Tested values for the `dist` argument are `weibull`,
-`exponential`, `lognormal`, and `loglogistic`. It is for this reason
-that the output object from `ertte_aft()` contains additional classes:
-the ertte-specific tools are not necessarily valid for all `survreg`
-objects, only those for which it has been explicitly defined.
+Like the `survreg()` function upon which it is based, `ertte_aft()` fits
+a log-location-scale AFT model,
+
+\$\$\log(t) = \mu + \sigma w\$\$
+
+where \\\mu\\ is the linear predictor, \\\sigma\\ is the scale
+parameter, and \\w\\ follows a fixed base distribution determined by
+`dist`:
+
+- `"weibull"`/`"exponential"`: \\w\\ follows a standard extreme-value
+  distribution.
+
+- `"lognormal"`: \\w\\ follows a standard normal distribution.
+
+- `"loglogistic"`: \\w\\ follows a standard logistic distribution.
+
+In principle `ertte_aft()` could support the full range of distributions
+available to `survreg()`, but it is important to note that the extended
+functionality provided by the ertte package, and hooks into other
+exposure-response tools supplied by other packages such as erplots, have
+not been thoroughly tested beyond four core cases. Tested values for the
+`dist` argument are `weibull`, `exponential`, `lognormal`, and
+`loglogistic`. It is for this reason that the output object from
+`ertte_aft()` contains additional classes: the ertte-specific tools are
+not necessarily valid for all `survreg` objects, only those for which it
+has been explicitly defined.
 
 Nevertheless, because the return value is genuinely a `survreg` object,
-albeit with some additional information and metata stored internally,
+albeit with some additional information and metadata stored internally,
 all the usual methods for survival regression models work unchanged,
 without needing any ertte-specific equivalent. This includes
 [`summary()`](https://rdrr.io/r/base/summary.html),
