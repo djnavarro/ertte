@@ -186,7 +186,7 @@ the shape of the baseline hazard over time:
 
 where \\h_0(t)\\ is an unspecified **baseline hazard** (the hazard for a
 subject with \\x = 0\\, or more precisely \\x\\ at the values
-[`coxph()`](https://rdrr.io/pkg/survival/man/coxph.html) centers on) and
+[`coxph()`](https://rdrr.io/pkg/survival/man/coxph.html) centres on) and
 \\\beta\\ are the log-hazard-ratio coefficients. This is a
 *semi-parametric* model: \\\beta\\ is estimated by maximising a partial
 likelihood that doesn’t require ever specifying \\h_0(t)\\’s functional

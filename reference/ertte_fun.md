@@ -67,7 +67,7 @@ and \\(x - \bar{x})' \beta\\ (a matrix multiplication) is the linear
 predictor that \\S_0(t)\\ is raised to the power of.
 
 The baseline survival function \\S_0(t)\\ refers to the fitted baseline
-survival curve, calulated by calling
+survival curve, calculated by calling
 [`survival::basehaz()`](https://rdrr.io/pkg/survival/man/basehaz.html)
 with `centered = TRUE` and held constant beyond the last observed time,
 consistent with the approach adopted by

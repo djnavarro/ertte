@@ -5,9 +5,9 @@
 Fit exposure-response time-to-event models
 
 - [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) :
-  AFT regression modeling
+  AFT regression modelling
 - [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
-  : Cox proportional hazard modeling
+  : Cox proportional hazard modelling
 
 ## Predict
 
