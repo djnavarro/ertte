@@ -8,60 +8,44 @@ ertte_power(x, ref = NULL)
 }
 \arguments{
 \item{x}{A numeric covariate. Every non-missing value must be strictly
-positive (\code{log(x / ref)} is undefined otherwise).}
+positive.}
 
 \item{ref}{A single strictly positive reference value. Defaults to
-\code{median(x, na.rm = TRUE)} -- the usual pop-PK/NONMEM convention of
-referencing the covariate's typical (median) value in the fitting data.}
+the median value of \code{x}.}
 }
 \value{
-A numeric vector equal to \code{log(x / ref)}, classed
-\code{"ertte_power"}, with \code{ref} stored as an attribute.
+A numeric vector equal to \code{log(x / ref)}, classed as an
+\code{"ertte_power"} object, with the value of \code{ref} stored as an attribute.
 }
 \description{
-A \code{poly()}/\code{splines::ns()}-style formula helper for entering a
-continuous covariate as a power function, e.g. \code{ertte_power(age)} in
-place of a plain \code{age} term.
+A formula helper used to entering a continuous covariate as a power
+transformed covariate rather than a plain linear term.
 }
 \details{
-Both \code{\link[=ertte_aft]{ertte_aft()}} (a log-location-scale AFT model: \code{log(T) = mu + scale * W}) and \code{ertte_coxph()} (a Cox PH model: `h(t | x) = h0(t)
-\itemize{
-\item exp(x'beta)\verb{) are linear in their covariates on the model's natural (log-time or log-hazard-ratio) scale. A power-function covariate effect -- }T = T_ref * (x / ref)^theta\verb{on the AFT time scale, or}h(t | x) =
-h0(t) * (x / ref)^theta\verb{on the Cox hazard scale -- is, after taking logs, exactly a linear term in}log(x / ref)`:
-}
+Both \code{\link[=ertte_aft]{ertte_aft()}} and \code{\link[=ertte_coxph]{ertte_coxph()}} are linear in their covariates on
+the model's natural scale (i.e., log-time for AFT models and log-hazard-ratio
+for Cox models). A power-function covariate effect is defined as follows for
+an AFT model:
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{log(T)    = ... + theta * log(x / ref) + scale * W
-log(h/h0) = ... + theta * log(x / ref)
-}\if{html}{\out{</div>}}
+\deqn{t = t_\mbox{ref} \times (x / x_\mbox{ref})^\theta}
+
+The equivalent for Cox models is as follows:
+
+\deqn{h(t | x) = h_0(t) \times (x / x_\mbox{ref})^\theta}
+
+Once log-transformed, these become linear terms in \code{log(x / ref)}.
 
 So \code{ertte_power(x)} reduces the power-function parameterisation to an
 ordinary covariate column: the fitted \code{survreg()}/\code{coxph()} coefficient
 on \code{ertte_power(x)} \emph{is} the power exponent \code{theta} directly, and its
 ordinary Wald confidence interval (from \code{confint()}/\code{summary()}) is
-exactly the confidence interval on \code{theta} -- no delta method or
-profile-likelihood machinery is needed, unlike covariate power
-functions on genuinely nonlinear structural parameters (e.g. the
-companion \code{emaxnls} package's Emax/EC50 parameters, where this
-reduction doesn't apply).
-
-\code{ref} is fixed at fitting time from the data \code{ertte_power()} is
-evaluated on, and reused (not recomputed) when the fitted model is used
-to predict on new data -- via a \code{makepredictcall.ertte_power()} method,
-the same mechanism \code{stats::poly()}/\code{splines::ns()} use for this purpose.
+exactly the confidence interval on \code{theta}.
 
 \code{ertte_power()} requires every non-missing value of \code{x} to be strictly
-positive, which rules it out for covariates with a placebo/zero-dose
-group (e.g. \code{dose}, \code{aucss}, \code{cmaxss} in \code{ertte_data}). This is by
-design: the power-function parameterisation described in the package's
-design issue is aimed at the \emph{covariate model} (e.g. age, weight), not
-the primary exposure metric, which enters the model directly (see
-\code{\link[=ertte_aft]{ertte_aft()}}).
-
-Nothing in \code{\link[=ertte_add_term]{ertte_add_term()}}/\code{\link[=ertte_scm_forward]{ertte_scm_forward()}}/
-\code{\link[=ertte_scm_backward]{ertte_scm_backward()}} prevents combining a plain linear term (\code{age})
-and a power term (\code{ertte_power(age)}) for the same underlying variable
--- term handling throughout ertte works on formula term-labels, not
-variable semantics, so this is left to the user's judgement.
+positive, so cannot be used for covariates with a placebo/zero-dose
+group (e.g. \code{dose}, \code{aucss}, \code{cmaxss} in \code{ertte_data}). It is not
+generally appropriate for the exposure itself, only for (some) covariate
+terms in the TTE model.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss + ertte_power(age), ertte_data)
@@ -69,4 +53,5 @@ summary(mod)
 
 # reference value used for the power transform
 attr(ertte_power(ertte_data$age), "ref")
+
 }
