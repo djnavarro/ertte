@@ -20,9 +20,7 @@ ertte_predict(object, newdata = NULL, time, conf_level = 0.95, ...)
 
 - object:
 
-  An ertte model, as returned by
-  [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) or
-  [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
+  An ertte model
 
 - ...:
 
@@ -47,8 +45,10 @@ A tibble with one row per combination of `newdata` row and `time`
 
 ## Details
 
-`ertte_predict()` is a generic, with methods for each supported engine –
-see `ertte_predict.ertte_aft()`.
+`ertte_predict()` is a generic function, with two supplied methods, one
+for parametric AFT exposure-response models (i.e., `ertte_aft` classed
+objects) and another for Cox proportional hazard exposure-response
+models (i.e., objects with class `ertte_coxph`).
 
 The `ertte_aft` method computes the linear predictor (and its standard
 error) via `predict(object, newdata, type = "linear", se.fit = TRUE)`,
@@ -64,13 +64,6 @@ throughout this package (e.g. `erglm_predict()`'s equivalent in the
 companion `erglm` package). `conf_level` must be a single number between
 0 and 1 (inclusive); other values error rather than silently producing a
 reversed or `NaN` interval.
-
-A zero-row `newdata` returns a zero-row tibble with the expected columns
-rather than erroring – explicit here (rather than relying on
-`predict.survreg()`'s incidental support for a zero-row `newdata`) for
-symmetry with `ertte_predict.ertte_coxph()`, where the equivalent
-[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)
-call genuinely does error on a zero-row `newdata` (see issue \#10).
 
 The `ertte_coxph` method delegates to
 `survival::survfit(object, newdata, conf.int = conf_level)`, which
@@ -88,28 +81,12 @@ on the linear predictor – the two methods' intervals are not directly
 comparable as a result, which is expected given the different model
 structures.
 
-`conf_level = 0`/`1` are legitimate degenerate endpoints, but
-[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)'s
-own `conf.int` machinery rejects exactly 0 or 1 (see issue \#11). Both
-are handled directly here instead: `conf_level = 0` collapses the
-interval to the point estimate (`ci_lower = ci_upper = fit_survival`);
-`conf_level = 1` widens it to the full valid probability range
-(`ci_lower = 0`, `ci_upper = 1`) – matching what the underlying
-log-transform interval converges to in the limit, and matching how
-`ertte_predict.ertte_aft()`'s CDF-based back-transform already behaves
-at these boundaries.
-
-A zero-row `newdata` returns a zero-row tibble with the expected columns
-rather than erroring:
-[`survival::survfit()`](https://rdrr.io/pkg/survival/man/survfit.html)
-itself rejects an entirely-missing `newdata` with a cryptic "all rows of
-newdata have missing values" error (see issue \#10).
-
 ## Examples
 
 ``` r
-mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
-ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
+# predictions for an AFT model
+mod_aft <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
+ertte_predict(mod_aft, ertte_data[1:5, ], time = c(30, 60, 90))
 #> # A tibble: 15 × 14
 #>       id sex      age weight  dose treatment aucss cmaxss  time event
 #>    <int> <fct>  <int>  <dbl> <dbl> <fct>     <dbl>  <dbl> <dbl> <dbl>
@@ -131,6 +108,7 @@ ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
 #> # ℹ 4 more variables: admin_censor <dbl>, fit_survival <dbl>, ci_lower <dbl>,
 #> #   ci_upper <dbl>
 
+# predictions for a Cox model
 mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 ertte_predict(mod_cox, ertte_data[1:5, ], time = c(30, 60, 90))
 #> # A tibble: 15 × 14

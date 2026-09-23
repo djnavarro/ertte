@@ -1,8 +1,7 @@
 # Cox proportional hazard modeling
 
 Fits a semi-parametric Cox proportional-hazards regression of
-time-to-event on covariates via
-[`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html).
+time-to-event data.
 
 ## Usage
 
@@ -19,7 +18,7 @@ ertte_coxph(formula, data, ...)
 
 - data:
 
-  Data set containing the variables of interest.
+  Data frame containing the variables of interest.
 
 - ...:
 
@@ -32,6 +31,17 @@ A coxph object with with additional `ertte_coxph` and `ertte_model`
 classes used to supply additional methods.
 
 ## Details
+
+The `ertte_coxph()` function is a thin wrapper around
+[`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html), used
+to build semi-parametric proportional hazard models for time-to-event
+data. One slight difference is that the call to `coxph()` always sets
+`model = TRUE`, because downstream methods supplied by the ertte package
+require the model frame to be accessible from within the return object.
+Along similar lines, `ertte_coxph()` caches the input data frame within
+the returned model object, ensuring that it remains accessible to
+downstream tools that have access to the model object but not
+necessarily the original data frame.
 
 Because the return value is a `coxph` object, all the usual methods for
 survival regression models work unchanged, without neeing an

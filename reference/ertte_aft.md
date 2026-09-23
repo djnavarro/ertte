@@ -1,8 +1,7 @@
 # AFT regression modeling
 
 Fits a parametric accelerated failure time (AFT) regression model for
-time-to-event data via
-[`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html).
+time-to-event data.
 
 ## Usage
 
@@ -19,11 +18,11 @@ ertte_aft(formula, data, dist = "weibull", ...)
 
 - data:
 
-  Data set containing the variables of interest.
+  Data frame containing the variables of interest.
 
 - dist:
 
-  The AFT distribution type to use, defaulting to `"weibull"`.
+  The AFT distribution type to use (default is `"weibull"`).
 
 - ...:
 
@@ -37,16 +36,31 @@ used to supply additional methods.
 
 ## Details
 
-Like the `survreg()` function upon which it is based, `ertte_aft()`
-supports four log-location-scale AFT models of the form
-`log(t) = mu + scale * w`, where `mu` is the linear predictor and the
-distribution of `w` is dependent on the choice of `dist`: extreme-value
-distributions for `"exponential"` and `"weibull"` models, a standard
-normal for `"lognormal"`, and a standard logistic for `"loglogistic"`.
+The `ertte_aft()` function is a thin wrapper around
+[`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html),
+used to build parametric AFT models for time-to-event data. Unlike the
+original, it caches the input data frame within the returned model
+object, ensuring that the data set remains accessible to downstream
+tools that have access to the model object but not necessarily the
+original data frame.
 
-Because the return value is a `survreg` object, all the usual methods
-for survival regression models work unchanged, without neeing an
-ertte-specific equivalent. This includes
+Like the `survreg()` function upon which it is based, `ertte_aft()`
+supports location-scale distributional families defined on some
+transformation of the time variable. In principle `ertte_aft()` could
+support the full range of distributions available to `survreg()`, but it
+is important to note that the extended functionality provided by the
+ertte package, and hooks into other exposure-response tools supplied by
+other packages such as erplots, have not been thoroughly tested beyond
+four core cases. Tested values for the `dist` argument are `weibull`,
+`exponential`, `lognormal`, and `loglogistic`. It is for this reason
+that the output object from `ertte_aft()` contains additional classes:
+the ertte-specific tools are not necessarily valid for all `survreg`
+objects, only those for which it has been explicitly defined.
+
+Nevertheless, because the return value is genuinely a `survreg` object,
+albeit with some additional information and metata stored internally,
+all the usual methods for survival regression models work unchanged,
+without needing any ertte-specific equivalent. This includes
 [`summary()`](https://rdrr.io/r/base/summary.html),
 [`coef()`](https://rdrr.io/r/stats/coef.html),
 [`vcov()`](https://rdrr.io/r/stats/vcov.html),
@@ -64,7 +78,8 @@ supplied via the ertte-specific classes include
 ## Examples
 
 ``` r
-# fit a Weibull AFT model
+# fit a Weibull AFT model; because the ertte package reexports Surv(), 
+# there is no need to load the survival package to build this model 
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod
 #> Call:

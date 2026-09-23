@@ -39,7 +39,7 @@ more time values."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Survival-probability predictions for exposure-response TTE models</h1>
-      <small class="dont-index">Source: <a href="https://github.com/djnavarro/ertte/blob/main/R/ertte-aft.R" class="external-link"><code>R/ertte-aft.R</code></a>, <a href="https://github.com/djnavarro/ertte/blob/main/R/ertte-coxph.R" class="external-link"><code>R/ertte-coxph.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/djnavarro/ertte/blob/main/R/ertte-predict.R" class="external-link"><code>R/ertte-predict.R</code></a></small>
       <div class="d-none name"><code>ertte_predict.Rd</code></div>
     </div>
 
@@ -65,8 +65,7 @@ more <code>time</code> values.</p>
 
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p>An ertte model, as returned by <code><a href="ertte_aft.html">ertte_aft()</a></code> or
-<code><a href="ertte_coxph.html">ertte_coxph()</a></code></p></dd>
+<dd><p>An ertte model</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -94,8 +93,10 @@ probabilities</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>ertte_predict()</code> is a generic, with methods for each
-supported engine – see <code>ertte_predict.ertte_aft()</code>.</p>
+    <p><code>ertte_predict()</code> is a generic function, with two supplied
+methods, one for parametric AFT exposure-response models (i.e.,
+<code>ertte_aft</code> classed objects) and another for Cox proportional hazard
+exposure-response models (i.e., objects with class <code>ertte_coxph</code>).</p>
 <p>The <code>ertte_aft</code> method computes the linear predictor (and
 its standard error) via <code>predict(object, newdata, type = "linear", se.fit = TRUE)</code>, then converts to a survival probability <code>S(t) = 1 - F((log(t) - mu) / scale)</code>, where <code>F</code> is the base distribution's CDF
 implied by <code>object</code>'s <code>dist</code> (see <code><a href="ertte_aft.html">ertte_aft()</a></code> Details). Confidence
@@ -106,12 +107,6 @@ approximation used throughout this package (e.g. <code>erglm_predict()</code>'s
 equivalent in the companion <code>erglm</code> package). <code>conf_level</code> must be a
 single number between 0 and 1 (inclusive); other values error rather
 than silently producing a reversed or <code>NaN</code> interval.</p>
-<p>A zero-row <code>newdata</code> returns a zero-row tibble with the expected
-columns rather than erroring – explicit here (rather than relying on
-<code>predict.survreg()</code>'s incidental support for a zero-row <code>newdata</code>)
-for symmetry with <code>ertte_predict.ertte_coxph()</code>, where the equivalent
-<code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code> call genuinely does error on a zero-row
-<code>newdata</code> (see issue #10).</p>
 <p>The <code>ertte_coxph</code> method delegates to
 <code>survival::survfit(object, newdata, conf.int = conf_level)</code>, which
 computes a per-row survival curve <code>S(t | x) = S0(t)^exp(lp(x) - lp(xbar))</code> from the fitted baseline hazard (Breslow or Efron,
@@ -125,26 +120,13 @@ better suited to a probability bounded in <code>[0, 1]</code> than the plain
 Wald interval <code>ertte_predict.ertte_aft()</code> uses on the linear
 predictor – the two methods' intervals are not directly comparable
 as a result, which is expected given the different model structures.</p>
-<p><code>conf_level = 0</code>/<code>1</code> are legitimate degenerate endpoints, but
-<code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code>'s own
-<code>conf.int</code> machinery rejects exactly 0 or 1 (see issue #11). Both are
-handled directly here instead: <code>conf_level = 0</code> collapses the
-interval to the point estimate (<code>ci_lower = ci_upper = fit_survival</code>);
-<code>conf_level = 1</code> widens it to the full valid probability range
-(<code>ci_lower = 0</code>, <code>ci_upper = 1</code>) – matching what the underlying
-log-transform interval converges to in the limit, and matching how
-<code>ertte_predict.ertte_aft()</code>'s CDF-based back-transform already
-behaves at these boundaries.</p>
-<p>A zero-row <code>newdata</code> returns a zero-row tibble with the expected
-columns rather than erroring: <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survival::survfit()</a></code> itself rejects an
-entirely-missing <code>newdata</code> with a cryptic "all rows of newdata have
-missing values" error (see issue #10).</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">mod</span>, <span class="va">ertte_data</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span>, time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">60</span>, <span class="fl">90</span><span class="op">)</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># predictions for an AFT model</span></span></span>
+<span class="r-in"><span><span class="va">mod_aft</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">mod_aft</span>, <span class="va">ertte_data</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span>, time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">60</span>, <span class="fl">90</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 15 × 14</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       id sex      age weight  dose treatment aucss cmaxss  time event</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
@@ -166,6 +148,7 @@ missing values" error (see issue #10).</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: admin_censor &lt;dbl&gt;, fit_survival &lt;dbl&gt;, ci_lower &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   ci_upper &lt;dbl&gt;</span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># predictions for a Cox model</span></span></span>
 <span class="r-in"><span><span class="va">mod_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_coxph.html">ertte_coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">ertte_predict</span><span class="op">(</span><span class="va">mod_cox</span>, <span class="va">ertte_data</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span>, time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">60</span>, <span class="fl">90</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 15 × 14</span></span>
