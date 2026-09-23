@@ -40,30 +40,27 @@ methods, one for parametric AFT exposure-response models (i.e.,
 \code{ertte_aft} classed objects) and another for Cox proportional hazard
 exposure-response models (i.e., objects with class \code{ertte_coxph}).
 
-The \code{ertte_aft} method computes the linear predictor (and
-its standard error) via \code{predict(object, newdata, type = "linear", se.fit = TRUE)}, then converts to a survival probability \code{S(t) = 1 - F((log(t) - mu) / scale)}, where \code{F} is the base distribution's CDF
-implied by \code{object}'s \code{dist} (see \code{\link[=ertte_aft]{ertte_aft()}} Details). Confidence
-intervals are Wald intervals on \code{mu} (a \code{qnorm()} z-score times the
-standard error), back-transformed the same way -- parameter
-uncertainty in \code{scale} is not propagated, matching the level of
-approximation used throughout this package (e.g. \code{erglm_predict()}'s
-equivalent in the companion \code{erglm} package). \code{conf_level} must be a
-single number between 0 and 1 (inclusive); other values error rather
-than silently producing a reversed or \code{NaN} interval.
+For AFT models, it computes the linear predictor and standard error
+using \code{predict()}, and then converts to a survival probability \eqn{S(t)}:
 
-The \code{ertte_coxph} method delegates to
-\code{survival::survfit(object, newdata, conf.int = conf_level)}, which
-computes a per-row survival curve \code{S(t | x) = S0(t)^exp(lp(x) - lp(xbar))} from the fitted baseline hazard (Breslow or Efron,
-matching \code{object$method}) and the linear predictor, then evaluates it
-at \code{time} via \code{summary(..., extend = TRUE)} -- \code{extend = TRUE} allows
-\code{time} to exceed the last observed follow-up time, holding survival
-constant beyond it (the usual step-function extrapolation) rather
-than erroring. Confidence intervals come from \code{survfit()}'s own
-\code{conf.type = "log"} transform (Wald on \code{log(-log(S))}), which is
-better suited to a probability bounded in \verb{[0, 1]} than the plain
-Wald interval \code{ertte_predict.ertte_aft()} uses on the linear
-predictor -- the two methods' intervals are not directly comparable
-as a result, which is expected given the different model structures.
+\deqn{S(t) = 1 - F((\log(t) - \mu) / \sigma)}
+
+where \eqn{F(\cdot)} denotes the cumulative distribution function for the
+AFT base distribution (e.g., Weibull), \eqn{\mu} denotes the linear
+predictor, and \eqn{\sigma} denotes the scale parameter. Confidence
+intervals are constructed using Wald intervals on the linear predictor
+and back-transformed onto the survival probability scale. Parameter
+uncertainty in the scale parameter is not propagated.
+
+For Cox models, \code{survival::survfit()} is used to compute the survival
+probability, When \code{time} exceeds the last observed follow-up time, the
+survival function is held constant (i.e., step-function extrapolation).
+Confidence intervals are calculated using the \code{conf.type = "log"}
+transform, which specifies Wald intervals on \eqn{\log(-\log(S))}, as
+this is is better suited to a probability bounded in \verb{[0, 1]}.
+Because of this, it should be noted that the
+confidence intervals computed for a Cox model are not directly
+comparable to those computed for AFT models.
 }
 \examples{
 # predictions for an AFT model

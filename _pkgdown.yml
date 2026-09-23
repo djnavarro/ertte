@@ -1,6 +1,7 @@
 url: https://ertte.djnavarro.net/
 template:
   package: waeponwifestre
+  math-rendering: mathjax
 
 articles:
 - title: Articles
