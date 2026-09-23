@@ -31,8 +31,7 @@ ertte_rmst(object, newdata = NULL, tau, conf_level = 0.95, ...)
 
 - tau:
 
-  Numeric vector of restriction horizons at which to compute RSMT
-  `RMST(tau) = integral of S(t) from 0 to tau`.
+  Numeric vector of restriction horizons at which to compute RSMT.
 
 - conf_level:
 
