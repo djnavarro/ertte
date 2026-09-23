@@ -1,65 +1,5 @@
 
-# Reimplements (rather than depends on) `survival:::survmean()`'s
-# rectangle/tail-weighted-sum construction for a single survival curve's
-# restricted mean, generalised to use a *profile-specific* variance
-# increment instead of `survmean()`'s population-level Greenwood term.
-#
-# `survmean()` (used internally by `print.survfit(fit, rmean = tau)`)
-# estimates the variance-of-mean via `hh <- n.event / (n.risk * (n.risk -
-# n.event))` -- the classic Greenwood increment for a *plain* KM curve.
-# Applied to a `coxph`-derived, per-covariate-profile curve (as returned by
-# `survival::survfit(coxph_object, newdata = ...)`), `n.risk`/`n.event` are
-# shared across every profile (they describe the baseline cohort's risk
-# sets, not a specific covariate value) -- so that term captures baseline-
-# hazard sampling variability but not coefficient uncertainty, and can
-# badly *understate* the true variance for a profile far from the mean
-# covariate values (confirmed empirically: for an extreme covariate
-# profile, `survmean()`'s SE was ~15x smaller than a nonparametric
-# bootstrap SE for the same quantity).
-#
-# The fix keeps the same rectangle/tail-weighted-sum machinery, but swaps
-# the variance-increment source for `diff(std.err^2)`: `survfit.coxph()`'s
-# own `std.err` field is already, per profile, the correctly-combined
-# (coefficient + baseline-hazard) standard error of the cumulative hazard
-# H(t|x) (confirmed empirically: `sf$logse == TRUE` and `sf$cumhaz ==
-# -log(sf$surv)` exactly, so `std.err(t)` genuinely estimates SE[H(t|x)]).
-# Treating its increments as if they accumulate independently across jump
-# times (the same simplifying assumption the classic Greenwood formula
-# makes) is an approximation -- the coefficient-uncertainty component of
-# H(t|x) is really a single random direction shared across all t, not a
-# sum of independent per-jump increments -- but cross-validated against a
-# 300-replicate nonparametric bootstrap across two very different
-# covariate profiles, this approximation tracked the bootstrap SE
-# substantially more closely than either `survmean()`'s naive population
-# term or a cheaper approximation that ignores baseline-hazard uncertainty
-# entirely (holding it fixed and only redrawing coefficients).
-#
-# `time`/`surv`/`std.err` are one curve's worth of `survfit()` output
-# (i.e. already selected out of the `[time x profile]` matrix `survfit()`
-# returns when `newdata` has more than one row); `start.time` is `sf$t0`
-# if present, else `min(0, sf$time)` (matching `survmean()`); `end.time`
-# is the RMST horizon `tau`.
-.ertte_rmst_pfun_delta <- function(time, surv, std.err, start.time, end.time) {
-  varH <- std.err^2
-  dVarH <- diff(c(0, varH)) # increment of Var[H(t|x)] at each jump time
 
-  keep <- which(time <= end.time)
-  if (length(keep) == 0) {
-    temptime <- end.time
-    tempsurv <- 1
-    hh <- 0
-  } else {
-    temptime <- c(time[keep], end.time)
-    tempsurv <- c(surv[keep], surv[max(keep)])
-    hh <- c(dVarH[keep], 0)
-  }
-  n <- length(temptime)
-  delta <- diff(c(start.time, temptime))
-  rectangles <- delta * c(1, tempsurv[-n])
-  varmean <- sum(cumsum(rev(rectangles[-1]))^2 * rev(hh)[-1])
-  mean <- sum(rectangles)
-  c(rmean = mean, se_rmean = sqrt(varmean))
-}
 
 #' Restricted mean survival time predictions for exposure-response TTE models
 #'
@@ -71,96 +11,79 @@
 #' [ertte_coxph()].
 #' @param newdata Data frame containing cases to be predicted. Defaults
 #' to the data the model was fitted to.
-#' @param tau Numeric vector of restriction horizons at which to compute
+#' @param tau Numeric vector of restriction horizons at which to compute RSMT
 #' `RMST(tau) = integral of S(t) from 0 to tau`.
 #' @param conf_level Confidence level for the intervals. Defaults to `.95`.
 #' @param ... Passed to methods.
 #' @returns A tibble with one row per combination of `newdata` row and
 #' `tau`, plus `fit_rmst`, `ci_lower`, and `ci_upper`.
 #'
-#' @details `ertte_rmst()` reduces a TTE endpoint to a scalar
-#' exposure-response value -- restricted mean survival time, the area
-#' under the survival curve up to a fixed horizon `tau` -- the other
-#' scalar reduction the package's design issue mentions alongside
-#' landmark-binary (see [ertte_landmark()]). Unlike `ertte_landmark()`,
-#' `ertte_rmst()` is a generic (not a thin wrapper around
-#' `ertte_predict()`): computing an area under the curve genuinely needs
-#' engine-specific logic (the whole curve, not a single time point), so
-#' there are per-engine methods -- see [ertte_rmst.ertte_aft()] and
-#' [ertte_rmst.ertte_coxph()].
+#' @details  
+#' `ertte_rmst()` is used to reduce a time-to-event endpoint to a scalar
+#' exposure-response value, in this case the restricted mean survival time
+#' (RMST). The RMST for some horizon time `tau` is defined as the area under
+#' the survival function calculated up to the horizon:
+#' 
+#' \deqn{\mbox{RMST}(\tau) = \int_0^\tau S(t) \, dt}
+#' 
+#' Because this calculation is performed differently for parametric AFT
+#' models and the Cox semiparametric proportional hazard model, `ertte_rmst()`
+#' is a generic function with two defined methods, one for each kind of model
+#' supported by the ertte package.
 #'
-#' Confidence intervals are symmetric Wald intervals on the RMST scale
-#' (`fit_rmst +/- z * se_rmst`) for both engines. This is not
-#' automatically bounded to `[0, tau]` the way `ertte_predict()`'s
-#' survival-probability intervals are bounded to `[0, 1]` by construction
-#' (their back-transform through a CDF keeps them there) -- an
-#' unclipped Wald interval on RMST can, in principle, dip below 0 or
-#' exceed `tau` for small samples or near-boundary cases. `conf_level`
-#' must be a single number between 0 and 1 (inclusive); other values
-#' error rather than silently producing a reversed or `NaN` interval.
+#' For both model types, confidence intervals are symmetric Wald intervals on 
+#' the RMST scale. This is not automatically bounded to `[0, tau]` the way that
+#' the survival probability intervals for `ertte_predict()` are bounded to `[0, 1]`.
+#' An unclipped Wald interval on RMST can, in principle, dip below 0 or
+#' exceed `tau` for small samples or near-boundary cases.
+#' 
+#' If any value of `tau` exceeds the last observed follow-up time across the whole
+#' fitted cohort, `ertte_rmst()` produces a warning that informs the user that 
+#' the assumption that survival stays flat beyond the observed range may be unreliable
+#' as this assumption has a larger effect on an area than on a point-in-time prediction.
 #'
-#' A zero-row `newdata` returns a zero-row tibble with the expected
-#' columns for both engines, rather than erroring (see issue #10 for
-#' why this needed an explicit guard on the `ertte_coxph` side).
+#' @section AFT method:
+#' The `ertte_aft` method computes `fit_rmst` by numerically
+#' integrating the closed-form survival function via [stats::integrate()]. 
+#' The integration is performed on the log-time scale rather than directly
+#' integrating over time, as adaptive quadrature can fail silently on the
+#' raw time scale. Even with this, however, the integration is not always
+#' reliable for extreme values of `tau`, and so `ertte_rmst()` produces
+#' warnings when `tau` is especially large. 
+#' 
+#' @section Cox PH method:
+#' The `ertte_coxph` method delegates the work to `survival::survfit()`
+#' Because the fitted baseline hazard (and therefore every covariate-adjusted
+#' survival curve) is a right-continuous step function, `fit_rmst` is an
+#' *exact* finite sum of rectangle areas between consecutive jump times
+#' up to `tau`: it is not a numerical-quadrature approximation. The standard
+#' error column `se_rmst` comes from a delta method that reuses the same 
+#' rectangle/tail-weighted construction as the Greenwood-based RMST
+#' variance method in  `survival:::survmean()`, but with the variance-increment 
+#' term replaced by increments of the profile-specific `std.err(t)^2` returned 
+#' by `survfit()`. In contrast, `survmean()`'s own Greenwood term is based on 
+#' population-level risk sets shared across every covariate profile, which 
+#' understates uncertainty for a profile far from the mean covariate values.
 #'
+#' @examples
+#' # RMST for a parametric AFT model
+#' mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
+#' ertte_rmst(mod, ertte_data[1:5, ], tau = c(60, 90))
+#' 
+#' # RMST for a semiparametric Cox PH model
+#' mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
+#' ertte_rmst(mod_cox, ertte_data[1:5, ], tau = c(60, 90))
+#'
+#' @rdname ertte_rmst
 #' @export
+#' 
 ertte_rmst <- function(object, newdata = NULL, tau, conf_level = .95, ...) {
   UseMethod("ertte_rmst")
 }
 
-#' @section AFT method:
-#' The `ertte_aft` method computes `fit_rmst` by numerically
-#' integrating the closed-form survival function `S(t|x) = 1 - F((log(t)
-#' - mu) / scale)` from 0 to `tau` via [stats::integrate()], where `mu`
-#' (and its standard error) comes from `predict(object, newdata, type =
-#' "linear", se.fit = TRUE)`, matching [ertte_predict.ertte_aft()]. The
-#' standard error is an analytic delta method that differentiates under
-#' the integral sign: `d/dmu RMST(tau|x) = integral of dbase(z) / scale
-#' from 0 to tau`, where `dbase` is the base distribution's density --
-#' propagating only `Var(mu)`, not `Var(scale)`,
-#' the same simplification `ertte_predict.ertte_aft()` already makes for
-#' its own confidence intervals.
-#'
-#' @section Integrating on the log-time scale:
-#' Both integrals are actually evaluated on the `u = log(t)` scale
-#' (substituting `t = exp(u)`, `dt = exp(u) du`) rather than directly
-#' over `t in [0, tau]`: for a `tau` many orders of magnitude larger
-#' than the fitted model's natural timescale, `stats::integrate()`'s
-#' adaptive quadrature can silently fail on the raw time scale --
-#' returning `0` with no error or warning, since the interval `[0,
-#' tau]` is enormous relative to the (comparatively tiny) region where
-#' `S(t|x)` actually differs from 0 (see issue #12). On the log scale,
-#' the upper integration bound is `log(tau)`, which grows only
-#' logarithmically with `tau`; the substituted integrand
-#' (`S(t|x) * t` / `(dbase(z) / scale) * t`, as a function of `u`)
-#' decays fast enough for every supported distribution that adaptive
-#' quadrature stays numerically reliable even for absurdly large `tau`.
-#' This changes nothing for ordinary `tau` values (confirmed
-#' numerically to agree with the untransformed integral to quadrature
-#' tolerance).
-#'
-#' @section Reliability for extreme `tau`:
-#' Even with this fix, `stats::integrate()` isn't unconditionally
-#' reliable for arbitrarily extreme `tau`: `fit_rmst` stays accurate to
-#' quadrature tolerance for `tau` many orders of magnitude beyond the
-#' fitting data's own follow-up range, but the delta-method gradient
-#' behind `se_rmst` was found (empirically, not from a general proof)
-#' to occasionally become unreliable somewhat sooner -- the density-like
-#' integrand it evaluates is a much narrower "bump" than the
-#' broad-plateau survival curve `fit_rmst` integrates, and is
-#' correspondingly harder for adaptive quadrature to reliably locate
-#' once the integration domain is stretched far enough. `ertte_rmst()`
-#' warns (rather than silently risking an unreliable interval) if any
-#' `tau` exceeds 10,000 times the last observed follow-up time in the
-#' fitting data -- a threshold with a wide empirical safety margin below
-#' where any instability was actually observed, not a hard numerical
-#' guarantee.
-#'
-#' @rdname ertte_rmst
+
+#' @name ertte_rmst
 #' @export
-#' @examples
-#' mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
-#' ertte_rmst(mod, ertte_data[1:5, ], tau = c(60, 90))
 #'
 ertte_rmst.ertte_aft <- function(object, newdata = NULL, tau, conf_level = .95, ...) {
   .ertte_check_conf_level(conf_level)
@@ -235,47 +158,9 @@ ertte_rmst.ertte_aft <- function(object, newdata = NULL, tau, conf_level = .95, 
     )
 }
 
-#' @details The `ertte_coxph` method delegates to
-#' `survival::survfit(object, newdata, conf.int = conf_level, se.fit =
-#' TRUE)`, the same call [ertte_predict.ertte_coxph()] uses. Because the
-#' fitted baseline hazard (and therefore every covariate-adjusted
-#' survival curve) is a right-continuous step function, `fit_rmst` is an
-#' *exact* finite sum of rectangle areas between consecutive jump times
-#' up to `tau` -- not a numerical-quadrature approximation. `se_rmst`
-#' comes from a delta method that reuses the same rectangle/tail-weighted
-#' construction as `survival:::survmean()`'s classic Greenwood-based RMST
-#' variance, but with the variance-increment term replaced by increments
-#' of the profile-specific `std.err(t)^2` returned by `survfit()` --
-#' `survmean()`'s own Greenwood term is based on population-level risk
-#' sets shared across every covariate profile, which understates
-#' uncertainty for a profile far from the mean covariate values.
-#'
-#' If any value of `tau` exceeds the last observed follow-up time across
-#' the whole fitted cohort, `ertte_rmst()` warns: RMST integrates the
-#' *entire* curve up to `tau`, so silently assuming survival stays flat
-#' beyond the observed range (the same extrapolation convention
-#' `ertte_predict.ertte_coxph()` uses for a single time point) has a
-#' larger effect on an area than on a point-in-time prediction.
-#'
-#' `conf_level = 0`/`1` are legitimate degenerate endpoints and are
-#' supported here directly, since
-#' the delta-method interval is built from `z_scale` (`qnorm()`-derived,
-#' `0` or `Inf` at these boundaries) rather than `survfit()`'s own
-#' `conf.int` machinery -- the latter is only used to request `$surv`/
-#' `$std.err`, which don't depend on the requested confidence level (see
-#' issue #11); `survfit()` is always called with a fixed, valid
-#' placeholder value internally.
-#'
-#' A zero-row `newdata` returns a zero-row tibble with the expected
-#' columns rather than erroring: `survival::survfit()` itself rejects an
-#' entirely-missing `newdata` with a cryptic "all rows of newdata have
-#' missing values" error (see issue #10).
-#'
-#' @rdname ertte_rmst
+
+#' @name ertte_rmst
 #' @export
-#' @examples
-#' mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
-#' ertte_rmst(mod_cox, ertte_data[1:5, ], tau = c(60, 90))
 #'
 ertte_rmst.ertte_coxph <- function(object, newdata = NULL, tau, conf_level = .95, ...) {
   .ertte_check_coxph_nevent(object)
@@ -345,4 +230,66 @@ ertte_rmst.ertte_coxph <- function(object, newdata = NULL, tau, conf_level = .95
       ci_lower = unname(fit_rmst_val - z_scale * se_rmst_val),
       ci_upper = unname(fit_rmst_val + z_scale * se_rmst_val),
     )
+}
+
+# Reimplements (rather than depends on) `survival:::survmean()`'s
+# rectangle/tail-weighted-sum construction for a single survival curve's
+# restricted mean, generalised to use a *profile-specific* variance
+# increment instead of `survmean()`'s population-level Greenwood term.
+#
+# `survmean()` (used internally by `print.survfit(fit, rmean = tau)`)
+# estimates the variance-of-mean via `hh <- n.event / (n.risk * (n.risk -
+# n.event))` -- the classic Greenwood increment for a *plain* KM curve.
+# Applied to a `coxph`-derived, per-covariate-profile curve (as returned by
+# `survival::survfit(coxph_object, newdata = ...)`), `n.risk`/`n.event` are
+# shared across every profile (they describe the baseline cohort's risk
+# sets, not a specific covariate value) -- so that term captures baseline-
+# hazard sampling variability but not coefficient uncertainty, and can
+# badly *understate* the true variance for a profile far from the mean
+# covariate values (confirmed empirically: for an extreme covariate
+# profile, `survmean()`'s SE was ~15x smaller than a nonparametric
+# bootstrap SE for the same quantity).
+#
+# The fix keeps the same rectangle/tail-weighted-sum machinery, but swaps
+# the variance-increment source for `diff(std.err^2)`: `survfit.coxph()`'s
+# own `std.err` field is already, per profile, the correctly-combined
+# (coefficient + baseline-hazard) standard error of the cumulative hazard
+# H(t|x) (confirmed empirically: `sf$logse == TRUE` and `sf$cumhaz ==
+# -log(sf$surv)` exactly, so `std.err(t)` genuinely estimates SE[H(t|x)]).
+# Treating its increments as if they accumulate independently across jump
+# times (the same simplifying assumption the classic Greenwood formula
+# makes) is an approximation -- the coefficient-uncertainty component of
+# H(t|x) is really a single random direction shared across all t, not a
+# sum of independent per-jump increments -- but cross-validated against a
+# 300-replicate nonparametric bootstrap across two very different
+# covariate profiles, this approximation tracked the bootstrap SE
+# substantially more closely than either `survmean()`'s naive population
+# term or a cheaper approximation that ignores baseline-hazard uncertainty
+# entirely (holding it fixed and only redrawing coefficients).
+#
+# `time`/`surv`/`std.err` are one curve's worth of `survfit()` output
+# (i.e. already selected out of the `[time x profile]` matrix `survfit()`
+# returns when `newdata` has more than one row); `start.time` is `sf$t0`
+# if present, else `min(0, sf$time)` (matching `survmean()`); `end.time`
+# is the RMST horizon `tau`.
+.ertte_rmst_pfun_delta <- function(time, surv, std.err, start.time, end.time) {
+  varH <- std.err^2
+  dVarH <- diff(c(0, varH)) # increment of Var[H(t|x)] at each jump time
+
+  keep <- which(time <= end.time)
+  if (length(keep) == 0) {
+    temptime <- end.time
+    tempsurv <- 1
+    hh <- 0
+  } else {
+    temptime <- c(time[keep], end.time)
+    tempsurv <- c(surv[keep], surv[max(keep)])
+    hh <- c(dVarH[keep], 0)
+  }
+  n <- length(temptime)
+  delta <- diff(c(start.time, temptime))
+  rectangles <- delta * c(1, tempsurv[-n])
+  varmean <- sum(cumsum(rev(rectangles[-1]))^2 * rev(hh)[-1])
+  mean <- sum(rectangles)
+  c(rmean = mean, se_rmean = sqrt(varmean))
 }

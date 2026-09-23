@@ -13,20 +13,23 @@ articles:
 
 reference:
 - title: Build
-  desc: Fit exposure-response time-to-event models based on survreg()/coxph()
+  desc: Fit exposure-response time-to-event models
 - contents:
   - ertte_aft
   - ertte_coxph
+- title: Predict
+  desc: Prediction tools for exposure-response time-to-event models
+- contents:
   - ertte_predict
   - ertte_landmark
   - ertte_rmst
-  - ertte_aft_select_distribution
-- title: Covariate selection
-  desc: Stepwise covariate modelling for exposure-response TTE models
+- title: Select
+  desc: Stepwise covariate modelling, and distribution selection
 - contents:
   - ertte_scm
   - ertte_term
   - ertte_power
+  - ertte_aft_select_distribution
 - title: Simulate
   desc: Simulation tools for exposure-response TTE models
 - contents:

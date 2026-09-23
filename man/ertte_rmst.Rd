@@ -19,7 +19,7 @@ ertte_rmst(object, newdata = NULL, tau, conf_level = 0.95, ...)
 \item{newdata}{Data frame containing cases to be predicted. Defaults
 to the data the model was fitted to.}
 
-\item{tau}{Numeric vector of restriction horizons at which to compute
+\item{tau}{Numeric vector of restriction horizons at which to compute RSMT
 \verb{RMST(tau) = integral of S(t) from 0 to tau}.}
 
 \item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.}
@@ -36,120 +36,62 @@ ertte model's survival curve up to one or more fixed horizons \code{tau},
 with confidence intervals.
 }
 \details{
-\code{ertte_rmst()} reduces a TTE endpoint to a scalar
-exposure-response value -- restricted mean survival time, the area
-under the survival curve up to a fixed horizon \code{tau} -- the other
-scalar reduction the package's design issue mentions alongside
-landmark-binary (see \code{\link[=ertte_landmark]{ertte_landmark()}}). Unlike \code{ertte_landmark()},
-\code{ertte_rmst()} is a generic (not a thin wrapper around
-\code{ertte_predict()}): computing an area under the curve genuinely needs
-engine-specific logic (the whole curve, not a single time point), so
-there are per-engine methods -- see \code{\link[=ertte_rmst.ertte_aft]{ertte_rmst.ertte_aft()}} and
-\code{\link[=ertte_rmst.ertte_coxph]{ertte_rmst.ertte_coxph()}}.
+\code{ertte_rmst()} is used to reduce a time-to-event endpoint to a scalar
+exposure-response value, in this case the restricted mean survival time
+(RMST). The RMST for some horizon time \code{tau} is defined as the area under
+the survival function calculated up to the horizon:
 
-Confidence intervals are symmetric Wald intervals on the RMST scale
-(\verb{fit_rmst +/- z * se_rmst}) for both engines. This is not
-automatically bounded to \verb{[0, tau]} the way \code{ertte_predict()}'s
-survival-probability intervals are bounded to \verb{[0, 1]} by construction
-(their back-transform through a CDF keeps them there) -- an
-unclipped Wald interval on RMST can, in principle, dip below 0 or
-exceed \code{tau} for small samples or near-boundary cases. \code{conf_level}
-must be a single number between 0 and 1 (inclusive); other values
-error rather than silently producing a reversed or \code{NaN} interval.
+\deqn{\mbox{RMST}(\tau) = \int_0^\tau S(t) \, dt}
 
-A zero-row \code{newdata} returns a zero-row tibble with the expected
-columns for both engines, rather than erroring (see issue #10 for
-why this needed an explicit guard on the \code{ertte_coxph} side).
+Because this calculation is performed differently for parametric AFT
+models and the Cox semiparametric proportional hazard model, \code{ertte_rmst()}
+is a generic function with two defined methods, one for each kind of model
+supported by the ertte package.
 
-The \code{ertte_coxph} method delegates to
-\code{survival::survfit(object, newdata, conf.int = conf_level, se.fit = TRUE)}, the same call \code{\link[=ertte_predict.ertte_coxph]{ertte_predict.ertte_coxph()}} uses. Because the
-fitted baseline hazard (and therefore every covariate-adjusted
-survival curve) is a right-continuous step function, \code{fit_rmst} is an
-\emph{exact} finite sum of rectangle areas between consecutive jump times
-up to \code{tau} -- not a numerical-quadrature approximation. \code{se_rmst}
-comes from a delta method that reuses the same rectangle/tail-weighted
-construction as \code{survival:::survmean()}'s classic Greenwood-based RMST
-variance, but with the variance-increment term replaced by increments
-of the profile-specific \code{std.err(t)^2} returned by \code{survfit()} --
-\code{survmean()}'s own Greenwood term is based on population-level risk
-sets shared across every covariate profile, which understates
-uncertainty for a profile far from the mean covariate values.
+For both model types, confidence intervals are symmetric Wald intervals on
+the RMST scale. This is not automatically bounded to \verb{[0, tau]} the way that
+the survival probability intervals for \code{ertte_predict()} are bounded to \verb{[0, 1]}.
+An unclipped Wald interval on RMST can, in principle, dip below 0 or
+exceed \code{tau} for small samples or near-boundary cases.
 
-If any value of \code{tau} exceeds the last observed follow-up time across
-the whole fitted cohort, \code{ertte_rmst()} warns: RMST integrates the
-\emph{entire} curve up to \code{tau}, so silently assuming survival stays flat
-beyond the observed range (the same extrapolation convention
-\code{ertte_predict.ertte_coxph()} uses for a single time point) has a
-larger effect on an area than on a point-in-time prediction.
-
-\code{conf_level = 0}/\code{1} are legitimate degenerate endpoints and are
-supported here directly, since
-the delta-method interval is built from \code{z_scale} (\code{qnorm()}-derived,
-\code{0} or \code{Inf} at these boundaries) rather than \code{survfit()}'s own
-\code{conf.int} machinery -- the latter is only used to request \verb{$surv}/
-\verb{$std.err}, which don't depend on the requested confidence level (see
-issue #11); \code{survfit()} is always called with a fixed, valid
-placeholder value internally.
-
-A zero-row \code{newdata} returns a zero-row tibble with the expected
-columns rather than erroring: \code{survival::survfit()} itself rejects an
-entirely-missing \code{newdata} with a cryptic "all rows of newdata have
-missing values" error (see issue #10).
+If any value of \code{tau} exceeds the last observed follow-up time across the whole
+fitted cohort, \code{ertte_rmst()} produces a warning that informs the user that
+the assumption that survival stays flat beyond the observed range may be unreliable
+as this assumption has a larger effect on an area than on a point-in-time prediction.
 }
 \section{AFT method}{
 
 The \code{ertte_aft} method computes \code{fit_rmst} by numerically
-integrating the closed-form survival function `S(t|x) = 1 - F((log(t)
-\itemize{
-\item mu) / scale)\verb{from 0 to}tau\verb{via [stats::integrate()], where}mu\verb{(and its standard error) comes from}predict(object, newdata, type =
-"linear", se.fit = TRUE)\verb{, matching [ertte_predict.ertte_aft()]. The standard error is an analytic delta method that differentiates under the integral sign: }d/dmu RMST(tau|x) = integral of dbase(z) / scale
-from 0 to tau\verb{, where }dbase\verb{is the base distribution's density -- propagating only}Var(mu)\verb{, not }Var(scale)\verb{, the same simplification }ertte_predict.ertte_aft()` already makes for
-its own confidence intervals.
-}
-}
-
-\section{Integrating on the log-time scale}{
-
-Both integrals are actually evaluated on the \code{u = log(t)} scale
-(substituting \code{t = exp(u)}, \verb{dt = exp(u) du}) rather than directly
-over \verb{t in [0, tau]}: for a \code{tau} many orders of magnitude larger
-than the fitted model's natural timescale, \code{stats::integrate()}'s
-adaptive quadrature can silently fail on the raw time scale --
-returning \code{0} with no error or warning, since the interval \verb{[0, tau]} is enormous relative to the (comparatively tiny) region where
-\code{S(t|x)} actually differs from 0 (see issue #12). On the log scale,
-the upper integration bound is \code{log(tau)}, which grows only
-logarithmically with \code{tau}; the substituted integrand
-(\code{S(t|x) * t} / \code{(dbase(z) / scale) * t}, as a function of \code{u})
-decays fast enough for every supported distribution that adaptive
-quadrature stays numerically reliable even for absurdly large \code{tau}.
-This changes nothing for ordinary \code{tau} values (confirmed
-numerically to agree with the untransformed integral to quadrature
-tolerance).
+integrating the closed-form survival function via \code{\link[stats:integrate]{stats::integrate()}}.
+The integration is performed on the log-time scale rather than directly
+integrating over time, as adaptive quadrature can fail silently on the
+raw time scale. Even with this, however, the integration is not always
+reliable for extreme values of \code{tau}, and so \code{ertte_rmst()} produces
+warnings when \code{tau} is especially large.
 }
 
-\section{Reliability for extreme \code{tau}}{
+\section{Cox PH method}{
 
-Even with this fix, \code{stats::integrate()} isn't unconditionally
-reliable for arbitrarily extreme \code{tau}: \code{fit_rmst} stays accurate to
-quadrature tolerance for \code{tau} many orders of magnitude beyond the
-fitting data's own follow-up range, but the delta-method gradient
-behind \code{se_rmst} was found (empirically, not from a general proof)
-to occasionally become unreliable somewhat sooner -- the density-like
-integrand it evaluates is a much narrower "bump" than the
-broad-plateau survival curve \code{fit_rmst} integrates, and is
-correspondingly harder for adaptive quadrature to reliably locate
-once the integration domain is stretched far enough. \code{ertte_rmst()}
-warns (rather than silently risking an unreliable interval) if any
-\code{tau} exceeds 10,000 times the last observed follow-up time in the
-fitting data -- a threshold with a wide empirical safety margin below
-where any instability was actually observed, not a hard numerical
-guarantee.
+The \code{ertte_coxph} method delegates the work to \code{survival::survfit()}
+Because the fitted baseline hazard (and therefore every covariate-adjusted
+survival curve) is a right-continuous step function, \code{fit_rmst} is an
+\emph{exact} finite sum of rectangle areas between consecutive jump times
+up to \code{tau}: it is not a numerical-quadrature approximation. The standard
+error column \code{se_rmst} comes from a delta method that reuses the same
+rectangle/tail-weighted construction as the Greenwood-based RMST
+variance method in  \code{survival:::survmean()}, but with the variance-increment
+term replaced by increments of the profile-specific \code{std.err(t)^2} returned
+by \code{survfit()}. In contrast, \code{survmean()}'s own Greenwood term is based on
+population-level risk sets shared across every covariate profile, which
+understates uncertainty for a profile far from the mean covariate values.
 }
 
 \examples{
+# RMST for a parametric AFT model
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 ertte_rmst(mod, ertte_data[1:5, ], tau = c(60, 90))
 
+# RMST for a semiparametric Cox PH model
 mod_cox <- ertte_coxph(Surv(time, event) ~ aucss, ertte_data)
 ertte_rmst(mod_cox, ertte_data[1:5, ], tau = c(60, 90))
 
