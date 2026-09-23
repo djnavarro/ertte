@@ -5,6 +5,7 @@ template:
 
 articles:
 - title: Articles
+  navbar:
   contents:
   - articles/overview
   - articles/landmark

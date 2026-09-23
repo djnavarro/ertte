@@ -1,5 +1,5 @@
 ---
-title: "Stepwise covariate modelling in ertte"
+title: "Stepwise covariate modelling"
 ---
 
 ```{r, include = FALSE}
@@ -11,17 +11,17 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
-library(ertte)
-library(survival)
-```
-
 This article covers `ertte`'s stepwise covariate modelling (SCM) machinery:
 `ertte_scm_forward()`/`ertte_scm_backward()`, the single-term
 `ertte_add_term()`/`ertte_remove_term()` helpers they're built on, and
 `ertte_scm_history()` for inspecting what happened during a search. It
 assumes familiarity with `ertte_aft()`/`ertte_coxph()` -- see the [overview
 article](overview.html) if you haven't already read it.
+
+```{r setup}
+library(ertte)
+library(survival)
+```
 
 ## What SCM does
 

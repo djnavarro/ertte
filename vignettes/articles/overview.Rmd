@@ -1,5 +1,5 @@
 ---
-title: "Survival models in ertte"
+title: "Exposure-response time-to-event models"
 ---
 
 ```{r, include = FALSE}
@@ -9,11 +9,6 @@ knitr::opts_chunk$set(
   fig.width = 6,
   fig.height = 4
 )
-```
-
-```{r setup}
-library(ertte)
-library(survival)
 ```
 
 This article is the place to start if you're new to `ertte`. It walks
@@ -29,6 +24,11 @@ time](rmst.html) and [landmark event probabilities](landmark.html) cover
 `ertte`'s two ways of reducing a TTE endpoint to a single scalar
 exposure-response summary, and [stepwise covariate modelling](scm.html)
 covers `ertte`'s tools for building up a covariate model.
+
+```{r setup}
+library(ertte)
+library(survival)
+```
 
 ## Time-to-event data
 
