@@ -11,6 +11,7 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+options(width = 120)
 ```
 
 # ertte
@@ -20,15 +21,16 @@ knitr::opts_chunk$set(
 [![Codecov test coverage](https://codecov.io/gh/djnavarro/ertte/graph/badge.svg)](https://app.codecov.io/gh/djnavarro/ertte)
 <!-- badges: end -->
 
-ertte is the time-to-event member of the exposure-response (E-R) package
-family, alongside [erglm](https://github.com/djnavarro/erglm) (GLM E-R
-models) and [emaxnls](https://github.com/djnavarro/emaxnls) (Emax /
-logistic-Emax models), all of which plug into
-[erplots](https://github.com/djnavarro/erplots) for visualisation. It
-wraps `survival::survreg()`-based parametric accelerated failure time
-(AFT) modelling behind a tidy, consistent interface: model fitting,
-AIC-based distribution selection, stepwise covariate modelling, and
-simulation.
+Provides tools for working with exposure-response models for time-to-event
+data. It is designed with a similar interface to the 
+[erglm](https://github.com/djnavarro/erglm) and [emaxnls](https://github.com/djnavarro/emaxnls)
+packages, and supports the plotting interface supplied by the 
+[erplots](https://github.com/djnavarro/erplots) package. It
+provides two model-fitting engines, one for parametric AFT regression
+models and another for semi-parametric Cox proportional-hazards regression,
+behind a shared, tidy interface for survival-probability prediction,
+restricted mean survival time, landmark analysis, stepwise covariate
+modelling, and simulation.
 
 ## Installation
 
