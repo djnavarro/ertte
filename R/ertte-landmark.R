@@ -1,56 +1,35 @@
 
 #' Landmark event-probability predictions for exposure-response TTE models
 #'
-#' Reduces a fitted ertte model's survival curve to a binary landmark
-#' event probability, `P(event by t*)`, at a single fixed time `t*`.
+#' Reduces the survival curve for an exposure-response time-to-even model
+#' to a binary landmark event probability at a single fixed time.
 #'
-#' @param object An ertte model, as returned by [ertte_aft()] or
-#' [ertte_coxph()].
+#' @param object An ertte model.
 #' @param newdata Data frame containing cases to be predicted. Defaults
 #' to the data the model was fitted to.
-#' @param landmark_time A single, strictly positive number: the fixed
-#' time `t*` at which to compute `P(event by t*)`.
+#' @param landmark_time A single positive number.
 #' @param conf_level Confidence level for the intervals. Defaults to `.95`.
 #' @param ... Passed to [ertte_predict()].
-#' @returns A tibble with one row per row of `newdata`, plus
-#' `landmark_time`, `fit_resp` (the estimated `P(event by t*)`),
-#' `ci_lower`, and `ci_upper`.
+#' 
+#' @return 
+#' A tibble with one row per row of `newdata`. In addition to 
+#' storing the original columns from `newdata`, it contains a column 
+#' storing the `landmark_time` itself, a `fit_resp` column with 
+#' the estimated probability of observing the event at or before the 
+#' land mark time, and `ci_lower`, and `ci_upper` columns specifying 
+#' the confidence interval.
 #'
-#' @details Reduces a TTE endpoint to a binary landmark response --
-#' "did the event happen by a fixed time t*" -- turning it into an
-#' ordinary scalar exposure-response value that erplots' existing
-#' `er_plot()`/`er_vpc()` grammars can visualise with no new plotting
-#' code (see the package's design issue, Workstream B1:
-#' <https://github.com/djnavarro/ertte/issues/1>). `P(event by t*) = 1
-#' - S(t*)`, computed by calling [ertte_predict()] at `time =
-#' landmark_time` and transforming its survival-probability output.
-#' Since that's a decreasing monotonic transform, the confidence
-#' interval bounds swap (the upper bound on survival becomes the lower
-#' bound on event probability, and vice versa) but need no
-#' recomputation of their own: whatever validity `ertte_predict()`'s
-#' interval has for a given engine -- a Wald interval on the AFT
-#' method's linear predictor, or `survival::survfit()`'s own
-#' `conf.type = "log"` interval for the Cox PH method -- carries
-#' through unchanged.
-#'
-#' `ertte_landmark()` is a single function, not a generic -- unlike
-#' [ertte_predict()]/[ertte_fun()], it needs no engine-specific logic
-#' of its own: it delegates entirely to `ertte_predict()`, which
-#' already dispatches on the `ertte_aft`/`ertte_coxph` subclass. This
-#' also means all of `ertte_predict()`'s existing edge-case handling
-#' (e.g. the all-censored-Cox guard, single-stratum `NA` propagation)
-#' is inherited unchanged.
-#'
-#' Unlike `ertte_predict()`'s `time` argument (a vector, evaluated at
-#' potentially many times per row), `landmark_time` must be a single
+#' @details 
+#' In some time-to-event analyses it is convenient to reduce a 
+#' time-to-event endpoint to a binary landmark response: for every
+#' row in the data, the landmark response describes the modelled 
+#' probability that the event occurs at or before a specified 
+#' `landmark_time` defined by the analyst. The landmark event
+#' probability is simply one minus the survival probability at
+#' that time, and is computed using `ertte_predict()`. However, 
+#' unlike the typical usage of `ertte_predict()` in which a vector
+#' of times is passed, `landmark_time` must be a single
 #' fixed value -- a landmark is by definition evaluated at one time.
-#'
-#' Restricted mean survival time (RMST), the other scalar E-R
-#' reduction the design issue mentions, is implemented separately as
-#' [ertte_rmst()] -- unlike `ertte_landmark()`, it's a genuine generic
-#' rather than a thin wrapper around `ertte_predict()`, since an area
-#' under the curve needs the whole survival curve, not a single time
-#' point.
 #'
 #' @export
 #' @examples

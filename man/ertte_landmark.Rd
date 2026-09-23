@@ -7,59 +7,40 @@
 ertte_landmark(object, newdata = NULL, landmark_time, conf_level = 0.95, ...)
 }
 \arguments{
-\item{object}{An ertte model, as returned by \code{\link[=ertte_aft]{ertte_aft()}} or
-\code{\link[=ertte_coxph]{ertte_coxph()}}.}
+\item{object}{An ertte model.}
 
 \item{newdata}{Data frame containing cases to be predicted. Defaults
 to the data the model was fitted to.}
 
-\item{landmark_time}{A single, strictly positive number: the fixed
-time \verb{t*} at which to compute \verb{P(event by t*)}.}
+\item{landmark_time}{A single positive number.}
 
 \item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.}
 
 \item{...}{Passed to \code{\link[=ertte_predict]{ertte_predict()}}.}
 }
 \value{
-A tibble with one row per row of \code{newdata}, plus
-\code{landmark_time}, \code{fit_resp} (the estimated \verb{P(event by t*)}),
-\code{ci_lower}, and \code{ci_upper}.
+A tibble with one row per row of \code{newdata}. In addition to
+storing the original columns from \code{newdata}, it contains a column
+storing the \code{landmark_time} itself, a \code{fit_resp} column with
+the estimated probability of observing the event at or before the
+land mark time, and \code{ci_lower}, and \code{ci_upper} columns specifying
+the confidence interval.
 }
 \description{
-Reduces a fitted ertte model's survival curve to a binary landmark
-event probability, \verb{P(event by t*)}, at a single fixed time \verb{t*}.
+Reduces the survival curve for an exposure-response time-to-even model
+to a binary landmark event probability at a single fixed time.
 }
 \details{
-Reduces a TTE endpoint to a binary landmark response --
-"did the event happen by a fixed time t*" -- turning it into an
-ordinary scalar exposure-response value that erplots' existing
-\code{er_plot()}/\code{er_vpc()} grammars can visualise with no new plotting
-code (see the package's design issue, Workstream B1:
-\url{https://github.com/djnavarro/ertte/issues/1}). `P(event by t*) = 1
-\itemize{
-\item S(t*)\verb{, computed by calling [ertte_predict()] at }time =
-landmark_time\verb{and transforming its survival-probability output. Since that's a decreasing monotonic transform, the confidence interval bounds swap (the upper bound on survival becomes the lower bound on event probability, and vice versa) but need no recomputation of their own: whatever validity}ertte_predict()\verb{'s interval has for a given engine -- a Wald interval on the AFT method's linear predictor, or }survival::survfit()\verb{'s own }conf.type = "log"` interval for the Cox PH method -- carries
-through unchanged.
-}
-
-\code{ertte_landmark()} is a single function, not a generic -- unlike
-\code{\link[=ertte_predict]{ertte_predict()}}/\code{\link[=ertte_fun]{ertte_fun()}}, it needs no engine-specific logic
-of its own: it delegates entirely to \code{ertte_predict()}, which
-already dispatches on the \code{ertte_aft}/\code{ertte_coxph} subclass. This
-also means all of \code{ertte_predict()}'s existing edge-case handling
-(e.g. the all-censored-Cox guard, single-stratum \code{NA} propagation)
-is inherited unchanged.
-
-Unlike \code{ertte_predict()}'s \code{time} argument (a vector, evaluated at
-potentially many times per row), \code{landmark_time} must be a single
+In some time-to-event analyses it is convenient to reduce a
+time-to-event endpoint to a binary landmark response: for every
+row in the data, the landmark response describes the modelled
+probability that the event occurs at or before a specified
+\code{landmark_time} defined by the analyst. The landmark event
+probability is simply one minus the survival probability at
+that time, and is computed using \code{ertte_predict()}. However,
+unlike the typical usage of \code{ertte_predict()} in which a vector
+of times is passed, \code{landmark_time} must be a single
 fixed value -- a landmark is by definition evaluated at one time.
-
-Restricted mean survival time (RMST), the other scalar E-R
-reduction the design issue mentions, is implemented separately as
-\code{\link[=ertte_rmst]{ertte_rmst()}} -- unlike \code{ertte_landmark()}, it's a genuine generic
-rather than a thin wrapper around \code{ertte_predict()}, since an area
-under the curve needs the whole survival curve, not a single time
-point.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
