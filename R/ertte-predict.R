@@ -11,6 +11,7 @@
 #' @param time Numeric vector of times at which to compute survival
 #' probabilities
 #' @param conf_level Confidence level for the intervals. Defaults to `.95`.
+#' Must be a single number between 0 and 1 (inclusive); other values error.
 #' @param ... Passed to methods
 #' @returns A tibble with one row per combination of `newdata` row and
 #' `time`
@@ -33,11 +34,11 @@
 #' uncertainty in the scale parameter is not propagated. 
 #' 
 #' For Cox models, `survival::survfit()` is used to compute the survival
-#' probability, When `time` exceeds the last observed follow-up time, the 
+#' probability. When `time` exceeds the last observed follow-up time, the 
 #' survival function is held constant (i.e., step-function extrapolation). 
 #' Confidence intervals are calculated using the `conf.type = "log"` 
 #' transform, which specifies Wald intervals on \eqn{\log(-\log(S))}, as 
-#' this is is better suited to a probability bounded in `[0, 1]`. 
+#' this is better suited to a probability bounded in `[0, 1]`. 
 #' Because of this, it should be noted that the 
 #' confidence intervals computed for a Cox model are not directly 
 #' comparable to those computed for AFT models. 

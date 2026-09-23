@@ -73,9 +73,8 @@ where behaviour genuinely differs:
 - **`simulate.ertte_model()`** -- the one `stats::simulate()` method
   for both engines; per-engine event-time simulation is dispatched one
   level down via the internal `.ertte_simulate_draws()` S3 generic
-  (`.ertte_simulate_draws.ertte_aft()` in `R/ertte-aft.R`,
-  `.ertte_simulate_draws.ertte_coxph()` in `R/ertte-coxph.R`). Takes an
-  optional `censor_time` (a genuine per-row administrative follow-up
+  (both the generic and its `ertte_aft`/`ertte_coxph` methods live in
+  `R/ertte-simulate.R`). Takes an optional `censor_time` (a genuine per-row administrative follow-up
   time); absent that, censored rows are capped at their observed exit
   time and event rows are left uncensored (an approximation, but a
   less biased one than capping every row at its observed exit time,
@@ -160,18 +159,24 @@ erglm's pattern) so ertte has no hard dependency on erplots.
 
 ## Structure
 
-- `R/ertte-aft.R` -- `ertte_aft()`; the `ertte_predict()`/`ertte_fun()`
-  generics plus their `ertte_predict.ertte_aft()`/`ertte_fun.ertte_aft()`
-  methods; the `.ertte_simulate_draws()` S3 generic (with its
-  `ertte_aft` method here; the `ertte_coxph` method is in
-  `R/ertte-coxph.R`). See `.ertte_dist_info()` in `R/utils-helpers.R`
-  for the base distribution CDF/quantile/density table.
-- `R/ertte-coxph.R` -- `ertte_coxph()`; `ertte_predict.ertte_coxph()`;
-  `ertte_fun.ertte_coxph()` (using the internal
-  `.ertte_coxph_basehaz_at()` step-function helper);
-  `.ertte_simulate_draws.ertte_coxph()` (event-time simulation by
-  inverting the fitted baseline cumulative hazard, via
-  `.ertte_coxph_invert_basehaz()`).
+- `R/ertte-aft.R` -- `ertte_aft()`. See `.ertte_dist_info()` in
+  `R/utils-helpers.R` for the base distribution CDF/quantile/density
+  table.
+- `R/ertte-coxph.R` -- `ertte_coxph()` and its internal
+  `.ertte_check_coxph_nevent()` validator.
+- `R/ertte-predict.R` -- the `ertte_predict()` generic plus its
+  `ertte_predict.ertte_aft()`/`ertte_predict.ertte_coxph()` methods.
+- `R/ertte-fun.R` -- the `ertte_fun()` generic plus its
+  `ertte_fun.ertte_aft()`/`ertte_fun.ertte_coxph()` methods (the latter
+  using the internal `.ertte_coxph_basehaz_at()` step-function helper);
+  also the internal `.ertte_coxph_invert_basehaz()` helper, used by
+  `.ertte_simulate_draws.ertte_coxph()` in `R/ertte-simulate.R` to
+  invert the fitted baseline cumulative hazard for event-time
+  simulation.
+- `R/ertte-simulate.R` -- `simulate.ertte_model()` (and its
+  `.ertte_resample()` helper), modelled on `simulate.erglm_model()`'s
+  output shape; also the internal `.ertte_simulate_draws()` S3 generic
+  and its `ertte_aft`/`ertte_coxph` methods.
 - `R/ertte-rmst.R` -- `ertte_rmst()` generic, with
   `ertte_rmst.ertte_aft()` and `ertte_rmst.ertte_coxph()` (the latter
   via the internal `.ertte_rmst_pfun_delta()` helper). Has a
@@ -185,9 +190,6 @@ erglm's pattern) so ertte has no hard dependency on erplots.
   `ertte_scm_history()`, `ertte_add_term()`/`ertte_remove_term()`, and
   the internal `.ertte_refit()` S3 generic. Has a website-only article,
   `vignettes/articles/scm.Rmd`.
-- `R/ertte-simulate.R` -- `simulate.ertte_model()` (and its
-  `.ertte_resample()` helper), modelled on `simulate.erglm_model()`'s
-  output shape.
 - `R/ertte-data.R` -- the synthetic `ertte_data` example dataset (`sex`,
   `age`, `weight`, `dose`, `aucss`, `cmaxss`, `admin_censor`), simulated
   from a Weibull AFT ground truth with an exposure and sex effect,

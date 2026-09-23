@@ -79,6 +79,26 @@ computed, since it plays no role in selection). The \code{model_aic} and
 drove selection, and the history's \code{criterion} column records which one
 was used for each forward/backward step.
 }
+\section{Handling problem candidates}{
+
+A candidate that can't be fit for a given step (e.g. it's aliased with
+a term already in the model, references a variable missing from the
+data, or fails to converge) is skipped for that step with a warning,
+rather than aborting the whole search or being silently selected.
+}
+
+\section{Candidate test order and \code{seed}}{
+
+\code{seed} exists as a safety measure against run-to-run variation in the
+order candidate terms are tested within a step (\code{sample()}, shuffled
+before testing one at a time). Model fitting itself
+(\code{survival::survreg()}) is deterministic given a starting formula, so
+\code{seed} only matters in the (essentially measure-zero) case of an
+exact p-value tie between competing candidates within a step -- see
+the companion \code{erglm} package's equivalent documentation for the full
+rationale, which applies unchanged here.
+}
+
 \examples{
 # Forward addition by p-value selection
 mod0 <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)

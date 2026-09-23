@@ -19,9 +19,10 @@ ertte_rmst(object, newdata = NULL, tau, conf_level = 0.95, ...)
 \item{newdata}{Data frame containing cases to be predicted. Defaults
 to the data the model was fitted to.}
 
-\item{tau}{Numeric vector of restriction horizons at which to compute RSMT.}
+\item{tau}{Numeric vector of restriction horizons at which to compute RMST.}
 
-\item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.}
+\item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.
+Must be a single number between 0 and 1 (inclusive); other values error.}
 
 \item{...}{Passed to methods.}
 }
@@ -52,26 +53,41 @@ the RMST scale. This is not automatically bounded to \verb{[0, tau]} the way tha
 the survival probability intervals for \code{ertte_predict()} are bounded to \verb{[0, 1]}.
 An unclipped Wald interval on RMST can, in principle, dip below 0 or
 exceed \code{tau} for small samples or near-boundary cases.
-
-If any value of \code{tau} exceeds the last observed follow-up time across the whole
-fitted cohort, \code{ertte_rmst()} produces a warning that informs the user that
-the assumption that survival stays flat beyond the observed range may be unreliable
-as this assumption has a larger effect on an area than on a point-in-time prediction.
 }
 \section{AFT method}{
 
 The \code{ertte_aft} method computes \code{fit_rmst} by numerically
 integrating the closed-form survival function via \code{\link[stats:integrate]{stats::integrate()}}.
-The integration is performed on the log-time scale rather than directly
-integrating over time, as adaptive quadrature can fail silently on the
-raw time scale. Even with this, however, the integration is not always
-reliable for extreme values of \code{tau}, and so \code{ertte_rmst()} produces
-warnings when \code{tau} is especially large.
+The integration variable is \code{u = log(t)} rather than \code{t} itself: adaptive
+quadrature over the raw time scale, \code{t} from \code{0} to \code{tau}, can fail
+silently for an extreme \code{tau}, whereas substituting \code{t = exp(u)} and
+integrating \code{u} from \code{-Inf} to \code{log(tau)} is numerically well-behaved.
+
+The standard error \code{se_rmst} uses the delta method: it's the absolute
+gradient of RMST with respect to the linear predictor \eqn{\mu}, scaled
+by the standard error of \eqn{\mu} itself,
+
+\deqn{\mathrm{se\_rmst} = \left| \frac{d \, \mathrm{RMST}(\tau)}{d\mu} \right| \times \mathrm{se}(\mu)}
+
+where the gradient is itself obtained by numerical integration of the
+survival function's derivative with respect to \eqn{\mu}.
+
+\code{fit_rmst} itself stays numerically reliable well beyond the observed
+follow-up range, but \code{se_rmst}/the confidence interval, also computed via
+numerical integration, can become unreliable for a very extreme horizon
+-- \code{ertte_rmst()} warns when any value of \code{tau} exceeds 10,000x the last
+observed follow-up time in the fitting data.
 }
 
 \section{Cox PH method}{
 
-The \code{ertte_coxph} method delegates the work to \code{survival::survfit()}
+The \code{ertte_coxph} method delegates the work to \code{survival::survfit()}.
+If any value of \code{tau} exceeds the last observed follow-up time across the
+whole fitted cohort, \code{ertte_rmst()} warns that the assumption that
+survival stays flat beyond the observed range may be unreliable, since
+this assumption has a larger effect on an area than on a point-in-time
+prediction.
+
 Because the fitted baseline hazard (and therefore every covariate-adjusted
 survival curve) is a right-continuous step function, \code{fit_rmst} is an
 \emph{exact} finite sum of rectangle areas between consecutive jump times

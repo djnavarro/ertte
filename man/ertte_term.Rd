@@ -16,7 +16,9 @@ ertte_remove_term(mod, term, quiet = FALSE)
 \item{term}{A one-sided formula naming the term to add/remove, e.g.
 \code{~ sex}.}
 
-\item{quiet}{Should warnings be suppressed? Defaults to \code{FALSE}.}
+\item{quiet}{Should the warning issued when the term can't be
+added/removed (because it's already in the model / isn't in the model,
+respectively) be suppressed? Defaults to \code{FALSE}.}
 }
 \value{
 An ertte model object. If the term can't be added/removed
@@ -30,6 +32,9 @@ returning a new fitted model object.
 These functions are not typically called directly; they
 underpin \code{\link[=ertte_scm_forward]{ertte_scm_forward()}} and \code{\link[=ertte_scm_backward]{ertte_scm_backward()}}, used to
 add or remove a single term from a time-to-event regression model.
+\code{mod} is refit using the matching engine constructor based on its
+class, so these functions work for both \code{ertte_aft} and \code{ertte_coxph}
+models.
 Regardless of whether the model is a parametric AFT model or a Cox
 proportional hazard model, the \code{term} to be added or removed is
 defined by a single one-sided formula. Categorical covariates enter

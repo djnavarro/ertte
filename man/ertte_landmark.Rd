@@ -23,11 +23,11 @@ A tibble with one row per row of \code{newdata}. In addition to
 storing the original columns from \code{newdata}, it contains a column
 storing the \code{landmark_time} itself, a \code{fit_resp} column with
 the estimated probability of observing the event at or before the
-land mark time, and \code{ci_lower}, and \code{ci_upper} columns specifying
+landmark time, and \code{ci_lower}, and \code{ci_upper} columns specifying
 the confidence interval.
 }
 \description{
-Reduces the survival curve for an exposure-response time-to-even model
+Reduces the survival curve for an exposure-response time-to-event model
 to a binary landmark event probability at a single fixed time.
 }
 \details{
@@ -41,6 +41,11 @@ that time, and is computed using \code{ertte_predict()}. However,
 unlike the typical usage of \code{ertte_predict()} in which a vector
 of times is passed, \code{landmark_time} must be a single
 fixed value -- a landmark is by definition evaluated at one time.
+
+Because the event probability is a decreasing transform of the survival
+probability (\verb{1 -} survival), the confidence interval is built by
+swapping \code{ertte_predict()}'s bounds: its lower survival bound becomes
+the upper event-probability bound, and vice versa.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)

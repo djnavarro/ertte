@@ -34,7 +34,7 @@ tools that have access to the model object but not necessarily the original
 data frame.
 
 Because the return value is a \code{coxph} object, all the usual
-methods for survival regression models work unchanged, without neeing an
+methods for survival regression models work unchanged, without needing an
 ertte-specific equivalent. This includes \code{summary()}, \code{coef()}, \code{vcov()},
 \code{confint()}, \code{predict()}, \code{AIC()}, \code{BIC()}, \code{logLik()}, and \code{anova()}.
 Additional methods supplied via the ertte-specific classes include

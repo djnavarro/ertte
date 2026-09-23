@@ -35,7 +35,7 @@
 #' distribution implied by `vcov(object)`. Event times are then drawn by
 #' inverse-CDF sampling, differing by engine: for
 #' `ertte_aft` fits, directly from the fitted log-location-scale AFT
-#' distribution (see [ertte_aft()] Details); for `ertte_coxph` fits, by
+#' distribution implied by the model's `dist`; for `ertte_coxph` fits, by
 #' inverting the fitted baseline cumulative hazard ([survival::basehaz()],
 #' held fixed regardless of the sampled coefficient draw -- the same
 #' simplification [ertte_fun.ertte_coxph()] makes for a user-supplied
@@ -105,7 +105,7 @@ simulate.ertte_model <- function(object, nsim = 100, seed = NULL, newdata = NULL
 # from the fitted log-location-scale distribution
 # (`.ertte_simulate_draws.ertte_aft()`), while Cox PH inverts the
 # fitted baseline cumulative hazard (`.ertte_simulate_draws.ertte_coxph()`,
-# in `R/ertte-coxph.R`). Used directly by `simulate.ertte_model()` (via
+# below). Used directly by `simulate.ertte_model()` (via
 # `.ertte_resample()`) and `er_simulate.ertte_model()` (used by
 # erplots, if installed, for TTE visual predictive checks) -- both work
 # for either engine automatically via this dispatch.
@@ -145,7 +145,7 @@ simulate.ertte_model <- function(object, nsim = 100, seed = NULL, newdata = NULL
         # scale is estimated jointly with the location coefficients);
         # only the location-coefficient block is needed here, since
         # `scale` itself is held fixed at its point estimate throughout
-        # this package (see `ertte_aft()` Details).
+        # this package.
         sigma = stats::vcov(object)[coef_names, coef_names, drop = FALSE]
       )
       sim <- list()
@@ -169,7 +169,7 @@ simulate.ertte_model <- function(object, nsim = 100, seed = NULL, newdata = NULL
 
 
 # `.ertte_simulate_draws()` method for `ertte_coxph` models -- see the
-# generic's documentation in `R/ertte-aft.R`. Coefficients are sampled
+# generic's documentation above. Coefficients are sampled
 # from the same asymptotic normal approximation as the AFT method, but
 # event times are drawn by inverting the fitted baseline cumulative
 # hazard (via `.ertte_coxph_invert_basehaz()`) rather than sampling

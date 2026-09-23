@@ -18,7 +18,7 @@ A numeric vector equal to \code{log(x / ref)}, classed as an
 \code{"ertte_power"} object, with the value of \code{ref} stored as an attribute.
 }
 \description{
-A formula helper used to entering a continuous covariate as a power
+A formula helper used to enter a continuous covariate as a power
 transformed covariate rather than a plain linear term.
 }
 \details{
@@ -46,6 +46,17 @@ positive, so cannot be used for covariates with a placebo/zero-dose
 group (e.g. \code{dose}, \code{aucss}, \code{cmaxss} in \code{ertte_data}). It is not
 generally appropriate for the exposure itself, only for (some) covariate
 terms in the TTE model.
+
+Nothing prevents combining a plain linear term (\code{age}) and a power term
+(\code{ertte_power(age)}) for the same underlying variable in the same model
+or SCM candidate set -- term handling works on formula term-labels, not
+variable semantics, so this is left to the user's judgement.
+
+\code{ref} is fixed at fitting time from the data \code{ertte_power()} is
+evaluated on, and reused (not recomputed) when the fitted model is used
+to predict or simulate on new data, via an internal
+\code{stats::makepredictcall()} method -- the same mechanism \code{stats::poly()}
+uses for this purpose.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss + ertte_power(age), ertte_data)

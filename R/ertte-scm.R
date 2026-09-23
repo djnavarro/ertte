@@ -48,6 +48,22 @@
 #' drove selection, and the history's `criterion` column records which one 
 #' was used for each forward/backward step.
 #'
+#' @section Handling problem candidates:
+#' A candidate that can't be fit for a given step (e.g. it's aliased with
+#' a term already in the model, references a variable missing from the
+#' data, or fails to converge) is skipped for that step with a warning,
+#' rather than aborting the whole search or being silently selected.
+#'
+#' @section Candidate test order and `seed`:
+#' `seed` exists as a safety measure against run-to-run variation in the
+#' order candidate terms are tested within a step (`sample()`, shuffled
+#' before testing one at a time). Model fitting itself
+#' (`survival::survreg()`) is deterministic given a starting formula, so
+#' `seed` only matters in the (essentially measure-zero) case of an
+#' exact p-value tie between competing candidates within a step -- see
+#' the companion `erglm` package's equivalent documentation for the full
+#' rationale, which applies unchanged here.
+#'
 #' @name ertte_scm
 #' @examples
 #' # Forward addition by p-value selection
@@ -437,11 +453,16 @@ ertte_scm_history <- function(mod) {
 #' @param mod An ertte model object.
 #' @param term A one-sided formula naming the term to add/remove, e.g.
 #' `~ sex`.
-#' @param quiet Should warnings be suppressed? Defaults to `FALSE`.
+#' @param quiet Should the warning issued when the term can't be
+#' added/removed (because it's already in the model / isn't in the model,
+#' respectively) be suppressed? Defaults to `FALSE`.
 #'
 #' @details These functions are not typically called directly; they
 #' underpin [ertte_scm_forward()] and [ertte_scm_backward()], used to
-#' add or remove a single term from a time-to-event regression model.  
+#' add or remove a single term from a time-to-event regression model.
+#' `mod` is refit using the matching engine constructor based on its
+#' class, so these functions work for both `ertte_aft` and `ertte_coxph`
+#' models.
 #' Regardless of whether the model is a parametric AFT model or a Cox
 #' proportional hazard model, the `term` to be added or removed is 
 #' defined by a single one-sided formula. Categorical covariates enter

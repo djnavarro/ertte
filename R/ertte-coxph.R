@@ -52,7 +52,7 @@
 #' data frame. 
 #' 
 #' Because the return value is a `coxph` object, all the usual 
-#' methods for survival regression models work unchanged, without neeing an 
+#' methods for survival regression models work unchanged, without needing an 
 #' ertte-specific equivalent. This includes `summary()`, `coef()`, `vcov()`, 
 #' `confint()`, `predict()`, `AIC()`, `BIC()`, `logLik()`, and `anova()`.
 #' Additional methods supplied via the ertte-specific classes include 

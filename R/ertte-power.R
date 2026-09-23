@@ -1,7 +1,7 @@
 
 #' Power-function covariate transform for exposure-response TTE models
 #'
-#' A formula helper used to entering a continuous covariate as a power 
+#' A formula helper used to enter a continuous covariate as a power 
 #' transformed covariate rather than a plain linear term.
 #'
 #' @param x A numeric covariate. Every non-missing value must be strictly
@@ -37,6 +37,17 @@
 #' group (e.g. `dose`, `aucss`, `cmaxss` in `ertte_data`). It is not 
 #' generally appropriate for the exposure itself, only for (some) covariate
 #' terms in the TTE model.
+#'
+#' Nothing prevents combining a plain linear term (`age`) and a power term
+#' (`ertte_power(age)`) for the same underlying variable in the same model
+#' or SCM candidate set -- term handling works on formula term-labels, not
+#' variable semantics, so this is left to the user's judgement.
+#'
+#' `ref` is fixed at fitting time from the data `ertte_power()` is
+#' evaluated on, and reused (not recomputed) when the fitted model is used
+#' to predict or simulate on new data, via an internal
+#' `stats::makepredictcall()` method -- the same mechanism `stats::poly()`
+#' uses for this purpose.
 #' 
 #' @export
 #' @examples

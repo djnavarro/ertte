@@ -23,7 +23,8 @@ to the data the model was fitted to.}
 \item{time}{Numeric vector of times at which to compute survival
 probabilities}
 
-\item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.}
+\item{conf_level}{Confidence level for the intervals. Defaults to \code{.95}.
+Must be a single number between 0 and 1 (inclusive); other values error.}
 }
 \value{
 A tibble with one row per combination of \code{newdata} row and
@@ -53,11 +54,11 @@ and back-transformed onto the survival probability scale. Parameter
 uncertainty in the scale parameter is not propagated.
 
 For Cox models, \code{survival::survfit()} is used to compute the survival
-probability, When \code{time} exceeds the last observed follow-up time, the
+probability. When \code{time} exceeds the last observed follow-up time, the
 survival function is held constant (i.e., step-function extrapolation).
 Confidence intervals are calculated using the \code{conf.type = "log"}
 transform, which specifies Wald intervals on \eqn{\log(-\log(S))}, as
-this is is better suited to a probability bounded in \verb{[0, 1]}.
+this is better suited to a probability bounded in \verb{[0, 1]}.
 Because of this, it should be noted that the
 confidence intervals computed for a Cox model are not directly
 comparable to those computed for AFT models.

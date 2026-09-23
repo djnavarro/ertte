@@ -56,7 +56,7 @@ Coefficients are sampled from the asymptotic sampling
 distribution implied by \code{vcov(object)}. Event times are then drawn by
 inverse-CDF sampling, differing by engine: for
 \code{ertte_aft} fits, directly from the fitted log-location-scale AFT
-distribution (see \code{\link[=ertte_aft]{ertte_aft()}} Details); for \code{ertte_coxph} fits, by
+distribution implied by the model's \code{dist}; for \code{ertte_coxph} fits, by
 inverting the fitted baseline cumulative hazard (\code{\link[survival:basehaz]{survival::basehaz()}},
 held fixed regardless of the sampled coefficient draw -- the same
 simplification \code{\link[=ertte_fun.ertte_coxph]{ertte_fun.ertte_coxph()}} makes for a user-supplied

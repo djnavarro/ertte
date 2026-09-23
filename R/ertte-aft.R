@@ -22,9 +22,21 @@
 #' the data set remains accessible to downstream tools that have access to the 
 #' model object but not necessarily the original data frame. 
 #' 
-#' Like the `survreg()` function upon which it is based, `ertte_aft()` 
-#' supports location-scale distributional families defined on some transformation
-#' of the time variable. In principle `ertte_aft()` could support the full range
+#' Like the `survreg()` function upon which it is based, `ertte_aft()` fits a
+#' log-location-scale AFT model,
+#'
+#' \deqn{\log(t) = \mu + \sigma w}
+#'
+#' where \eqn{\mu} is the linear predictor, \eqn{\sigma} is the scale
+#' parameter, and \eqn{w} follows a fixed base distribution determined by
+#' `dist`:
+#'
+#' - `"weibull"`/`"exponential"`: \eqn{w} follows a standard extreme-value
+#'   distribution.
+#' - `"lognormal"`: \eqn{w} follows a standard normal distribution.
+#' - `"loglogistic"`: \eqn{w} follows a standard logistic distribution.
+#'
+#' In principle `ertte_aft()` could support the full range
 #' of distributions available to `survreg()`, but it is important to note that
 #' the extended functionality provided by the ertte package, and hooks into other
 #' exposure-response tools supplied by other packages such as erplots, have not 
@@ -35,7 +47,7 @@
 #' objects, only those for which it has been explicitly defined.
 #' 
 #' Nevertheless, because the return value is genuinely a `survreg` object, albeit
-#' with some additional information and metata stored internally, all the usual 
+#' with some additional information and metadata stored internally, all the usual 
 #' methods for survival regression models work unchanged, without needing any 
 #' ertte-specific equivalent. This includes `summary()`, `coef()`, `vcov()`, 
 #' `confint()`, `predict()`, `AIC()`, `BIC()`, `logLik()`, and `anova()`. 
