@@ -87,21 +87,7 @@ ertte_power <- function(x, ref = NULL) {
   out
 }
 
-#' @details `makepredictcall.ertte_power()` is a `stats::makepredictcall()`
-#' method, not typically called directly. It ensures that when a fitted
-#' model containing an `ertte_power()` term is used to predict/simulate on
-#' new data (via `stats::model.matrix()`/`stats::model.frame()` on the
-#' model's `terms()`), the *original* fitting-time `ref` is reused rather
-#' than a new one recomputed from whatever data is supplied -- the same
-#' mechanism `stats::poly()`/`splines::ns()` use.
-#'
-#' @param var The evaluated variable (here, the `ertte_power()`-transformed
-#' vector from the original model fit).
-#' @param call The unevaluated call to be reconstructed for new data.
-#'
-#' @rdname ertte_power
-#' @importFrom stats makepredictcall
-#' @export
+#' @exportS3Method stats::makepredictcall
 makepredictcall.ertte_power <- function(var, call) {
   if (as.character(call)[1L] == "ertte_power") {
     call$ref <- attr(var, "ref")

@@ -2,12 +2,9 @@
 % Please edit documentation in R/ertte-power.R
 \name{ertte_power}
 \alias{ertte_power}
-\alias{makepredictcall.ertte_power}
 \title{Power-function covariate transform for exposure-response TTE models}
 \usage{
 ertte_power(x, ref = NULL)
-
-\method{makepredictcall}{ertte_power}(var, call)
 }
 \arguments{
 \item{x}{A numeric covariate. Every non-missing value must be strictly
@@ -16,11 +13,6 @@ positive (\code{log(x / ref)} is undefined otherwise).}
 \item{ref}{A single strictly positive reference value. Defaults to
 \code{median(x, na.rm = TRUE)} -- the usual pop-PK/NONMEM convention of
 referencing the covariate's typical (median) value in the fitting data.}
-
-\item{var}{The evaluated variable (here, the \code{ertte_power()}-transformed
-vector from the original model fit).}
-
-\item{call}{The unevaluated call to be reconstructed for new data.}
 }
 \value{
 A numeric vector equal to \code{log(x / ref)}, classed
@@ -70,14 +62,6 @@ Nothing in \code{\link[=ertte_add_term]{ertte_add_term()}}/\code{\link[=ertte_sc
 and a power term (\code{ertte_power(age)}) for the same underlying variable
 -- term handling throughout ertte works on formula term-labels, not
 variable semantics, so this is left to the user's judgement.
-
-\code{makepredictcall.ertte_power()} is a \code{stats::makepredictcall()}
-method, not typically called directly. It ensures that when a fitted
-model containing an \code{ertte_power()} term is used to predict/simulate on
-new data (via \code{stats::model.matrix()}/\code{stats::model.frame()} on the
-model's \code{terms()}), the \emph{original} fitting-time \code{ref} is reused rather
-than a new one recomputed from whatever data is supplied -- the same
-mechanism \code{stats::poly()}/\code{splines::ns()} use.
 }
 \examples{
 mod <- ertte_aft(Surv(time, event) ~ aucss + ertte_power(age), ertte_data)
