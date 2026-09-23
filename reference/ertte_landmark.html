@@ -5,9 +5,9 @@
       fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
     }
   };
-</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Landmark event-probability predictions for exposure-response TTE models — ertte_landmark"><meta name="description" content="Reduces a fitted ertte model's survival curve to a binary landmark
-event probability, P(event by t*), at a single fixed time t*."><meta property="og:description" content="Reduces a fitted ertte model's survival curve to a binary landmark
-event probability, P(event by t*), at a single fixed time t*."></head><body>
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Landmark event-probability predictions for exposure-response TTE models — ertte_landmark"><meta name="description" content="Reduces the survival curve for an exposure-response time-to-even model
+to a binary landmark event probability at a single fixed time."><meta property="og:description" content="Reduces the survival curve for an exposure-response time-to-even model
+to a binary landmark event probability at a single fixed time."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -48,8 +48,8 @@ event probability, P(event by t*), at a single fixed time t*."></head><body>
     </div>
 
     <div class="ref-description section level2">
-    <p>Reduces a fitted ertte model's survival curve to a binary landmark
-event probability, <code>P(event by t*)</code>, at a single fixed time <code>t*</code>.</p>
+    <p>Reduces the survival curve for an exposure-response time-to-even model
+to a binary landmark event probability at a single fixed time.</p>
     </div>
 
     <div class="section level2">
@@ -62,8 +62,7 @@ event probability, <code>P(event by t*)</code>, at a single fixed time <code>t*<
 
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p>An ertte model, as returned by <code><a href="ertte_aft.html">ertte_aft()</a></code> or
-<code><a href="ertte_coxph.html">ertte_coxph()</a></code>.</p></dd>
+<dd><p>An ertte model.</p></dd>
 
 
 <dt id="arg-newdata">newdata<a class="anchor" aria-label="anchor" href="#arg-newdata"></a></dt>
@@ -72,8 +71,7 @@ to the data the model was fitted to.</p></dd>
 
 
 <dt id="arg-landmark-time">landmark_time<a class="anchor" aria-label="anchor" href="#arg-landmark-time"></a></dt>
-<dd><p>A single, strictly positive number: the fixed
-time <code>t*</code> at which to compute <code>P(event by t*)</code>.</p></dd>
+<dd><p>A single positive number.</p></dd>
 
 
 <dt id="arg-conf-level">conf_level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
@@ -86,36 +84,25 @@ time <code>t*</code> at which to compute <code>P(event by t*)</code>.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with one row per row of <code>newdata</code>, plus
-<code>landmark_time</code>, <code>fit_resp</code> (the estimated <code>P(event by t*)</code>),
-<code>ci_lower</code>, and <code>ci_upper</code>.</p>
+    <p>A tibble with one row per row of <code>newdata</code>. In addition to
+storing the original columns from <code>newdata</code>, it contains a column
+storing the <code>landmark_time</code> itself, a <code>fit_resp</code> column with
+the estimated probability of observing the event at or before the
+land mark time, and <code>ci_lower</code>, and <code>ci_upper</code> columns specifying
+the confidence interval.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Reduces a TTE endpoint to a binary landmark response –
-"did the event happen by a fixed time t*" – turning it into an
-ordinary scalar exposure-response value that erplots' existing
-<code>er_plot()</code>/<code>er_vpc()</code> grammars can visualise with no new plotting
-code (see the package's design issue, Workstream B1:
-<a href="https://github.com/djnavarro/ertte/issues/1" class="external-link">https://github.com/djnavarro/ertte/issues/1</a>). `P(event by t*) = 1</p><ul><li><p>S(t*)<code>, computed by calling [ertte_predict()] at </code>time =
-landmark_time<code>and transforming its survival-probability output. Since that's a decreasing monotonic transform, the confidence interval bounds swap (the upper bound on survival becomes the lower bound on event probability, and vice versa) but need no recomputation of their own: whatever validity</code>ertte_predict()<code>'s interval has for a given engine -- a Wald interval on the AFT method's linear predictor, or </code>survival::survfit()<code>'s own </code>conf.type = "log"` interval for the Cox PH method – carries
-through unchanged.</p></li>
-</ul><p><code>ertte_landmark()</code> is a single function, not a generic – unlike
-<code><a href="ertte_predict.html">ertte_predict()</a></code>/<code><a href="ertte_fun.html">ertte_fun()</a></code>, it needs no engine-specific logic
-of its own: it delegates entirely to <code><a href="ertte_predict.html">ertte_predict()</a></code>, which
-already dispatches on the <code>ertte_aft</code>/<code>ertte_coxph</code> subclass. This
-also means all of <code><a href="ertte_predict.html">ertte_predict()</a></code>'s existing edge-case handling
-(e.g. the all-censored-Cox guard, single-stratum <code>NA</code> propagation)
-is inherited unchanged.</p>
-<p>Unlike <code><a href="ertte_predict.html">ertte_predict()</a></code>'s <code>time</code> argument (a vector, evaluated at
-potentially many times per row), <code>landmark_time</code> must be a single
+    <p>In some time-to-event analyses it is convenient to reduce a
+time-to-event endpoint to a binary landmark response: for every
+row in the data, the landmark response describes the modelled
+probability that the event occurs at or before a specified
+<code>landmark_time</code> defined by the analyst. The landmark event
+probability is simply one minus the survival probability at
+that time, and is computed using <code><a href="ertte_predict.html">ertte_predict()</a></code>. However,
+unlike the typical usage of <code><a href="ertte_predict.html">ertte_predict()</a></code> in which a vector
+of times is passed, <code>landmark_time</code> must be a single
 fixed value – a landmark is by definition evaluated at one time.</p>
-<p>Restricted mean survival time (RMST), the other scalar E-R
-reduction the design issue mentions, is implemented separately as
-<code><a href="ertte_rmst.html">ertte_rmst()</a></code> – unlike <code>ertte_landmark()</code>, it's a genuine generic
-rather than a thin wrapper around <code><a href="ertte_predict.html">ertte_predict()</a></code>, since an area
-under the curve needs the whole survival curve, not a single time
-point.</p>
     </div>
 
     <div class="section level2">
