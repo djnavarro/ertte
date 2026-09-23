@@ -5,9 +5,9 @@
       fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
     }
   };
-</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Prediction function for an exposure-response TTE model — ertte_fun"><meta name="description" content="Returns a closure that evaluates a fitted ertte model's survival
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Atkinson_Hyperlegible-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Prediction function for an exposure-response TTE model — ertte_fun"><meta name="description" content="Returns a function that evaluates a fitted ertte model's survival
 function at user-specified data, times, and (optionally) counterfactual
-parameters, without needing to refit the model."><meta property="og:description" content="Returns a closure that evaluates a fitted ertte model's survival
+parameters, without needing to refit the model."><meta property="og:description" content="Returns a function that evaluates a fitted ertte model's survival
 function at user-specified data, times, and (optionally) counterfactual
 parameters, without needing to refit the model."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -50,7 +50,7 @@ parameters, without needing to refit the model."></head><body>
     </div>
 
     <div class="ref-description section level2">
-    <p>Returns a closure that evaluates a fitted ertte model's survival
+    <p>Returns a function that evaluates a fitted ertte model's survival
 function at user-specified data, times, and (optionally) counterfactual
 parameters, without needing to refit the model.</p>
     </div>
@@ -71,89 +71,86 @@ parameters, without needing to refit the model.</p>
 
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p>An ertte model, as returned by <code><a href="ertte_aft.html">ertte_aft()</a></code> or
-<code><a href="ertte_coxph.html">ertte_coxph()</a></code></p></dd>
+<dd><p>An ertte model.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Passed to methods</p></dd>
+<dd><p>Passed to methods.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A function with arguments <code>data</code>, <code>time</code>, and <code>param</code>, in
-that order – matching the argument order every other data-taking
-entry point in the package uses (<code><a href="ertte_predict.html">ertte_predict()</a></code>, <code><a href="ertte_landmark.html">ertte_landmark()</a></code>,
-<code><a href="ertte_rmst.html">ertte_rmst()</a></code> all take <code>newdata</code>/<code>data</code> immediately after <code>object</code>).</p><ul><li><p>The <code>data</code> argument should be a data frame or tibble; defaults to
+    <p>A function with arguments <code>data</code>, <code>time</code>, and <code>param</code>:</p><ul><li><p>The <code>data</code> argument should be a data frame or tibble; defaults to
 <code>object$data</code> (the data the model was fitted to) if not supplied.</p></li>
 <li><p>The <code>time</code> argument gives the time(s) at which to evaluate the
 survival function; recycled against <code>data</code>.</p></li>
 <li><p>The <code>param</code> argument should be a vector of location coefficients;
 defaults to <code>coef(object)</code> (the fitted coefficients) if not supplied.</p></li>
-</ul></div>
+</ul><p>The function returns a vector of survival probabilities.</p>
+    </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>ertte_fun()</code> is a generic, with methods for each supported
-engine – see <code>ertte_fun.ertte_aft()</code>. Named <code>ertte_fun()</code> for
-consistency with the companion <code>erglm</code>/<code>emaxnls</code> packages'
-<code>erglm_fun()</code>/<code>emax_fun()</code>, which serve the same purpose for their
-respective model classes.</p>
+    <p><code>ertte_fun()</code> is a generic function, with methods for each the supported
+exposure-response time-to-even model classes.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="aft-models">AFT models<a class="anchor" aria-label="anchor" href="#aft-models"></a></h2>
+
+
 <p>The <code>ertte_aft</code> method takes a fitted AFT model as input and
 returns a function that evaluates the survival function <code>S(t)</code> at
-user-specified parameters, data, and times (e.g. for VPCs or other
-counterfactual simulation scenarios). The returned function checks
-that <code>param</code> is numeric and has one entry per column of the model
-matrix implied by <code>data</code>, erroring informatively rather than failing
-with a cryptic "non-conformable arguments" error from matrix
-multiplication. <code>scale</code> is always taken from the fitted <code>object</code>, not
-from <code>param</code> (the coefficient vector from <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> never includes
-it). <code>time</code> is validated the same way <code><a href="ertte_predict.html">ertte_predict()</a></code> validates it
-(a numeric vector of strictly positive values) – a non-positive
-<code>time</code> previously returned a silent <code>NaN</code> (via <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code>) instead of
-erroring.</p>
-<p>The <code>ertte_coxph</code> method returns a function that evaluates
-<code>S(t | x) = S0(t)^exp((x - xbar)'param)</code>, where <code>S0(t)</code> is the fitted
-baseline survival curve (via <code>survival::basehaz(object, centered = TRUE)</code>, held constant beyond the last observed time, matching
-<code><a href="ertte_predict.html">ertte_predict.ertte_coxph()</a></code>) and <code>xbar</code> is <code>object$means</code> (the
-covariate means <code>coxph()</code> centers the partial likelihood on when
-fitting – centering matters here because <code>basehaz()</code>'s baseline is
-defined relative to it, not to <code>x = 0</code>). As with
-<code>ertte_fun.ertte_aft()</code>, <code>param</code> only varies the linear predictor:
-the baseline hazard is always taken from the fitted <code>object</code>, never
-recomputed for a hypothetical <code>param</code> (that would need refitting the
-partial likelihood's risk sets) – matching the level of
-approximation used elsewhere in this package (e.g. <code>scale</code> for AFT
-models is likewise held fixed). Since Cox models have no intercept,
-<code>param</code> has one entry per covariate with no <code>"(Intercept)"</code> column,
-unlike <code>ertte_fun.ertte_aft()</code>. <code>time</code> is validated the same way
-<code><a href="ertte_predict.html">ertte_predict()</a></code> validates it (a numeric vector of strictly positive
-values) – a non-positive <code>time</code> previously returned a silent <code>1</code>
-(as if survival were guaranteed) instead of erroring.</p>
+user-specified parameters, data, and times. Note that the <code>scale</code>
+parameter is always taken from the fitted object, and not passed
+via <code>param</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="cox-ph-models">Cox PH models<a class="anchor" aria-label="anchor" href="#cox-ph-models"></a></h2>
+
+
+<p>The <code>ertte_coxph</code> method takes a fitted Cox model as input and
+similarly returns a function that evaluates the survival probabilities.
+More precisely, it returns</p>
+<p>$$S(t|x) = S_0(t) \times \exp((x - \bar{x})' \beta)$$</p>
+<p>where \(x\) is the vector of covariates, \(\bar{x}\) is the mean of the covariates
+in the fitted model, \(\beta\) is the vector of coefficients, and the exponentiation
+is a matrix multiplication (i.e., \((x - \bar{x})' \beta\) is the linear predictor).</p>
+<p>The baseline survival function \(S_0(t)\) refers to the fitted
+baseline survival curve, calulated by calling <code><a href="https://rdrr.io/pkg/survival/man/basehaz.html" class="external-link">survival::basehaz()</a></code>
+with <code>centered = TRUE</code> and held constant beyond the last observed
+time, consistent with the approach adopted by <code><a href="ertte_predict.html">ertte_predict()</a></code> for
+Cox proportional hazard models.</p>
+<p>Analogous to the AFT model case, <code>param</code> is only used to vary the
+linear predictor: the baseline hazard is always taken from the
+fitted model, and not recomputed for a hypothetical <code>param</code> value
+as that would require refitting the model.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">mod_fun</span> <span class="op">&lt;-</span> <span class="fu">ertte_fun</span><span class="op">(</span><span class="va">mod</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># fit an AFT model</span></span></span>
+<span class="r-in"><span><span class="va">mod_aft</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_aft.html">ertte_aft</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mod_aft_fun</span> <span class="op">&lt;-</span> <span class="fu">ertte_fun</span><span class="op">(</span><span class="va">mod_aft</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># no arguments: reproduces the fitted model's own survival predictions</span></span></span>
-<span class="r-in"><span><span class="va">s1</span> <span class="op">&lt;-</span> <span class="fu">mod_fun</span><span class="op">(</span>time <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># when called with no arguments it reproduces the fitted </span></span></span>
+<span class="r-in"><span><span class="co"># model's own survival predictions</span></span></span>
+<span class="r-in"><span><span class="va">s1</span> <span class="op">&lt;-</span> <span class="fu">mod_aft_fun</span><span class="op">(</span>time <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">s1</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.3925581 0.5653608 0.7080801 0.7080801 0.2939277</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># user modifies the parameters</span></span></span>
-<span class="r-in"><span><span class="va">par2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">mod</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">par2</span><span class="op">[</span><span class="st">"(Intercept)"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">par2</span><span class="op">[</span><span class="st">"(Intercept)"</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span></span></span>
-<span class="r-in"><span><span class="va">s2</span> <span class="op">&lt;-</span> <span class="fu">mod_fun</span><span class="op">(</span>param <span class="op">=</span> <span class="va">par2</span>, time <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># when called with an explicit parameter vector, the model</span></span></span>
+<span class="r-in"><span><span class="co"># is evaluated at those modified parameters</span></span></span>
+<span class="r-in"><span><span class="va">par_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">mod_aft</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">par_new</span><span class="op">[</span><span class="st">"(Intercept)"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">par_new</span><span class="op">[</span><span class="st">"(Intercept)"</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span></span></span>
+<span class="r-in"><span><span class="va">s2</span> <span class="op">&lt;-</span> <span class="fu">mod_aft_fun</span><span class="op">(</span>param <span class="op">=</span> <span class="va">par_new</span>, time <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">s2</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.7933096 0.8683024 0.9180736 0.9180736 0.7384583</span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># the same logic applies for Cox regression models </span></span></span>
 <span class="r-in"><span><span class="va">mod_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="ertte_coxph.html">ertte_coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">aucss</span>, <span class="va">ertte_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">mod_cox_fun</span> <span class="op">&lt;-</span> <span class="fu">ertte_fun</span><span class="op">(</span><span class="va">mod_cox</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># no arguments: reproduces the fitted model's own survival predictions</span></span></span>
-<span class="r-in"><span><span class="va">s1</span> <span class="op">&lt;-</span> <span class="fu">mod_cox_fun</span><span class="op">(</span>time <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># user modifies the parameters</span></span></span>
-<span class="r-in"><span><span class="va">par2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">mod_cox</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">par2</span><span class="op">[</span><span class="st">"aucss"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">par2</span><span class="op">[</span><span class="st">"aucss"</span><span class="op">]</span> <span class="op">*</span> <span class="fl">1.5</span></span></span>
-<span class="r-in"><span><span class="va">s2</span> <span class="op">&lt;-</span> <span class="fu">mod_cox_fun</span><span class="op">(</span>param <span class="op">=</span> <span class="va">par2</span>, time <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">s3</span> <span class="op">&lt;-</span> <span class="fu">mod_cox_fun</span><span class="op">(</span>time <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">s3</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.3752982 0.5485030 0.6940022 0.6940022 0.2780437</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
