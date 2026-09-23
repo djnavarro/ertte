@@ -1,24 +1,24 @@
-# Landmark event probabilities in ertte
+# Landmark event probabilities
+
+This article covers
+[`ertte_landmark()`](https://ertte.djnavarro.net/reference/ertte_landmark.md),
+the simpler of the two tools for scalar exposure-response (E-R)
+reduction of a time-to-event (TTE) endpoint. It’s the shorter sibling of
+the [restricted mean survival time
+article](https://ertte.djnavarro.net/articles/rmst.md). Both of these
+tools are used to turn a full survival curve into a single number that
+can be plotted with the standard `erplots` grammar. If you haven’t
+already, start with the [overview
+article](https://ertte.djnavarro.net/articles/overview.md) for
+background on
+[`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)/
+[`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md).
 
 ``` r
 
 library(ertte)
 library(survival)
 ```
-
-This article covers
-[`ertte_landmark()`](https://ertte.djnavarro.net/reference/ertte_landmark.md),
-`ertte`‘s simplest scalar exposure-response (E-R) reduction of a
-time-to-event (TTE) endpoint. It’s the shorter sibling of the [RMST
-article](https://ertte.djnavarro.net/articles/rmst.md), which covers a
-more involved reduction (restricted mean survival time) built on the
-same idea – turning a full survival curve into a single number that can
-be plotted with `erplots`’ ordinary E-R grammar. If you haven’t already,
-start with the [overview
-article](https://ertte.djnavarro.net/articles/overview.md) for
-background on
-[`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)/
-[`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md).
 
 ## Why a landmark?
 

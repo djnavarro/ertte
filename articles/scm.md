@@ -1,10 +1,4 @@
-# Stepwise covariate modelling in ertte
-
-``` r
-
-library(ertte)
-library(survival)
-```
+# Stepwise covariate modelling
 
 This article covers `ertte`’s stepwise covariate modelling (SCM)
 machinery:
@@ -19,6 +13,12 @@ with
 – see the [overview
 article](https://ertte.djnavarro.net/articles/overview.md) if you
 haven’t already read it.
+
+``` r
+
+library(ertte)
+library(survival)
+```
 
 ## What SCM does
 

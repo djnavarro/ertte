@@ -1,10 +1,4 @@
-# Survival models in ertte
-
-``` r
-
-library(ertte)
-library(survival)
-```
+# Exposure-response time-to-event models
 
 This article is the place to start if you’re new to `ertte`. It walks
 through what a time-to-event (TTE) endpoint looks like, a short
@@ -24,6 +18,12 @@ probabilities](https://ertte.djnavarro.net/articles/landmark.md) cover
 exposure-response summary, and [stepwise covariate
 modelling](https://ertte.djnavarro.net/articles/scm.md) covers `ertte`’s
 tools for building up a covariate model.
+
+``` r
+
+library(ertte)
+library(survival)
+```
 
 ## Time-to-event data
 

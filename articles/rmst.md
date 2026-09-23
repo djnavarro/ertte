@@ -1,4 +1,18 @@
-# Restricted mean survival time in ertte
+# Restricted mean survival time
+
+This article covers
+[`ertte_rmst()`](https://ertte.djnavarro.net/reference/ertte_rmst.md),
+the more complicated of the two tools for scalar exposure-response (E-R)
+reduction of a time-to-event (TTE) endpoint. It’s the longer sibling of
+the [landmark event probability
+article](https://ertte.djnavarro.net/articles/landmark.md). Both of
+these tools are used to turn a full survival curve into a single number
+that can be plotted with the standard `erplots` grammar. If you haven’t
+already, start with the [overview
+article](https://ertte.djnavarro.net/articles/overview.md) for
+background on
+[`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)/
+[`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md).
 
 ``` r
 
