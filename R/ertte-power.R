@@ -18,11 +18,11 @@
 #' for Cox models). A power-function covariate effect is defined as follows for
 #' an AFT model:
 #' 
-#' \deqn{t = t_\mbox{ref} \times (x / x_\mbox{ref})^\theta}
+#' \deqn{t = t_{\mbox{ref}} \times (x / x_{\mbox{ref}})^\theta}
 #' 
 #' The equivalent for Cox models is as follows:
 #' 
-#' \deqn{h(t | x) = h_0(t) \times (x / x_\mbox{ref})^\theta}
+#' \deqn{h(t | x) = h_0(t) \times (x / x_{\mbox{ref}})^\theta}
 #' 
 #' Once log-transformed, these become linear terms in `log(x / ref)`.
 #'
