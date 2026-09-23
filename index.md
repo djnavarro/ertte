@@ -1,15 +1,16 @@
 # ertte
 
-ertte is the time-to-event member of the exposure-response (E-R) package
-family, alongside [erglm](https://github.com/djnavarro/erglm) (GLM E-R
-models) and [emaxnls](https://github.com/djnavarro/emaxnls) (Emax /
-logistic-Emax models), all of which plug into
-[erplots](https://github.com/djnavarro/erplots) for visualisation. It
-wraps
-[`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html)-based
-parametric accelerated failure time (AFT) modelling behind a tidy,
-consistent interface: model fitting, AIC-based distribution selection,
-stepwise covariate modelling, and simulation.
+Provides tools for working with exposure-response models for
+time-to-event data. It is designed with a similar interface to the
+[erglm](https://github.com/djnavarro/erglm) and
+[emaxnls](https://github.com/djnavarro/emaxnls) packages, and supports
+the plotting interface supplied by the
+[erplots](https://github.com/djnavarro/erplots) package. It provides two
+model-fitting engines, one for parametric AFT regression models and
+another for semi-parametric Cox proportional-hazards regression, behind
+a shared, tidy interface for survival-probability prediction, restricted
+mean survival time, landmark analysis, stepwise covariate modelling, and
+simulation.
 
 ## Installation
 
@@ -44,22 +45,22 @@ mod
 #> n= 300
 
 ertte_predict(mod, ertte_data[1:5, ], time = c(30, 60, 90))
-#> # A tibble: 15 × 13
-#>       id sex      age weight  dose treatment aucss cmaxss  time event fit_survival ci_lower ci_upper
-#>    <int> <fct>  <int>  <dbl> <dbl> <fct>     <dbl>  <dbl> <dbl> <dbl>        <dbl>    <dbl>    <dbl>
-#>  1     1 Female    27     70   200 Drug      1114.  187.     30     1        0.701   0.666     0.733
-#>  2     1 Female    27     70   200 Drug      1114.  187.     60     1        0.393   0.344     0.441
-#>  3     1 Female    27     70   200 Drug      1114.  187.     90     1        0.193   0.152     0.237
-#>  4     2 Female    27     59   100 Drug       561.   49.1    30     0        0.805   0.780     0.827
-#>  5     2 Female    27     59   100 Drug       561.   49.1    60     0        0.565   0.521     0.607
-#>  6     2 Female    27     59   100 Drug       561.   49.1    90     0        0.366   0.317     0.416
-#>  7     3 Female    24     65     0 Placebo      0     0      30     0        0.877   0.856     0.895
-#>  8     3 Female    24     65     0 Placebo      0     0      60     0        0.708   0.665     0.747
-#>  9     3 Female    24     65     0 Placebo      0     0      90     0        0.544   0.487     0.598
-#> 10     4 Female    29     63     0 Placebo      0     0      30     0        0.877   0.856     0.895
-#> 11     4 Female    29     63     0 Placebo      0     0      60     0        0.708   0.665     0.747
-#> 12     4 Female    29     63     0 Placebo      0     0      90     0        0.544   0.487     0.598
-#> 13     5 Male      27     91   200 Drug      1416.  143.     30     1        0.628   0.584     0.669
-#> 14     5 Male      27     91   200 Drug      1416.  143.     60     1        0.294   0.242     0.347
-#> 15     5 Male      27     91   200 Drug      1416.  143.     90     1        0.116   0.0824    0.155
+#> # A tibble: 15 × 14
+#>       id sex      age weight  dose treatment aucss cmaxss  time event admin_censor fit_survival ci_lower ci_upper
+#>    <int> <fct>  <int>  <dbl> <dbl> <fct>     <dbl>  <dbl> <dbl> <dbl>        <dbl>        <dbl>    <dbl>    <dbl>
+#>  1     1 Female    27     70   200 Drug      1114.  187.     30     1          180        0.701   0.666     0.733
+#>  2     1 Female    27     70   200 Drug      1114.  187.     60     1          180        0.393   0.344     0.441
+#>  3     1 Female    27     70   200 Drug      1114.  187.     90     1          180        0.193   0.152     0.237
+#>  4     2 Female    27     59   100 Drug       561.   49.1    30     0          180        0.805   0.780     0.827
+#>  5     2 Female    27     59   100 Drug       561.   49.1    60     0          180        0.565   0.521     0.607
+#>  6     2 Female    27     59   100 Drug       561.   49.1    90     0          180        0.366   0.317     0.416
+#>  7     3 Female    24     65     0 Placebo      0     0      30     0          180        0.877   0.856     0.895
+#>  8     3 Female    24     65     0 Placebo      0     0      60     0          180        0.708   0.665     0.747
+#>  9     3 Female    24     65     0 Placebo      0     0      90     0          180        0.544   0.487     0.598
+#> 10     4 Female    29     63     0 Placebo      0     0      30     0          180        0.877   0.856     0.895
+#> 11     4 Female    29     63     0 Placebo      0     0      60     0          180        0.708   0.665     0.747
+#> 12     4 Female    29     63     0 Placebo      0     0      90     0          180        0.544   0.487     0.598
+#> 13     5 Male      27     91   200 Drug      1416.  143.     30     1          180        0.628   0.584     0.669
+#> 14     5 Male      27     91   200 Drug      1416.  143.     60     1          180        0.294   0.242     0.347
+#> 15     5 Male      27     91   200 Drug      1416.  143.     90     1          180        0.116   0.0824    0.155
 ```
