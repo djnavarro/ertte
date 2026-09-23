@@ -435,10 +435,12 @@ simulate(mod_aft, ertte_data[1:3, ], nsim = 2, seed = 8204) |>
 - Kalbfleisch, J.D. and Prentice, R.L. (2002). *The Statistical Analysis
   of Failure Time Data*, 2nd edition. Wiley. A standard reference
   covering both the AFT and Cox PH model families in depth.
+  <https://doi.org/10.1002/9781118032985>
 - Therneau, T.M. and Grambsch, P.M. (2000). *Modeling Survival Data:
   Extending the Cox Model*. Springer. Covers
   [`cox.zph()`](https://rdrr.io/pkg/survival/man/cox.zph.html) and the
   proportional-hazards assumption in detail.
+  <https://doi.org/10.1007/978-1-4757-3294-8>
 - [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html)/[`survival::coxph()`](https://rdrr.io/pkg/survival/man/coxph.html)’s
   own documentation, which
   [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md)/[`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)

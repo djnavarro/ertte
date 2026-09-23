@@ -256,92 +256,52 @@ exactly as in <code><a href="../reference/ertte_predict.html">ertte_predict.ertt
 interval is a symmetric Wald interval, <code>fit_rmst</code> <span class="math inline">\(\pm\ z \cdot\)</span> <code>se_rmst</code>.</p>
 </div>
 <div class="section level3">
-<h3 id="cox-why-the-obvious-shortcut-doesnt-work">Cox: why the obvious shortcut doesn’t work<a class="anchor" aria-label="anchor" href="#cox-why-the-obvious-shortcut-doesnt-work"></a>
+<h3 id="cox-a-corrected-delta-method">Cox: a corrected delta method<a class="anchor" aria-label="anchor" href="#cox-a-corrected-delta-method"></a>
 </h3>
 <p>For the Cox engine, the natural first idea is to reuse machinery
 <code>survival</code> already ships:
-<code>print(survfit_object, rmean = tau)</code> (backed by the
-unexported <code>survival:::survmean()</code>) already prints an
+<code>print(survfit_object, rmean = tau)</code> prints an
 <code>rmean</code>/<code>se(rmean)</code> pair for a fitted
-<code>survfit</code> object. Calling this on
-<code>survival::survfit(coxph_object, newdata = x)</code> does run, and
-does produce a value that looks reasonable at first glance – it varies
-by covariate profile, because the <em>survival curve itself</em> differs
-by profile.</p>
-<p>The problem surfaces on closer inspection. <code>survmean()</code>’s
-variance calculation uses a Greenwood-type increment,</p>
-<p><span class="math display">\[
-\hat h_k = \frac{d_k}{n_k (n_k - d_k)},
-\]</span></p>
-<p>built entirely from <code>n.risk</code> (<span class="math inline">\(n_k\)</span>) and <code>n.event</code> (<span class="math inline">\(d_k\)</span>) – the <em>number of subjects at risk
-and experiencing an event</em> at each observed time, in the whole
-fitting cohort. These are properties of the shared baseline hazard
-estimate, <strong>not of the covariate profile being predicted
-for</strong>: two very different covariate profiles passed through the
-same fitted Cox model get <em>identical</em>
-<code>n.risk</code>/<code>n.event</code> sequences, because both curves
-are built from the same baseline hazard and the same underlying risk
-sets. The formula never touches <code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survfit()</a></code>‘s own
-<code>std.err</code> field, which – for a <code>coxph</code>-based curve
-– genuinely does combine both sources of uncertainty (the baseline
-hazard’s estimation uncertainty <em>and</em> the regression
-coefficients’ estimation uncertainty) correctly for that specific
-profile.</p>
-<p>The practical consequence: for a covariate profile far from the
-average (e.g. an unusually high exposure value),
-<code>survmean()</code>’s naive standard error can be dramatically too
-small – in one check during development, roughly 15-fold smaller than a
-300-replicate nonparametric bootstrap standard error for the same
-quantity. That’s not a subtle numerical discrepancy; it’s a real, and
-potentially misleading, understatement of uncertainty for exactly the
-covariate profiles an exposure-response analysis often cares most about
-(e.g. a high-exposure arm).</p>
-</div>
-<div class="section level3">
-<h3 id="cox-the-corrected-delta-method">Cox: the corrected delta method<a class="anchor" aria-label="anchor" href="#cox-the-corrected-delta-method"></a>
-</h3>
+<code>survfit</code> object, and does run on
+<code>survival::survfit(coxph_object, newdata = x)</code>. It’s the
+wrong standard error to use here, though: it’s built from
+<code>n.risk</code>/<code>n.event</code>, which are properties of the
+shared baseline hazard estimate, identical across <em>any</em> covariate
+profile passed through the same fitted model – not profile-specific
+uncertainty at all. For a covariate profile far from the average
+(e.g. an unusually high exposure value), that naive standard error can
+be dramatically too small, understating uncertainty for exactly the
+profiles an exposure-response analysis often cares most about (e.g. a
+high-exposure arm).</p>
 <p><code><a href="../reference/ertte_rmst.html">ertte_rmst.ertte_coxph()</a></code> instead builds on
-<code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survfit()</a></code>’s own <code>std.err</code> field, which is on the
-cumulative-hazard scale: <code>std.err(t)</code> is the estimated
+<code><a href="https://rdrr.io/pkg/survival/man/survfit.html" class="external-link">survfit()</a></code>’s own <code>std.err</code> field, which
+<em>does</em> vary correctly by covariate profile: it’s the estimated
 standard error of <span class="math inline">\(\hat H(t \mid x)\)</span>,
-the profile-specific cumulative hazard (confirmed by checking that
-<code>sf$cumhaz</code> equals <code>-log(sf$surv)</code> exactly, and
-<code>sf$logse</code> is <code>TRUE</code>). This <em>does</em> vary
-correctly by covariate profile, since it comes from the same
-delta-method calculation <code>survfit.coxph()</code> uses internally to
-build its own per-time confidence intervals.</p>
-<p>The fix keeps <code>survmean()</code>’s overall construction –
-summing squared “area remaining beyond <span class="math inline">\(t_k\)</span>” terms, each weighted by a variance
-increment at <span class="math inline">\(t_k\)</span> – but replaces the
-increment itself:</p>
+the profile-specific cumulative hazard, coming from the same
+delta-method calculation <code>survfit.coxph()</code> uses internally
+for its own per-time confidence intervals. The construction otherwise
+matches the classic Greenwood-type sum – squared “area remaining beyond
+<span class="math inline">\(t_k\)</span>” terms, each weighted by a
+variance increment at <span class="math inline">\(t_k\)</span> – but
+with the increment itself replaced:</p>
 <p><span class="math display">\[
 \hat h_k = \widehat{\text{Var}}\!\left[\hat H(t_{(k)} \mid x)\right] -
 \widehat{\text{Var}}\!\left[\hat H(t_{(k-1)} \mid x)\right] =
 \text{std.err}(t_{(k)})^2 - \text{std.err}(t_{(k-1)})^2.
 \]</span></p>
-<p>This is a genuine improvement, but it’s still an
-<strong>approximation</strong>, and it’s worth understanding exactly
-which assumption it makes. The classic Greenwood-type construction (and
-this adapted version of it) implicitly treats <span class="math inline">\(\hat H(t \mid x)\)</span> as accumulating via a
-sequence of <em>statistically independent</em> increments over time –
-true, in an appropriate asymptotic sense, for the martingale-based part
-of a nonparametric hazard estimator. But for a Cox model, part of <span class="math inline">\(\hat H(t \mid x)\)</span>’s uncertainty comes from
-the regression coefficients <span class="math inline">\(\hat\beta\)</span>, and that part is really
-<strong>one shared random quantity affecting every time point
-together</strong>, not something that accumulates independently as <span class="math inline">\(t\)</span> increases. Treating its contribution as
-if it did accumulate independently is a simplification, not an exact
-result.</p>
-<p>This was checked empirically during development: for two contrasting
-covariate profiles, a 300-replicate nonparametric bootstrap (refitting
-the Cox model on resampled data and recomputing RMST each time) was used
-as a independent benchmark. The corrected delta-method standard error
-tracked the bootstrap substantially more closely than either
-<code>survmean()</code>’s naive version or a second, cheaper alternative
-that holds the baseline hazard fixed and treats only <span class="math inline">\(\hat\beta\)</span> as random (which, depending on
-how extreme the covariate profile is, can either over- or under-state
-the true uncertainty). It was not, however, checked across a wide range
-of sample sizes, censoring patterns, or covariate profiles – treat it as
-a meaningfully better approximation, not a proven-exact one.</p>
+<p>This is a genuine improvement, but still an
+<strong>approximation</strong>: it treats <span class="math inline">\(\hat H(t \mid x)\)</span> as accumulating via
+statistically independent increments over time, which holds for the
+nonparametric part of the hazard estimator but not exactly for the part
+of its uncertainty coming from the regression coefficients <span class="math inline">\(\hat\beta\)</span> – that’s really one shared
+random quantity affecting every time point together, not something that
+accumulates independently as <span class="math inline">\(t\)</span>
+increases. In development testing against a nonparametric bootstrap for
+a couple of contrasting covariate profiles, this corrected standard
+error tracked the bootstrap substantially more closely than the naive
+<code>survmean()</code>-based version – but that check wasn’t exhaustive
+across sample sizes, censoring patterns, or covariate profiles, so treat
+it as a meaningfully better approximation, not a proven-exact one.</p>
 </div>
 </div>
 <div class="section level2">
@@ -516,7 +476,8 @@ IPCW/pseudo-observation alternative currently offered</strong> – see
 <li>Royston, P. and Parmar, M.K.B. (2013). Restricted mean survival
 time: an alternative to the hazard ratio for the design and analysis of
 randomized trials with a time-to-event outcome. <em>BMC Medical Research
-Methodology</em>, 13, 152.</li>
+Methodology</em>, 13, 152. <a href="https://doi.org/10.1186/1471-2288-13-152" class="external-link uri">https://doi.org/10.1186/1471-2288-13-152</a>
+</li>
 <li>
 <code><a href="https://rdrr.io/pkg/survival/man/print.survfit.html" class="external-link">survival::print.survfit()</a></code>’s <code>rmean</code>
 argument, and the classic Greenwood-type variance formula it’s based on,
