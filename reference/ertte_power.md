@@ -9,9 +9,6 @@ e.g. `ertte_power(age)` in place of a plain `age` term.
 
 ``` r
 ertte_power(x, ref = NULL)
-
-# S3 method for class 'ertte_power'
-makepredictcall(var, call)
 ```
 
 ## Arguments
@@ -27,15 +24,6 @@ makepredictcall(var, call)
   `median(x, na.rm = TRUE)` – the usual pop-PK/NONMEM convention of
   referencing the covariate's typical (median) value in the fitting
   data.
-
-- var:
-
-  The evaluated variable (here, the `ertte_power()`-transformed vector
-  from the original model fit).
-
-- call:
-
-  The unevaluated call to be reconstructed for new data.
 
 ## Value
 
@@ -91,18 +79,6 @@ prevents combining a plain linear term (`age`) and a power term
 (`ertte_power(age)`) for the same underlying variable – term handling
 throughout ertte works on formula term-labels, not variable semantics,
 so this is left to the user's judgement.
-
-`makepredictcall.ertte_power()` is a
-[`stats::makepredictcall()`](https://rdrr.io/r/stats/makepredictcall.html)
-method, not typically called directly. It ensures that when a fitted
-model containing an `ertte_power()` term is used to predict/simulate on
-new data (via
-[`stats::model.matrix()`](https://rdrr.io/r/stats/model.matrix.html)/[`stats::model.frame()`](https://rdrr.io/r/stats/model.frame.html)
-on the model's [`terms()`](https://rdrr.io/r/stats/terms.html)), the
-*original* fitting-time `ref` is reused rather than a new one recomputed
-from whatever data is supplied – the same mechanism
-[`stats::poly()`](https://rdrr.io/r/stats/poly.html)/[`splines::ns()`](https://rdrr.io/r/splines/ns.html)
-use.
 
 ## Examples
 

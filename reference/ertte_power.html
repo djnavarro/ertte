@@ -57,10 +57,7 @@ place of a plain <code>age</code> term.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ertte_power</span><span class="op">(</span><span class="va">x</span>, ref <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># S3 method for class 'ertte_power'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/makepredictcall.html" class="external-link">makepredictcall</a></span><span class="op">(</span><span class="va">var</span>, <span class="va">call</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ertte_power</span><span class="op">(</span><span class="va">x</span>, ref <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -76,15 +73,6 @@ positive (<code>log(x / ref)</code> is undefined otherwise).</p></dd>
 <dd><p>A single strictly positive reference value. Defaults to
 <code>median(x, na.rm = TRUE)</code> – the usual pop-PK/NONMEM convention of
 referencing the covariate's typical (median) value in the fitting data.</p></dd>
-
-
-<dt id="arg-var">var<a class="anchor" aria-label="anchor" href="#arg-var"></a></dt>
-<dd><p>The evaluated variable (here, the <code>ertte_power()</code>-transformed
-vector from the original model fit).</p></dd>
-
-
-<dt id="arg-call">call<a class="anchor" aria-label="anchor" href="#arg-call"></a></dt>
-<dd><p>The unevaluated call to be reconstructed for new data.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -123,13 +111,6 @@ the primary exposure metric, which enters the model directly (see
 and a power term (<code>ertte_power(age)</code>) for the same underlying variable
 – term handling throughout ertte works on formula term-labels, not
 variable semantics, so this is left to the user's judgement.</p>
-<p><code>makepredictcall.ertte_power()</code> is a <code><a href="https://rdrr.io/r/stats/makepredictcall.html" class="external-link">stats::makepredictcall()</a></code>
-method, not typically called directly. It ensures that when a fitted
-model containing an <code>ertte_power()</code> term is used to predict/simulate on
-new data (via <code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">stats::model.matrix()</a></code>/<code><a href="https://rdrr.io/r/stats/model.frame.html" class="external-link">stats::model.frame()</a></code> on the
-model's <code><a href="https://rdrr.io/r/stats/terms.html" class="external-link">terms()</a></code>), the <em>original</em> fitting-time <code>ref</code> is reused rather
-than a new one recomputed from whatever data is supplied – the same
-mechanism <code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">stats::poly()</a></code>/<code><a href="https://rdrr.io/r/splines/ns.html" class="external-link">splines::ns()</a></code> use.</p>
     </div>
 
     <div class="section level2">

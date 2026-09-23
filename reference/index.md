@@ -34,7 +34,6 @@ Stepwise covariate modelling, and distribution selection
   [`ertte_remove_term()`](https://ertte.djnavarro.net/reference/ertte_term.md)
   : Add or remove a covariate term from an exposure-response TTE model
 - [`ertte_power()`](https://ertte.djnavarro.net/reference/ertte_power.md)
-  [`makepredictcall(`*`<ertte_power>`*`)`](https://ertte.djnavarro.net/reference/ertte_power.md)
   : Power-function covariate transform for exposure-response TTE models
 - [`ertte_aft_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_aft_select_distribution.md)
   : Select an AFT distribution by AIC
