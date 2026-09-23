@@ -2,12 +2,17 @@
 
 ## Build
 
-Fit exposure-response time-to-event models based on survreg()/coxph()
+Fit exposure-response time-to-event models
 
 - [`ertte_aft()`](https://ertte.djnavarro.net/reference/ertte_aft.md) :
   AFT regression modeling
 - [`ertte_coxph()`](https://ertte.djnavarro.net/reference/ertte_coxph.md)
   : Cox proportional hazard modeling
+
+## Predict
+
+Prediction tools for exposure-response time-to-event models
+
 - [`ertte_predict()`](https://ertte.djnavarro.net/reference/ertte_predict.md)
   : Survival-probability predictions for exposure-response TTE models
 - [`ertte_landmark()`](https://ertte.djnavarro.net/reference/ertte_landmark.md)
@@ -16,12 +21,10 @@ Fit exposure-response time-to-event models based on survreg()/coxph()
 - [`ertte_rmst()`](https://ertte.djnavarro.net/reference/ertte_rmst.md)
   : Restricted mean survival time predictions for exposure-response TTE
   models
-- [`ertte_aft_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_aft_select_distribution.md)
-  : Select an AFT distribution by AIC
 
-## Covariate selection
+## Select
 
-Stepwise covariate modelling for exposure-response TTE models
+Stepwise covariate modelling, and distribution selection
 
 - [`ertte_scm_forward()`](https://ertte.djnavarro.net/reference/ertte_scm.md)
   [`ertte_scm_backward()`](https://ertte.djnavarro.net/reference/ertte_scm.md)
@@ -33,6 +36,8 @@ Stepwise covariate modelling for exposure-response TTE models
 - [`ertte_power()`](https://ertte.djnavarro.net/reference/ertte_power.md)
   [`makepredictcall(`*`<ertte_power>`*`)`](https://ertte.djnavarro.net/reference/ertte_power.md)
   : Power-function covariate transform for exposure-response TTE models
+- [`ertte_aft_select_distribution()`](https://ertte.djnavarro.net/reference/ertte_aft_select_distribution.md)
+  : Select an AFT distribution by AIC
 
 ## Simulate
 
