@@ -46,7 +46,7 @@ this actually matters).}
 For \code{ertte_scm_forward()} and \code{ertte_scm_backward()}, the
 updated ertte model is returned, with the SCM history log updated
 internally. For \code{ertte_scm_history()}, a data frame is returned
-containing the SCM history log
+containing the SCM history log.
 }
 \description{
 Iteratively adds (\code{ertte_scm_forward()}) or removes
@@ -55,89 +55,37 @@ time, selecting each step's term by a likelihood-ratio p-value, AIC, or
 BIC, and logging the search in a history object retrievable via
 \code{ertte_scm_history()}.
 }
-\section{Selection test}{
-
-Terms are compared with a likelihood-ratio Chi-squared test
-(\code{stats::anova()} on nested \code{survreg}/\code{coxph} fits) -- unlike the
-companion \code{erglm} package's SCM, there's no family-dependent choice of
-test here, since a \code{survreg}/\code{coxph} model's likelihood ratio test
-doesn't vary by distribution.
-}
-
-\section{Selection criteria}{
-
+\details{
 Three model selection criteria are available via the \code{criterion}
-argument, mirroring the companion \code{emaxnls} package's development
-version:
+argument:
 \itemize{
-\item \code{"p-value"} (default): a term is added if its likelihood-ratio
+\item \code{"p-value"} (default): Models are compared with a likelihood-ratio
+Chi-squared test. A term is added if its likelihood-ratio
 p-value falls below \code{threshold} (forward) or removed if its p-value
 exceeds \code{threshold} (backward). When multiple candidates satisfy the
 threshold within a step, the one with the most extreme p-value is
 chosen.
-\item \code{"aic"}: a term is added (forward) or removed (backward) if doing so
+\item \code{"aic"}: A term is added (forward) or removed (backward) if doing so
 strictly decreases AIC relative to the current model. When multiple
 candidates improve AIC, the one yielding the lowest AIC is chosen.
-\item \code{"bic"}: same as \code{"aic"}, but using BIC as the criterion.
+\item \code{"bic"}: Same as \code{"aic"}, but using BIC as the criterion.
 }
 
 When \code{criterion} is \code{"aic"} or \code{"bic"}, the \code{threshold} argument has no
 effect and is ignored, and \code{term_p_value} is left \code{NA} in the history
 for every candidate tested that step (the likelihood-ratio test isn't
-computed, since it plays no role in selection). \code{model_aic}/\code{model_bic}
-are always recorded regardless of which criterion drove selection, and
-the history's \code{criterion} column records which one was used for each
-forward/backward step (\code{NA} for the base-model/pre-existing rows).
+computed, since it plays no role in selection). The \code{model_aic} and
+\code{model_bic} columns are always recorded regardless of which criterion
+drove selection, and the history's \code{criterion} column records which one
+was used for each forward/backward step.
 }
-
-\section{Candidate test order and \code{seed}}{
-
-\code{seed} exists as a safety measure against run-to-run variation in the
-order candidate terms are tested within a step (\code{sample()}, shuffled
-before testing one at a time). Model fitting itself
-(\code{survival::survreg()}) is deterministic given a starting formula, so
-\code{seed} only matters in the (essentially measure-zero) case of an
-exact p-value tie between competing candidates within a step -- see
-the companion \code{erglm} package's equivalent documentation for the full
-rationale, which applies unchanged here.
-}
-
-\section{Handling problem candidates}{
-
-If a candidate term is aliased (perfectly collinear) with a term
-already in the model, \code{stats::anova()} reports an \code{NA} p-value for
-it. That candidate is skipped for the step (with a warning) rather
-than being selected or crashing the search. This check only applies
-under \code{criterion = "p-value"}, since it's the only criterion that
-computes a likelihood-ratio p-value at all -- an aliased candidate
-under \code{criterion = "aic"}/\code{"bic"} is simply judged (and, in
-degenerate cases, potentially selected) on AIC/BIC like any other
-candidate.
-
-Two further failure modes are also handled per-candidate, rather than
-aborting the whole search: if refitting with a candidate added/removed
-throws an error (e.g. a single-level factor candidate that \code{coxph()}/
-\code{survreg()} can't build contrasts for), that candidate is skipped with
-a warning quoting the underlying error, and the rest of the candidate
-set is still tried. Separately, if a candidate can't be added/removed
-at all (e.g. it references a variable not present in the fitting
-data, so \code{\link[=ertte_add_term]{ertte_add_term()}}/\code{\link[=ertte_remove_term]{ertte_remove_term()}} return \code{mod}
-unchanged), that's detected directly (the refit formula is identical
-to the current model's) and the candidate is skipped with a warning
-explaining why -- rather than comparing the unchanged model to itself
-via \code{anova()}, which would produce an \code{NA} p-value and be misreported
-as aliasing/collinearity.
-
-\code{candidates} is validated up front: every element must be parseable
-as a formula and name exactly one covariate term (e.g. \code{"sex"}, not
-\code{"sex + dose"} or \code{"not a formula"}).
-}
-
 \examples{
+# Forward addition by p-value selection
 mod0 <- ertte_aft(Surv(time, event) ~ aucss, ertte_data)
 mod1 <- ertte_scm_forward(mod0, candidates = c("sex", "dose"))
 ertte_scm_history(mod1)
 
+# Backward elimination by p-value selection
 mod2 <- ertte_aft(Surv(time, event) ~ aucss + sex + dose, ertte_data)
 mod3 <- ertte_scm_backward(mod2, candidates = c("sex", "dose"))
 ertte_scm_history(mod3)
