@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/djnavarro/ertte/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/djnavarro/ertte/blob/v0.1.1/DESCRIPTION)
 
 Navarro D (2026). *ertte: Exposure-Response Tools for Time-to-Event
 Models*. R package version 0.1.1, <https://github.com/djnavarro/ertte>.
