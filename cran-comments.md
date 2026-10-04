@@ -38,34 +38,33 @@ file exercising them is skipped via
 
 ## Test environments
 
-* local Ubuntu 24.04, R 4.6.1, `devtools::check(cran = TRUE)`
-* R-hub v2 (`rhub::rhub_check()`): linux, windows, and nosuggests, all
-  R-devel -- all `Status: OK`. macos-arm64 (R-devel) failed before
-  `R CMD check` itself ran: `setup-deps` reported the runner's
-  macOS-arm64 binary CRAN/Bioconductor mirrors as unreachable
-  (`pak::repo_status()` showed `ok = FALSE` for every `bin/macos/arm64`
-  repo entry), which forced dependency compilation from source and
-  then failed loading the compiled `mvtnorm` dependency (`dyn.load`).
-  This is rhub macOS runner/mirror infrastructure trouble, not an
-  issue with ertte -- corroborated by the two CRAN-infrastructure
-  win-builder checks below both passing cleanly on the same code.
-* win-builder, R-release and R-devel -- both `Status: 1 NOTE` (the
-  routine `New submission` note), 0 errors, 0 warnings
-  (<https://win-builder.r-project.org/9U18L0UUn2ND/00check.log>,
-  <https://win-builder.r-project.org/57zjIk601rjZ/00check.log>)
-* Since both rhub and CRAN's own macOS builder (`mac.r-project.org`,
-  currently returning HTTP 502) are unavailable for this package right
-  now, macOS coverage instead comes from ertte's regular CI, which
-  runs `R CMD check` via `r-lib/actions/check-r-package@v2` on
-  `macos-latest` (R release) on every push. The run at this exact
-  commit (<https://github.com/djnavarro/ertte/actions/runs/35847857269>)
-  passed cleanly on macOS, alongside Windows and three Linux R
-  versions (devel/release/oldrel-1).
+* local Ubuntu 24.04, R 4.6.1, `devtools::check(cran = TRUE)` -- 0
+  errors, 0 warnings, 0 notes (the `New submission` note from the 0.1
+  cycle no longer appears locally, though CRAN's own incoming checks
+  may still raise it since the package hasn't been accepted yet)
+* R-hub v2 (`rhub::rhub_check()`), re-run for this 0.1.1 resubmission
+  at commit `f4570cb`: linux, windows, macos-arm64, and nosuggests, all
+  R-devel -- all four `Status: OK`
+  (<https://github.com/djnavarro/ertte/actions/runs/37242824713>).
+  macos-arm64 previously failed before `R CMD check` itself ran, due
+  to rhub macOS runner/mirror infrastructure trouble (unreachable
+  `bin/macos/arm64` binary repos forcing source compilation, which
+  then failed loading the compiled `mvtnorm` dependency); that's
+  resolved on this re-run.
+* win-builder, R-release and R-devel -- resubmitted for this 0.1.1
+  resubmission via `devtools::check_win_release()`/
+  `check_win_devel()`; results pending by email at submission time.
+* ertte's regular CI also runs `R CMD check` via
+  `r-lib/actions/check-r-package@v2` on `macos-latest`/`windows-latest`
+  (R release) and three Linux R versions (devel/release/oldrel-1) on
+  every push, as an additional cross-platform signal alongside rhub/
+  win-builder.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note (`New submission`, expected for a
-first submission)
+0 errors | 0 warnings | 0 notes locally; CRAN's incoming checks may
+still raise the routine `New submission` note, since the package
+hasn't previously been accepted.
 
 ## Downstream dependencies
 
