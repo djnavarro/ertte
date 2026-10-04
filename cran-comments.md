@@ -52,11 +52,11 @@ file exercising them is skipped via
   then failed loading the compiled `mvtnorm` dependency); that's
   resolved on this re-run.
 * win-builder, re-run for this 0.1.1 resubmission via
-  `devtools::check_win_release()`/`check_win_devel()`: R-devel back
-  already -- `Status: 1 NOTE` (the routine `New submission` note), 0
+  `devtools::check_win_release()`/`check_win_devel()`: R-release and
+  R-devel both `Status: 1 NOTE` (the routine `New submission` note), 0
   errors, 0 warnings
-  (<https://win-builder.r-project.org/LtvbZNf1OXkv/00check.log>);
-  R-release still pending by email.
+  (<https://win-builder.r-project.org/69JuvIc5YjyZ/00check.log>,
+  <https://win-builder.r-project.org/LtvbZNf1OXkv/00check.log>).
 * ertte's regular CI also runs `R CMD check` via
   `r-lib/actions/check-r-package@v2` on `macos-latest`/`windows-latest`
   (R release) and three Linux R versions (devel/release/oldrel-1) on
