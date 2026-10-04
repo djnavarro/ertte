@@ -1,6 +1,6 @@
 Package: ertte
 Title: Exposure-Response Tools for Time-to-Event Models
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person("Danielle", "Navarro", , "djnavarro@protonmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0001-7648-6578"))
 Description:

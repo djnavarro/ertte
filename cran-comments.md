@@ -1,3 +1,23 @@
+## Resubmission (0.1.1)
+
+This is a resubmission addressing two comments from the CRAN
+reviewer on the 0.1 submission:
+
+* "If there are references describing the methods in your package,
+  please add these in the description field of your DESCRIPTION file
+  ...". There are no standalone references describing the package's
+  methods beyond the general time-to-event/survival-analysis
+  literature already cited in the vignettes; `Surv()`/`survreg()`/
+  `coxph()` themselves are documented (with their own references) in
+  the `survival` package. No DESCRIPTION change was made for this
+  comment.
+* "Please add `\value` to .Rd files regarding exported methods ...
+  -> Missing Rd-tags: reexports.Rd: `\value`". `R/reexports.R` now has
+  a `@return` tag documenting `Surv()`'s return value (an object of
+  class `"Surv"`), and the `@description` text was corrected to
+  actually link to `survival::Surv()`'s documentation (it previously
+  said "follow the links below" without any link being rendered).
+
 ## Submission
 
 This is a new release. ertte is the time-to-event member of the

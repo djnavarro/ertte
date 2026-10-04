@@ -13,8 +13,19 @@ Surv(
   origin = 0
 )
 }
+\value{
+\code{Surv()} returns an object of class \code{"Surv"}, a matrix of
+time/event (or time/time2/event, for interval- or counting-process-style
+data) values used as the response in \code{\link[=ertte_aft]{ertte_aft()}}/\code{\link[=ertte_coxph]{ertte_coxph()}}
+formulas. See \code{survival::Surv()} for full details on its return value.
+}
 \description{
-These objects are imported from other packages. Follow the links below to
-see their documentation.
+These objects are imported from other packages. Follow the link below to
+see its documentation.
+}
+\details{
+\describe{
+\item{survival}{\code{\link[survival]{Surv}}}
+}
 }
 \keyword{internal}
