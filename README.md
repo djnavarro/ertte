@@ -8,6 +8,10 @@
 [![R-CMD-check](https://github.com/djnavarro/ertte/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/djnavarro/ertte/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/djnavarro/ertte/graph/badge.svg)](https://app.codecov.io/gh/djnavarro/ertte)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/ertte)](https://CRAN.R-project.org/package=ertte)
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
 Provides tools for working with exposure-response models for
@@ -24,7 +28,13 @@ simulation.
 
 ## Installation
 
-You can install the development version of ertte from
+You can install the latest CRAN release with:
+
+``` r
+install.packages("ertte")
+```
+
+Alternatively, you can install the development version of ertte from
 [GitHub](https://github.com/) with:
 
 ``` r
