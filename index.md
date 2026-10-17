@@ -14,7 +14,14 @@ simulation.
 
 ## Installation
 
-You can install the development version of ertte from
+You can install the latest CRAN release with:
+
+``` r
+
+install.packages("ertte")
+```
+
+Alternatively, you can install the development version of ertte from
 [GitHub](https://github.com/) with:
 
 ``` r
